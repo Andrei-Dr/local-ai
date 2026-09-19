@@ -2,9 +2,10 @@ qual3	skipped	0	-	-	-	grep -q QUAL3_DONE qual3.log 2>/dev/null || { bash /ai/ben
 q38	done	1	2026-09-19 23:35:29	2026-09-19 23:40:51	0	bash /ai/bench/q38.sh > q38.log 2>&1; grep -q Q38_DONE q38.log
 qmmlu	skipped	1	2026-09-20 00:10:53	-	-	bash /ai/bench/qmmlu.sh > qmmlu.log 2>&1; grep -q QMMLU_DONE qmmlu.log
 distill	done	1	2026-09-19 23:41:51	2026-09-20 00:09:53	0	bash /ai/bench/distill.sh > distill.log 2>&1; grep -q DISTILL_DONE distill.log
-build_mainline	pending	0	-	-	-	bash /ai/bench/build_mainline.sh >> build_mainline.log 2>&1; grep -q BUILD_MAINLINE_DONE build_mainline.log
-mainline_ab	pending	0	-	-	-	grep -q BUILD_MAINLINE_DONE build_mainline.log && bash /ai/bench/mainline_ab.sh > mainline_ab.log 2>&1; grep -q MAINLINE_AB_DONE mainline_ab.log
-trace2	pending	0	-	-	-	bash /ai/bench/trace2.sh > trace2.log 2>&1; grep -q TRACE2_DONE trace2.log
+build_mainline	done	1	2026-09-20 00:25:34	2026-09-20 00:35:33	0	bash /ai/bench/build_mainline.sh >> build_mainline.log 2>&1; grep -q BUILD_MAINLINE_DONE build_mainline.log
+mainline_ab	done	1	2026-09-20 00:36:33	2026-09-20 00:38:19	0	grep -q BUILD_MAINLINE_DONE build_mainline.log && bash /ai/bench/mainline_ab.sh > mainline_ab.log 2>&1; grep -q MAINLINE_AB_DONE mainline_ab.log
+trace2	running	1	2026-09-20 00:39:19	-	-	bash /ai/bench/trace2.sh > trace2.log 2>&1; grep -q TRACE2_DONE trace2.log
 ngram1	pending	0	-	-	-	bash /ai/bench/ngram1.sh > ngram1.log 2>&1; grep -q NGRAM1_DONE ngram1.log
 steady1	pending	0	-	-	-	bash /ai/bench/steady1.sh > steady1.log 2>&1; grep -q STEADY1_DONE steady1.log
 mmlu2k	pending	0	-	-	-	bash /ai/bench/mmlu2k.sh > mmlu2k.log 2>&1; grep -q MMLU2K_DONE mmlu2k.log
+mainqual	pending	0	-	-	-	bash /ai/bench/mainqual.sh > mainqual.log 2>&1; grep -q MAINQUAL_DONE mainqual.log
