@@ -1,5 +1,7 @@
 # local-ai notes
 
+Repo: **https://github.com/Andrei-Dr/local-ai** (private; `~/dev/local-ai`). Commit + push after every recorded result: notes, `bench/` (harness, ledger, logs mirrored from the box via `rsync root@i5.local:/ai/bench/{*.log,ledger.jsonl} bench/box/`), `research/`. The llama.cpp work itself lives on the box (`/ai/src/llama.cpp` branch `i5-tuning`, worktree `/ai/src/llama.cpp-moecache` branch `moe-cache`); it is exported here as `research/patches/box-series/` (`git format-patch 9a9394a..moe-cache`) — re-export after every box commit. A GitHub fork of llama.cpp would be PUBLIC (forks of public repos cannot be private), so that waits for an explicit go.
+
 ## i5 box (`ssh root@i5.local`)
 
 - GPU: GTX 1650 SUPER 4 GB — Turing cc 7.5 but **TU116: no tensor cores**, no bf16/FP8. ~3.45 GB usable. PCIe 3.0 x16 (idles at gen1, gen3 under load). Power cap already at max (100 W).
