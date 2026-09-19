@@ -1,0 +1,1 @@
+{"label": "g4_q2kp_cache19", "thinking": false, "sets": {"mmlu_pro": {"n": 70, "correct": 56, "pct": 80.0, "se_pct": 4.8, "truncated": 1, "empty": 0}}, "mean_tokens": 361.6, "mean_decode_tps": 38.85, "truncated": 2, "empty": 0, "items": 161}

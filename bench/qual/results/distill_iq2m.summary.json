@@ -1,0 +1,1 @@
+{"label": "distill_iq2m", "thinking": false, "sets": {"gsm8k": {"n": 50, "correct": 46, "pct": 92.0, "se_pct": 3.8}, "humaneval": {"n": 41, "correct": 34, "pct": 82.9, "se_pct": 5.9}, "mmlu_pro": {"n": 70, "correct": 51, "pct": 72.9, "se_pct": 5.3}}, "mean_tokens": 255.8, "mean_decode_tps": 38.34, "truncated": 6, "empty": 0, "items": 161}

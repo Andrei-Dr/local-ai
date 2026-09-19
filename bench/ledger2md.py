@@ -11,7 +11,8 @@ SHORT = {"Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf": "Bonsai-27B PQ2_0-MT
 AXES = [("math", "gsm8k"), ("code", "humaneval"), ("knowledge", "mmlu_pro")]
 # Absolute per-axis floors for the "best config" pick. Eligible = every axis BOTH within 1 sigma of the best
 # clean score on that axis AND >= its floor (1 sigma catches noise ties; the floor stops a statistically
-# excusable but actually-bad config sneaking in). Winner = fastest eligible config. Tune here.
+# excusable but actually-bad config sneaking in). On knowledge the 1-sigma band anchors on the best CLEAN
+# or CLEAN-ENOUGH row and uses that row's SE. Winner = fastest eligible config. Tune here.
 FLOOR = {"math": 90.0, "code": 85.0, "knowledge": 65.0}
 
 
@@ -24,15 +25,32 @@ def mmlu_trunc(r):
         return mp["truncated"]
     f = HERE / "qual" / "results" / f"{r['label']}.jsonl"
     if f.exists():
-        rr = [json.loads(l) for l in f.open()]
-        return sum(1 for x in rr if x.get("set") == "mmlu_pro" and x.get("finish") == "length")
+        latest = {}  # the jsonl is append-only across reruns: only the newest answer per item counts
+        for l in f.open():
+            x = json.loads(l)
+            latest[x["id"]] = x
+        return sum(1 for x in latest.values() if x.get("set") == "mmlu_pro" and x.get("finish") == "length")
     return -1 if r["quality"].get("truncated", 0) else 0
+
+
+def _se_pct(sd, pct):
+    """Standard error in points: recorded se_pct if present, else binomial from pct/n: 100*sqrt(p(1-p)/n)."""
+    se = sd.get("se_pct")
+    if se:
+        return se
+    n = sd.get("n") or 0
+    if not n or pct is None:
+        return 0.0
+    p = max(0.0, min(1.0, pct / 100.0))
+    return 100.0 * (p * (1 - p) / n) ** 0.5
 
 
 def scoreboard(recs):
     """Per-axis model comparison. Answers which model wins on math / code / knowledge / speed, so the
-    comparison lives in tooling, not in prose in notes.md. A winner is marked only among CLEAN scores:
-    an MMLU-Pro run with truncated answers (cut-offs score wrong) is a FLOOR, flagged `!`, never a winner."""
+    comparison lives in tooling, not in prose in notes.md. Knowledge rule: a cut-off answer scores wrong,
+    so a row with MMLU-Pro cut-offs measures a FLOOR; its true score lies in [pct, pct + 100*cut/n]. Such a
+    row renders `(<x)` and competes ONLY while that band is narrower than 1 SE (clean-enough); a wider band,
+    or an unknown cut (old records, flagged `!`), never wins an axis nor feeds the picker."""
     qruns = [r for r in recs if r.get("kind") == "quality" and r.get("quality")]
     speed = [r for r in recs if r.get("kind") == "specbench" and r.get("prompts")]
     # tuned-best decode tok/s per model file (from specbench rows; lives under different labels than the quality run)
@@ -41,31 +59,50 @@ def scoreboard(recs):
         ds = [p.get("decode_tps") for p in r["prompts"] if p.get("decode_tps") is not None]
         if ds:
             best_decode[r["model"]] = max(best_decode.get(r["model"], 0), max(ds))
-    # one quality row per label: latest by ts (reruns share a label with the old-cap run)
-    latest = {}
+    # one quality row per label: latest by ts (reruns share a label with the old-cap run), and per SET the
+    # newest record carrying that set — a rerun at a higher cap may cover only some sets
+    latest, sup = {}, {}
     for r in qruns:
-        if r["label"] not in latest or (r.get("ts") or "") > (latest[r["label"]].get("ts") or ""):
-            latest[r["label"]] = r
+        lab = r["label"]
+        if lab not in latest or (r.get("ts") or "") >= (latest[lab].get("ts") or ""):
+            latest[lab] = r
+        for name, sd in (r["quality"].get("sets") or {}).items():
+            if sd.get("pct") is None:
+                continue
+            k = (lab, name)
+            if k not in sup or (r.get("ts") or "") >= (sup[k].get("ts") or ""):
+                sup[k] = r
     rows = []
     for r in latest.values():
-        s = r["quality"]["sets"]
-        dec = best_decode.get(r["model"])
-        rows.append({"label": r["label"], "model": r["model"], "trunc": mmlu_trunc(r),
-                     "math": s.get("gsm8k", {}).get("pct"), "code": s.get("humaneval", {}).get("pct"),
-                     "knowledge": s.get("mmlu_pro", {}).get("pct"),
-                     "se": {ax: s.get(k, {}).get("se_pct") for ax, k in AXES},
-                     "speed": dec if dec is not None else r["quality"].get("mean_decode_tps"),
-                     "speed_tag": "" if dec is not None else "~"})
+        lab, dec = r["label"], best_decode.get(r["model"])
+        row = {"label": lab, "model": r["model"], "se": {},
+               "speed": dec if dec is not None else r["quality"].get("mean_decode_tps"),
+               "speed_tag": "" if dec is not None else "~"}
+        for ax, name in AXES:
+            pr = sup.get((lab, name))
+            sd = (pr["quality"].get("sets") or {}).get(name, {}) if pr else {}
+            v = sd.get("pct")
+            row[ax] = v
+            row["se"][ax] = _se_pct(sd, v) if v is not None else None
+            if ax == "knowledge":
+                cut = mmlu_trunc(pr) if pr else -1
+                n = sd.get("n") or 0
+                row["cut"] = cut
+                row["kn_ub"] = v + 100.0 * cut / n if (pr and cut >= 0 and n and v is not None) else None
+                row["kn_clean"] = bool(pr and cut == 0)
+                row["kn_ok"] = bool(row["kn_ub"] is not None and 100.0 * cut / n <= (row["se"][ax] or 0))
+        for k in ("cut", "kn_ub", "kn_clean", "kn_ok"):
+            row.setdefault(k, -1 if k == "cut" else False)
+        row["kn_bad"] = not (row["kn_clean"] or row["kn_ok"])  # contaminated: `!`, never competes
+        rows.append(row)
     rows.sort(key=lambda r: r["model"])
+    competitive = lambda r: r["kn_clean"] or r["kn_ok"]  # knowledge may compete: zero cut, or band <= 1 SE
 
-    def win(axis):  # winner among clean scores (knowledge clean = zero MMLU-Pro truncation; -1 = unknown, excluded)
-        clean = [r for r in rows if r[axis] is not None and (axis != "knowledge" or r["trunc"] == 0)]
-        if not clean:
+    def win(axis):  # knowledge pool = clean + clean-enough, ranked by the floor pct; other axes: any value
+        cand = [r for r in rows if r[axis] is not None and (axis != "knowledge" or competitive(r))]
+        if not cand:
             return None, any(r[axis] is not None for r in rows)
-        best = max(clean, key=lambda r: r[axis])
-        allv = [r for r in rows if r[axis] is not None]
-        dirty = axis == "knowledge" and max(allv, key=lambda r: r[axis]) is not best
-        return best["label"], dirty
+        return max(cand, key=lambda r: r[axis])["label"], False
     wins = {ax: win(ax) for ax, _ in AXES}
     speed_win = max((r for r in rows if r["speed"] is not None), key=lambda r: r["speed"], default=None)
 
@@ -79,24 +116,32 @@ def scoreboard(recs):
             if v is None:
                 cells.append("-"); continue
             mark = " ✅" if wins[ax][0] == r["label"] else ""
-            flag = "!" if ax == "knowledge" and r["trunc"] != 0 else ""  # r['trunc'] is MMLU-Pro-specific; -1 = unknown
-            cells.append(f"{v:.1f}{flag}{mark}")
+            if ax == "knowledge" and not r["kn_clean"]:
+                # contaminated or clean-enough: the floor pct plus its [pct, pct+100*cut/n] band; no band = unknown cut
+                flag = "" if r["kn_ok"] else "!"
+                bound = f" (<={r['kn_ub']:.1f})" if r["kn_ub"] is not None else ""
+                v = f"{v:.1f}{flag}{bound}"
+            else:
+                v = f"{v:.1f}"
+            cells.append(v + mark)
         sp = "-" if r["speed"] is None else f"{r['speed_tag']}{r['speed']:.1f}" + (" ✅" if speed_win and r["label"] == speed_win["label"] else "")
         short = r["model"].replace(".gguf", "").replace("-Uncensored-HauhauCS-Aggressive", "").replace("-Uncensored-HauhauCS-Balanced", "")
         o.append(f"| {short} | `{r['label']}` | {cells[0]} | {cells[1]} | {cells[2]} | {sp} |")
     o += ["", "**Axis winners:** " + ", ".join(f"{ax}=" + (wins[ax][0] or "?") for ax, _ in AXES) + (f", speed={speed_win['label']}" if speed_win else "")]
-    if any(r["trunc"] != 0 for r in rows):
-        o += ["", "- `!` = this run's MMLU-Pro answers include cut-offs (score wrong => the pct is a FLOOR, not comparable); winner marked only among zero-truncation runs. `!` on an unknown count (old records) means truncation could not be attributed per-set."]
+    if any(r["knowledge"] is not None and not r["kn_clean"] for r in rows):
+        o += ["", "- `(<x)` = knowledge true score lies in [pct, x] with x = pct + 100*cut/n (cut = cut-off answers, which score wrong) — the pct is a FLOOR, not a point estimate.",
+              "- Clean-enough (cut known AND 100*cut/n <= 1 SE, a band inside the noise) competes normally; `!` = contaminated (band wider than 1 SE) or cut unknown (old records) — never wins an axis, never best-config eligible."]
     if any(wins[ax][1] for ax, _ in AXES):
-        o += ["", "- knowledge leader is contaminated by truncation; the true knowledge winner is unresolved until a clean (zero-truncation) re-run."]
+        o += ["", "- knowledge winner unresolved: no clean or clean-enough MMLU-Pro record exists for any label; resolve with a rerun."]
     if any(r["speed_tag"] for r in rows):
         o += ["", "- `~` speed = the quality run's in-run mean decode tok/s (no specbench row for that model); not the tuned best."]
 
-    # --- Best config: fastest that holds quality (1 sigma of best-clean AND >= absolute floor, all axes) ---
-    best_clean = {}
+    # --- Best config: fastest that holds quality (within 1 sigma of best AND >= absolute floor, all axes;
+    #     knowledge band = best clean-or-clean-enough pct minus THAT row's SE) ---
+    best_q = {}
     for ax, _ in AXES:
-        cl = [r[ax] for r in rows if r[ax] is not None and (ax != "knowledge" or r["trunc"] == 0)]
-        best_clean[ax] = max(cl) if cl else None
+        cl = [r for r in rows if r[ax] is not None and (ax != "knowledge" or competitive(r))]
+        best_q[ax] = max(cl, key=lambda r: r[ax], default=None)
 
     def eligible(r):
         why = []
@@ -104,19 +149,24 @@ def scoreboard(recs):
             v = r[ax]
             if v is None:
                 return False, [f"no {ax}"]
-            if ax == "knowledge" and r["trunc"] != 0:
-                return False, ["knowledge not clean (truncated)"]
+            if ax == "knowledge" and not competitive(r):
+                return False, ["knowledge contaminated (cut-off band wider than 1 SE)"]
             if v < FLOOR[ax]:
                 why.append(f"{ax} {v:.1f}<{FLOOR[ax]:g} floor")
-            bc = best_clean[ax]
-            se = (r["se"] or {}).get(ax) or 0
-            if bc is not None and v < bc - max(se, 0):  # more than 1 sigma below the best clean score
-                why.append(f"{ax} {v:.1f} >1sigma below best {bc:.1f}")
+            bq = best_q[ax]
+            if bq is not None:
+                if ax == "knowledge":
+                    if v < bq["knowledge"] - (bq["se"]["knowledge"] or 0):  # band anchored on the BEST row's SE
+                        why.append(f"knowledge {v:.1f} >1sigma below best {bq['knowledge']:.1f}")
+                else:
+                    se = (r["se"] or {}).get(ax) or 0
+                    if v < bq[ax] - max(se, 0):  # more than 1 sigma below the best score on that axis
+                        why.append(f"{ax} {v:.1f} >1sigma below best {bq[ax]:.1f}")
         return (len(why) == 0), why
 
     elig = [r for r in rows if eligible(r)[0] and r["speed"] is not None]
     o += ["", "## Best config (fastest that holds quality)", "",
-          f"Eligible = every axis within 1 sigma of the best clean score AND >= floor (math {FLOOR['math']:g}, code {FLOOR['code']:g}, knowledge {FLOOR['knowledge']:g}). Winner = fastest eligible.", ""]
+          f"Eligible = every axis within 1 sigma of the best score (knowledge: best clean-or-clean-enough pct minus that row's SE) AND >= floor (math {FLOOR['math']:g}, code {FLOOR['code']:g}, knowledge {FLOOR['knowledge']:g}). Winner = fastest eligible.", ""]
     if elig:
         w = max(elig, key=lambda r: r["speed"])
         short = w["model"].replace(".gguf", "").replace("-Uncensored-HauhauCS-Aggressive", "").replace("-Uncensored-HauhauCS-Balanced", "")

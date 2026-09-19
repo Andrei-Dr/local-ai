@@ -5,22 +5,27 @@ Axes: math=GSM8K, code=HumanEval, knowledge=MMLU-Pro (temp 0, thinking off); spe
 
 | model | config | math (GSM8K) | code (HumanEval) | knowledge (MMLU-Pro) | speed tok/s |
 |---|---|---|---|---|---|
-| Gemma4-26B-A4B-IQ3_M | `g4_iq3m_cache16` | 100.0 ✅ | 92.7 | 71.4! | 29.7 |
-| Gemma4-26B-A4B-IQ3_M | `g4_iq3m` | 100.0 | 87.8 | 44.3! | 29.7 |
-| Gemma4-26B-A4B-Q2_K_P | `g4_q2kp_cache19` | 96.0 | 92.7 | 71.4! | 55.6 ✅ |
-| Gemma4-26B-A4B-Q3_K_M | `g4_q3km_cache15` | 100.0 | 90.2 | 71.4! | 37.2 |
-| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m` | 96.0 | 92.7 | 38.6! | 49.5 |
-| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_cache48` | 100.0 | 95.1 ✅ | 62.9! | 49.5 |
-| Qwen3.8-35B-A3B-Distill-IQ2_M | `distill_iq2m` | 92.0 | 82.9 | 72.9! | 39.1 |
+| Gemma4-26B-A4B-IQ3_M | `g4_iq3m_cache16` | 100.0 ✅ | 92.7 | 81.4 ✅ | 29.7 |
+| Gemma4-26B-A4B-IQ3_M | `g4_iq3m` | 100.0 | 87.8 | 44.3! (<=94.3) | 29.7 |
+| Gemma4-26B-A4B-Q2_K_P | `g4_q2kp_cache19` | 96.0 | 92.7 | 80.0 (<=81.4) | 55.6 ✅ |
+| Gemma4-26B-A4B-Q3_K_M | `g4_q3km_cache15` | 100.0 | 90.2 | 75.7! (<=81.4) | 37.2 |
+| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m` | 96.0 | 92.7 | 38.6! (<=94.3) | 49.5 |
+| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_cache48` | 100.0 | 95.1 ✅ | 62.9! (<=87.2) | 49.5 |
+| Qwen3.8-35B-A3B-Distill-IQ2_M | `distill_iq2m` | 92.0 | 82.9 | 72.9! (<=80.0) | 39.1 |
 
-**Axis winners:** math=g4_iq3m_cache16, code=q36_iq2m_cache48, knowledge=?, speed=g4_q2kp_cache19
+**Axis winners:** math=g4_iq3m_cache16, code=q36_iq2m_cache48, knowledge=g4_iq3m_cache16, speed=g4_q2kp_cache19
 
-- `!` = this run's MMLU-Pro answers include cut-offs (score wrong => the pct is a FLOOR, not comparable); winner marked only among zero-truncation runs. `!` on an unknown count (old records) means truncation could not be attributed per-set.
-
-- knowledge leader is contaminated by truncation; the true knowledge winner is unresolved until a clean (zero-truncation) re-run.
+- `(<x)` = knowledge true score lies in [pct, x] with x = pct + 100*cut/n (cut = cut-off answers, which score wrong) — the pct is a FLOOR, not a point estimate.
+- Clean-enough (cut known AND 100*cut/n <= 1 SE, a band inside the noise) competes normally; `!` = contaminated (band wider than 1 SE) or cut unknown (old records) — never wins an axis, never best-config eligible.
 
 ## Best config (fastest that holds quality)
 
-Eligible = every axis within 1 sigma of the best clean score AND >= floor (math 90, code 85, knowledge 65). Winner = fastest eligible.
+Eligible = every axis within 1 sigma of the best score (knowledge: best clean-or-clean-enough pct minus that row's SE) AND >= floor (math 90, code 85, knowledge 65). Winner = fastest eligible.
 
-No config is eligible yet — every candidate is excluded (usually MMLU-Pro not clean; see truncation flags). Resolve with the cap-2048 reruns.
+**WINNER: `g4_iq3m_cache16` (Gemma4-26B-A4B-IQ3_M) at 29.7 tok/s** — GSM8K 100.0, HumanEval 92.7, MMLU-Pro 81.4.
+
+| rank | config | speed tok/s | math | code | knowledge |
+|---|---|---|---|---|---|
+| 1 | `g4_iq3m_cache16` | 29.7 | 100.0 | 92.7 | 81.4 |
+
+Excluded: `g4_iq3m` (knowledge contaminated (cut-off band wider than 1 SE)); `g4_q2kp_cache19` (math 96.0 >1sigma below best 100.0); `g4_q3km_cache15` (knowledge contaminated (cut-off band wider than 1 SE)); `q36_iq2m` (knowledge contaminated (cut-off band wider than 1 SE)); `q36_iq2m_cache48` (knowledge contaminated (cut-off band wider than 1 SE)); `distill_iq2m` (knowledge contaminated (cut-off band wider than 1 SE))
