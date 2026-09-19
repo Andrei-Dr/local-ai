@@ -17,7 +17,7 @@ if [ ! -x $B/bin/llama-quantize ] || [ ! -x $B/bin/llama-imatrix ]; then
 fi
 if [ ! -s $K2 ]; then
   if [ ! -s $SRC ]; then
-    free=$(df -BG --output=avail /ai | tail -1 | tr -dc 0-9); [ "$free" -ge 50 ] || { echo "KQ1_DISK_REFUSED: ${free}G free, need 50G"; exit 1; }
+    free=$(df -BG --output=avail /ai | tail -1 | tr -dc 0-9); [ "$free" -ge 45 ] || { echo "KQ1_DISK_REFUSED: ${free}G free, need 45G"; exit 1; }
     want=$(curl -sIL "$URL" | awk 'tolower($1)=="content-length:"{n=$2} END{print n+0}' | tr -d '\r')
     curl -sL -C - --retry 30 --retry-delay 20 -o $SRC.part "$URL"; got=$(stat -c %s $SRC.part 2>/dev/null || echo 0)
     [ "$want" -gt 1000000000 ] && [ "$got" = "$want" ] || { echo "KQ1_DOWNLOAD_INCOMPLETE: got $got want $want (rerun resumes)"; exit 1; }
