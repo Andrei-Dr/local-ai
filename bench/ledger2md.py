@@ -9,6 +9,10 @@ HERE = Path(__file__).parent
 SHORT = {"Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf": "Bonsai-27B PQ2_0-MTP", "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf": "Qwen3.6-35B-A3B IQ2_M",
          "Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf": "Gemma4-26B-A4B IQ3_M"}
 AXES = [("math", "gsm8k"), ("code", "humaneval"), ("knowledge", "mmlu_pro")]
+# Absolute per-axis floors for the "best config" pick. Eligible = every axis BOTH within 1 sigma of the best
+# clean score on that axis AND >= its floor (1 sigma catches noise ties; the floor stops a statistically
+# excusable but actually-bad config sneaking in). Winner = fastest eligible config. Tune here.
+FLOOR = {"math": 90.0, "code": 85.0, "knowledge": 65.0}
 
 
 def mmlu_trunc(r):
@@ -49,6 +53,7 @@ def scoreboard(recs):
         rows.append({"label": r["label"], "model": r["model"], "trunc": mmlu_trunc(r),
                      "math": s.get("gsm8k", {}).get("pct"), "code": s.get("humaneval", {}).get("pct"),
                      "knowledge": s.get("mmlu_pro", {}).get("pct"),
+                     "se": {ax: s.get(k, {}).get("se_pct") for ax, k in AXES},
                      "speed": dec if dec is not None else r["quality"].get("mean_decode_tps"),
                      "speed_tag": "" if dec is not None else "~"})
     rows.sort(key=lambda r: r["model"])
@@ -86,6 +91,80 @@ def scoreboard(recs):
         o += ["", "- knowledge leader is contaminated by truncation; the true knowledge winner is unresolved until a clean (zero-truncation) re-run."]
     if any(r["speed_tag"] for r in rows):
         o += ["", "- `~` speed = the quality run's in-run mean decode tok/s (no specbench row for that model); not the tuned best."]
+
+    # --- Best config: fastest that holds quality (1 sigma of best-clean AND >= absolute floor, all axes) ---
+    best_clean = {}
+    for ax, _ in AXES:
+        cl = [r[ax] for r in rows if r[ax] is not None and (ax != "knowledge" or r["trunc"] == 0)]
+        best_clean[ax] = max(cl) if cl else None
+
+    def eligible(r):
+        why = []
+        for ax, _ in AXES:
+            v = r[ax]
+            if v is None:
+                return False, [f"no {ax}"]
+            if ax == "knowledge" and r["trunc"] != 0:
+                return False, ["knowledge not clean (truncated)"]
+            if v < FLOOR[ax]:
+                why.append(f"{ax} {v:.1f}<{FLOOR[ax]:g} floor")
+            bc = best_clean[ax]
+            se = (r["se"] or {}).get(ax) or 0
+            if bc is not None and v < bc - max(se, 0):  # more than 1 sigma below the best clean score
+                why.append(f"{ax} {v:.1f} >1sigma below best {bc:.1f}")
+        return (len(why) == 0), why
+
+    elig = [r for r in rows if eligible(r)[0] and r["speed"] is not None]
+    o += ["", "## Best config (fastest that holds quality)", "",
+          f"Eligible = every axis within 1 sigma of the best clean score AND >= floor (math {FLOOR['math']:g}, code {FLOOR['code']:g}, knowledge {FLOOR['knowledge']:g}). Winner = fastest eligible.", ""]
+    if elig:
+        w = max(elig, key=lambda r: r["speed"])
+        short = w["model"].replace(".gguf", "").replace("-Uncensored-HauhauCS-Aggressive", "").replace("-Uncensored-HauhauCS-Balanced", "")
+        o.append(f"**WINNER: `{w['label']}` ({short}) at {w['speed_tag']}{w['speed']:.1f} tok/s** — GSM8K {w['math']:.1f}, HumanEval {w['code']:.1f}, MMLU-Pro {w['knowledge']:.1f}.")
+        o += ["", "| rank | config | speed tok/s | math | code | knowledge |", "|---|---|---|---|---|---|"]
+        for i, r in enumerate(sorted(elig, key=lambda r: -r["speed"]), 1):
+            o.append(f"| {i} | `{r['label']}` | {r['speed_tag']}{r['speed']:.1f} | {r['math']:.1f} | {r['code']:.1f} | {r['knowledge']:.1f} |")
+        excl = [r for r in rows if not eligible(r)[0] and r["knowledge"] is not None]
+        if excl:
+            o += ["", "Excluded: " + "; ".join(f"`{r['label']}` (" + ", ".join(eligible(r)[1]) + ")" for r in excl)]
+    else:
+        o.append("No config is eligible yet — every candidate is excluded (usually MMLU-Pro not clean; see truncation flags). Resolve with the cap-2048 reruns.")
+    return "\n".join(o) + "\n"
+
+
+def builds_md(recs):
+    """Registry of every distinct build seen in the ledger, so 'the optimal build' is a rebuildable artifact,
+    not a path on one box. A build's identity = (source dir, full commit, cmake flags, dirty-diff sha). For each,
+    print exactly how to recreate it and which run labels used it. Any dirty build lists its diff blob."""
+    runs = [r for r in recs if r.get("kind") in ("specbench", "quality") and r.get("git")]
+    builds = {}
+    for r in runs:
+        g = r["git"]
+        src = (r.get("build") or "").rsplit("/", 1)[0]
+        key = (src, g.get("commit_full") or g.get("commit"), json.dumps(g.get("cmake"), sort_keys=True), g.get("dirty_diff_sha"))
+        b = builds.setdefault(key, {"g": g, "src": src, "build": r.get("build"), "labels": [], "ts": []})
+        b["labels"].append(r["label"]); b["ts"].append(r.get("ts") or "")
+    o = ["# Build registry", "", f"{len(builds)} distinct builds in the ledger. Generated by `bench/ledger2md.py`. Do not edit by hand.",
+         "Each build is identified by source dir + full commit + cmake flags + dirty-diff sha. A row is recreatable by",
+         "checking out the commit, applying the diff blob if any (`git apply builds/diffs/<sha>.diff` on the box), and",
+         "building with the listed cmake flags. `dirty` builds without a diff sha are from before provenance hardening (2026-09-20) and are NOT fully recreatable.", ""]
+    for b in sorted(builds.values(), key=lambda x: max(x["ts"]), reverse=True):
+        g, cm = b["g"], (b["g"].get("cmake") or {})
+        o.append(f"## `{b['build']}` @ {g.get('describe') or g.get('commit')}")
+        o.append("")
+        o.append(f"- source: `{b['src']}` branch `{g.get('branch')}` commit `{g.get('commit_full') or g.get('commit')}`")
+        o.append(f"- cmake: CUDA arch {cm.get('cuda_arch')}, {cm.get('build_type')}, GGML_CUDA={cm.get('ggml_cuda')}, cxx `{cm.get('cxx')}`")
+        tc = g.get("toolchain") or {}
+        o.append(f"- toolchain: {tc.get('cxx')}; nvcc {tc.get('nvcc')}")
+        if g.get("dirty"):
+            ds = g.get("dirty_diff_sha")
+            o.append(f"- **DIRTY** — " + (f"diff blob `builds/diffs/{ds}.diff` (recreate: checkout commit, `git apply` that diff)" if ds else "no diff captured (pre-hardening); NOT recreatable"))
+            if g.get("untracked"):
+                o.append(f"  - untracked files at build time: {', '.join(g['untracked'])}")
+        n = len(b["labels"])
+        shown = sorted(set(b["labels"]))
+        o.append(f"- {n} runs ({len(shown)} labels): {', '.join('`' + l + '`' for l in shown[:20])}{' ...' if len(shown) > 20 else ''}")
+        o.append("")
     return "\n".join(o) + "\n"
 
 
@@ -137,7 +216,8 @@ def main():
         out.append(f"- **`{r['label']}`** ({r.get('model')}, commit {r['git']['commit']}, `{r.get('args')}`, {r.get('build')}): `{json.dumps(body)}` — {r.get('note', '')}")
     (HERE / "LEDGER.md").write_text("\n".join(out) + "\n")
     (HERE / "SCOREBOARD.md").write_text(scoreboard(recs))
-    print(f"LEDGER.md: {len(runs)} run rows, {len(other)} other records; SCOREBOARD.md written")
+    (HERE / "BUILDS.md").write_text(builds_md(recs))
+    print(f"LEDGER.md: {len(runs)} run rows, {len(other)} other records; SCOREBOARD.md + BUILDS.md written")
 
 
 if __name__ == "__main__":

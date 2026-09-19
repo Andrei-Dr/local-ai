@@ -18,3 +18,9 @@ Axes: math=GSM8K, code=HumanEval, knowledge=MMLU-Pro (temp 0, thinking off); spe
 - `!` = this run's MMLU-Pro answers include cut-offs (score wrong => the pct is a FLOOR, not comparable); winner marked only among zero-truncation runs. `!` on an unknown count (old records) means truncation could not be attributed per-set.
 
 - knowledge leader is contaminated by truncation; the true knowledge winner is unresolved until a clean (zero-truncation) re-run.
+
+## Best config (fastest that holds quality)
+
+Eligible = every axis within 1 sigma of the best clean score AND >= floor (math 90, code 85, knowledge 65). Winner = fastest eligible.
+
+No config is eligible yet — every candidate is excluded (usually MMLU-Pro not clean; see truncation flags). Resolve with the cap-2048 reruns.
