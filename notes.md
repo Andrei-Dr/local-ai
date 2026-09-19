@@ -304,7 +304,8 @@ Scores belong to (model file, thinking mode). Placement and speculation flags do
 | Gemma4-26B-A4B IQ3_M, **cache 16** | 3.9 | 24.3 (22.6 in-run, 41 min sustained) | 100.0 | 87.8 ±5.1 | 44.3 ±5.9 (*) | 38 / 0 | |
 | Gemma4-26B-A4B IQ3_M, cache off | 3.9 | 16.7 | 100.0 (50/50) | 87.8 (36/41) | partial (*) | | killed by systemd-oomd at item 145/161 (15:06), resumed 21:05 |
 | Bonsai-27B PQ2_0-MTP | 2.13 | 5.15 | owed | | | | ~2.5 h run |
-| Gemma4 Q3_K_M / Q2_K_P | 3.4 / ~2.8 | to be measured | owed | | | | |
+| **Gemma4-26B-A4B Q3_K_M, cache 15** | ~3.4 | 33.7 (37.2 with drafter n=2; 31.5 in-run, 40 min sustained) | 100.0 | 90.2 ±4.6 | **71.4 ±5.4 (new caps)** | 11 / 0 | holds IQ3_M quality on GSM8K/HumanEval => Gemma default candidate; MMLU-Pro comparable only to other NEW-cap rows |
+| Gemma4 Q2_K_P, cache 19 | ~2.8 | 40.2 (48.2 with drafter n=2) | running (`qual3.sh`) | | | | |
 
 (*) MMLU-Pro first pass is NOT usable as an absolute score: 34–39 of 70 answers hit the 350-token cap and every cut-off answer scored wrong (accuracy among finished answers: Qwen 27/31, Gemma 31/36). Caps raised to 768/1024/1024; `qual.py` re-runs cut-off rows automatically on the next pass (`/ai/bench/qual3.sh`, to be run with the new quants + Bonsai).
 
@@ -313,6 +314,14 @@ Scores belong to (model file, thinking mode). Placement and speculation flags do
 - `research/pr-scout-llamacpp-prs.md` — mainline + prism PRs/issues. Key: FFN-only-on-CPU placement (#26622), MTP shared-KV misdetection bug present in our checkout (#27781, `common/speculative.cpp:2129`), #24670 (GTX 1650 SUPER + Qwen3.6-35B-A3B: `draft-mtp` never drafts unless `--spec-draft-p-min 0.0`).
 - `research/lit-scout-arxiv-survey.md` — arXiv survey re-ranked against our measurements. Expert cache design: async admission, compute misses on CPU, never stall on a fetch (FreeToken 2608.16157, WiSP 2606.21868); eviction policy barely matters, cache-aware routing (Cache-Prior 2412.00099) is the lever at small caches; do NOT quantize GDN state (DAMP 2608.27513).
 - `research/moe-scout-abliterated-moe.md` — MoE shortlist. On the box: Gemma4-26B-A4B IQ3_M (12.39 GB) + `mtp-gemma-4-26B-A4B-it.gguf`, Qwen3.6-35B-A3B IQ2_M (11.66 GB). The QAT-MTP Gemma (16.8 GB) does not fit. Fork supports `gemma4`, `gemma4-assistant`, `qwen35moe`; AVX2 kernels exist for all their quant types.
+
+## RESUME HERE (state at 2026-09-19 ~22:40 EEST, written before a context compaction)
+
+- **Box queue, all unattended, each step preflight-guarded:** tmux `ai:moe6` = `qual3.sh` -> `/ai/bench/qual3.log` (`QUAL3_DONE`): Q3_K_M DONE (row above), Q2_K_P running, then cut-off re-runs for `g4_iq3m_cache16` + `q36_iq2m_cache48`, then Bonsai (~3 h). -> `ai:q38` = `q38.sh` -> `q38.log` (`Q38_DONE`): stock `Qwen3.8-27B-i1-IQ3_M` (downloaded, sha256 OK) speed + quality vs Bonsai. -> `ai:idlequeue` (`/ai/bench/idlequeue.done`): `distill.sh` (`Qwen3.8-35B-A3B-Distill-IQ2_M`, downloaded; `distill.log`, `DISTILL_DONE`) -> `build_mainline.sh` (`BUILD_MAINLINE_DONE|FAILED`) -> `mainline_ab.sh` (`MAINLINE_AB_DONE`). -> `ai:trace2` = `trace2.sh` (`TRACE2_DONE`): 40k-token traces with token ids for `predict.py`.
+- **Wait on any of it ONLY with `bench/watch.sh LOG DONE_REGEX PROC_REGEX TIMEOUT_MIN`** (death-aware). Row streaming: a Monitor whose remote command ends in `; true` (a grep on a not-yet-existing log made the whole ssh exit non-zero and silenced an earlier monitor).
+- **Scouts:** `research/upcycle-scout.md` (done: do NOT MoE-ify the dense 27B). `ngram-codesign-scout` -> `research/ngram-codesign-scout.md` (running: n-gram x MoE co-design, 4 layers, + KD wall-clock ETA table for Dave's 2xMI210 + 512 GB). Verify its claims against primary sources before acting.
+- **When results land:** sync (`rsync root@i5.local:/ai/bench/{ledger.jsonl,*.log} bench/box/`, results into `bench/qual/results/`), `bench/ledger2md.py`, fill the quality table, decide (a) Gemma default file (Q3_K_M vs Q2_K_P on quality), (b) distill vs Qwen3.6-A3B (if the distill wins: ask Dave/davetha to abliterate it, re-bench), (c) Bonsai vs stock Qwen3.8-27B verdict (Bonsai's likely real home = MLX on the Mac, parked), (d) mainline becomes the default tree if the A/B is equivalent, (e) prefetch go/no-go from `predict.py` (only if unigram/bigram recall beats `recent(LRU)` at equal budget).
+- **Best configs so far:** Qwen3.6 IQ2_M cache 30 + MTP head n=2 = 46.3 tok/s; Gemma4 Q3_K_M cache 11 + drafter n=2 = 37.2; Gemma4 Q2_K_P cache 15 + drafter n=2 = 48.2; binaries `/ai/src/llama.cpp-moecache/build75/bin` (branch `moe-cache` @ `f94da5a`).
 
 ## HANDOFF RUNBOOK (resume from here; written 2026-09-19 ~10:55 EEST)
 
