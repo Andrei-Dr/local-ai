@@ -7,10 +7,10 @@ Axes: math=GSM8K, code=HumanEval, knowledge=MMLU-Pro (temp 0, thinking off); spe
 |---|---|---|---|---|---|
 | Gemma4-26B-A4B-IQ3_M | `g4_iq3m_cache16` | 100.0 ✅ | 92.7 | 71.4! | 29.7 |
 | Gemma4-26B-A4B-IQ3_M | `g4_iq3m` | 100.0 | 87.8 | 44.3! | 29.7 |
-| Gemma4-26B-A4B-Q2_K_P | `g4_q2kp_cache19` | 96.0 | 92.7 | 71.4! | 48.2 ✅ |
+| Gemma4-26B-A4B-Q2_K_P | `g4_q2kp_cache19` | 96.0 | 92.7 | 71.4! | 55.6 ✅ |
 | Gemma4-26B-A4B-Q3_K_M | `g4_q3km_cache15` | 100.0 | 90.2 | 71.4! | 37.2 |
-| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m` | 96.0 | 92.7 | 38.6! | 46.3 |
-| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_cache48` | 100.0 | 95.1 ✅ | 62.9! | 46.3 |
+| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m` | 96.0 | 92.7 | 38.6! | 49.5 |
+| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_cache48` | 100.0 | 95.1 ✅ | 62.9! | 49.5 |
 | Qwen3.8-35B-A3B-Distill-IQ2_M | `distill_iq2m` | 92.0 | 82.9 | 72.9! | 39.1 |
 
 **Axis winners:** math=g4_iq3m_cache16, code=q36_iq2m_cache48, knowledge=?, speed=g4_q2kp_cache19

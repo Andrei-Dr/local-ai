@@ -34,8 +34,8 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 | U2 | Fork vs mainline A/B | queued (`mainline_ab.sh`) | G2 |
 | U3 | Split the cumulative mainline diff into a reviewable series | todo | after U2 |
 | U4 | Upstream candidates | todo | needs Andrei's explicit go (a fork of a public repo is public) |
-| N1 | Hybrid `ngram-mod,draft-mtp` bench | queued (`ngram1.sh`) | G3 |
-| N2 | Decouple `n_rs_seq` from the model drafter for n-gram drafts | todo | after N1 if long drafts pay |
+| N1 | Hybrid `ngram-mod,draft-mtp` bench | **done [M]** | G3 PASS (workload-shaped): keep MTP n=2, n-gram ON, cap Qwen<=2 / Gemma long; +3.8% Qwen edit, ~free Gemma, neutral code/reason |
+| N2 | Decouple `n_rs_seq` from the model drafter for n-gram drafts | **justified [M]**, todo | Qwen 16-tok n-gram = -24% via GDN replay; Gemma (no GDN) flat => lift `n_rs_seq` so long n-gram drafts are legal on Qwen. Build in Phase 2. |
 | N3 | Persistent, offline-seeded n-gram continuation store ("rainbow table") | design in section 6 | after N1 |
 | P1 | Token-n-gram -> expert predictability (`predict.py` on trace2) | queued behind trace2 | G4 |
 | P2 | Draft-driven expert prefetch | blocked on P1 | G4 |
@@ -117,6 +117,8 @@ Four levers, and which work attacks them:
 | Fewer misses | m down via hit rate h | P2 (prefetch with draft lookahead), T2 (locality-trained routers), P4c (warm-up), admission tuning |
 | Fewer distinct experts per batch | m(k) sub-linear in k | T2 (consecutive tokens reuse experts), P3c (cache path for k > 4) |
 | Cheaper miss | c_miss down | K-quant expert files (done), kernel work (parking lot) |
+
+**Measured 2026-09-20 (N1):** on Qwen (GDN) an n-gram draft longer than `n_rs_seq` (=MTP n_max=2) forces the recurrent checkpoint+replay path and costs -24% on the edit workload; the identical 16-token drafts are free on Gemma (no recurrent state). So raising tau via longer drafts on GDN models is blocked on N2, and raising it via MTP n=3 is blocked on T1 (n=3 acceptance 0.77-0.80 today, a net loss). tau is cheap to raise only on Gemma until those land.
 
 N and T1 raise tau but also raise k, which raises m(k). P2 and T2 are what keep that affordable. That interaction is the reason to build them as one system rather than four tricks, and it is the claim a write-up would stand on.
 
