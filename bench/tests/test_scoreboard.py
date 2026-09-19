@@ -1,5 +1,6 @@
 """tests for bench/ledger2md.py scoreboard(): knowledge truncation as a bound (<=), clean-enough competition,
-picker eligibility, and latest-record-per-label/set selection. Synthetic records only; no files, no network."""
+picker eligibility, latest-record-per-label/set selection, and the top-5 leaderboards. Synthetic records
+only; no files, no network."""
 import sys, unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -19,6 +20,14 @@ def q(label, ts="2026-09-01T00:00:00+0300", model="m.gguf", math=95.0, code=90.0
     truncated = cut if (cut is not None and cut > 0) else (0 if cut == 0 else 3)
     return {"kind": "quality", "label": label, "model": model, "ts": ts,
             "quality": {"sets": sets, "mean_decode_tps": tps, "truncated": truncated}}
+
+
+def sb(label, ts="2026-09-01T00:00:00+0300", model="m.gguf", decodes=(30.0,), args="",
+       cache={"slots": 96, "hit_rate_pct": 55.0}, vram=3400, commit="deadbeef0", completed=True):
+    """Minimal specbench record the speed leaderboard consumes."""
+    return {"kind": "specbench", "label": label, "ts": ts, "model": model, "completed": completed,
+            "args": args, "vram_mib": vram, "git": {"commit": commit}, "moe_cache": cache,
+            "prompts": [{"prompt": f"p{i}", "decode_tps": d} for i, d in enumerate(decodes)]}
 
 
 class RenderCase(unittest.TestCase):
@@ -50,9 +59,12 @@ class PickerCase(unittest.TestCase):
         md = ledger2md.scoreboard(recs)
         self.assertIn("WINNER: `sx_fast`", md)
         self.assertIn("knowledge=sx_slowok", md)             # highest floor pct among competitors
-        ranks = [ln for ln in md.split("## Best config", 1)[1].splitlines() if ln.startswith("|")]
+        ranks = [ln for ln in md.split("## Best config", 1)[1].split("Closest misses", 1)[0].splitlines()
+                 if ln.startswith("|")]
         self.assertFalse([ln for ln in ranks if "`sx_zerp`" in ln])  # never in the eligible rank table
-        self.assertIn("Excluded: `sx_zerp` (knowledge contaminated", md)
+        miss = md.split("Closest misses", 1)[1]                       # exclusion reasons now live in that table
+        self.assertIn("`sx_zerp`", miss)
+        self.assertIn("knowledge contaminated", miss)
 
 
 class LatestRecordCase(unittest.TestCase):
@@ -69,6 +81,57 @@ class LatestRecordCase(unittest.TestCase):
                 q("sx_partial", ts="2026-09-10T00:00:00+0300", kn=None)]
         md = ledger2md.scoreboard(recs)
         self.assertIn("40.0! (<=75.7)", md)  # knowledge comes from the OLDER record carrying that set
+
+class TopFiveCase(unittest.TestCase):
+    def board(self, md, name):
+        return md.split(f"### {name}", 1)[1].split("###", 1)[0].split("## ", 1)[0]
+
+    def test_math_top5_order_and_tie_notes(self):
+        recs = [q("m_a", math=96.0), q("m_b", math=94.0), q("m_c", math=93.3), q("m_d", math=89.0),
+                q("m_e", math=84.0), q("m_f", math=79.0)]
+        sec = self.board(ledger2md.scoreboard(recs), "math (GSM8K)")
+        body = [ln for ln in sec.splitlines() if ln.startswith("| ") and not ln.startswith("| rank") and "---" not in ln]
+        self.assertLessEqual(len(body), 5)                            # capped
+        self.assertNotIn("`m_f`", sec)                                # sixth row dropped
+        pcts = [float(ln.split("|")[4].strip().split(" ")[0]) for ln in body]
+        self.assertEqual(pcts, sorted(pcts, reverse=True))            # desc
+        self.assertEqual(sec.count("tie with #1 within 1 SE"), 2)      # exactly 94.0 and 93.3 (>= 96 - 2.8 SE)
+
+    def test_knowledge_competitive_before_contaminated(self):
+        recs = [q("k_cont", kn=85.0, cut=20, tps=50.0),   # contaminated floor pct 85 (band 28.6 > 4.7 SE)
+                q("k_clean", kn=78.0, cut=0, tps=30.0),
+                q("k_enough", kn=70.0, cut=2, tps=25.0)]  # clean-enough (2.9 <= 4.7)
+        sec = self.board(ledger2md.scoreboard(recs), "knowledge (MMLU-Pro)")
+        self.assertLess(sec.index("`k_clean`"), sec.index("`k_cont`"))     # despite lower pct
+        self.assertLess(sec.index("`k_enough`"), sec.index("`k_cont`"))
+        self.assertIn("floor only, not ranked against clean rows", sec)
+        self.assertIn("70.0 (<=72.9)", sec)                                 # main-table bound rendering reused
+        self.assertIn("85.0!", sec)
+
+    def test_speed_board_from_specbench_latest_completed_notes(self):
+        recs = [sb("sp_a", ts="2026-09-01T00:00:00+0300", decodes=(30.0,)),
+                sb("sp_a", ts="2026-09-09T00:00:00+0300", decodes=(50.0, 40.0),
+                   args="--spec-type draft-mtp --spec-draft-n-max 2", cache=None),
+                sb("sp_b", decodes=(45.0,), args=""),
+                sb("sp_c", decodes=(900.0,), completed=False)]
+        sec = self.board(ledger2md.scoreboard(recs), "speed (decode tok/s)")
+        self.assertIn("50.0 (mean 45.0 over 2 prompts)", sec)   # latest per label, max over prompts
+        self.assertNotIn("30.0 (", sec)                          # superseded record gone
+        self.assertNotIn("900.0", sec)                           # incomplete record ignored
+        self.assertIn("MTP n=2", sec)
+        self.assertIn("no cache", sec)                           # sp_a latest: moe_cache null
+        self.assertIn("no spec", sec)                            # sp_b: plain args
+        self.assertIn("slots 96", sec)                           # sp_b default cache present
+
+    def test_closest_misses_carries_reasons(self):
+        recs = [q("ok_cfg", kn=70.0, cut=0, tps=40.0), q("bad_cfg", kn=30.0, cut=20, tps=50.0)]
+        md = ledger2md.scoreboard(recs)
+        miss = md.split("Closest misses", 1)[1]
+        self.assertIn("`bad_cfg`", miss)
+        self.assertIn("knowledge contaminated", miss)
+        self.assertNotIn("Excluded:", md)                        # old paragraph is gone
+        self.assertLess(md.index("WINNER"), md.index("Closest misses"))
+
 
 if __name__ == "__main__":
     unittest.main()

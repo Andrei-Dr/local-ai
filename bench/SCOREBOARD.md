@@ -18,6 +18,60 @@ Axes: math=GSM8K, code=HumanEval, knowledge=MMLU-Pro (temp 0, thinking off); spe
 - `(<x)` = knowledge true score lies in [pct, x] with x = pct + 100*cut/n (cut = cut-off answers, which score wrong) — the pct is a FLOOR, not a point estimate.
 - Clean-enough (cut known AND 100*cut/n <= 1 SE, a band inside the noise) competes normally; `!` = contaminated (band wider than 1 SE) or cut unknown (old records) — never wins an axis, never best-config eligible.
 
+## Top 5 by dimension
+
+### math (GSM8K)
+
+| rank | config | model | score | note |
+|---|---|---|---|---|
+| 1 | `q36_iq2m_cache48` | Qwen3.6-35B-A3B-IQ2_M | 100.0 ±0.0 (n=50) |  |
+| 2 | `g4_q3km_cache15` | Gemma4-26B-A4B-Q3_K_M | 100.0 ±0.0 (n=50) | tie with #1 within 1 SE |
+| 3 | `g4_iq3m` | Gemma4-26B-A4B-IQ3_M | 100.0 ±0.0 (n=50) | tie with #1 within 1 SE |
+| 4 | `g4_iq3m_cache16` | Gemma4-26B-A4B-IQ3_M | 100.0 ±0.0 (n=50) | tie with #1 within 1 SE |
+| 5 | `g4_q2kp_cache19` | Gemma4-26B-A4B-Q2_K_P | 96.0 ±2.8 (n=50) |  |
+
+### code (HumanEval)
+
+| rank | config | model | score | note |
+|---|---|---|---|---|
+| 1 | `q36_iq2m_cache48` | Qwen3.6-35B-A3B-IQ2_M | 95.1 ±3.4 (n=41) |  |
+| 2 | `g4_q2kp_cache19` | Gemma4-26B-A4B-Q2_K_P | 92.7 ±4.1 (n=41) | tie with #1 within 1 SE |
+| 3 | `q36_iq2m` | Qwen3.6-35B-A3B-IQ2_M | 92.7 ±4.1 (n=41) | tie with #1 within 1 SE |
+| 4 | `g4_iq3m_cache16` | Gemma4-26B-A4B-IQ3_M | 92.7 ±4.1 (n=41) | tie with #1 within 1 SE |
+| 5 | `g4_q3km_cache15` | Gemma4-26B-A4B-Q3_K_M | 90.2 ±4.6 (n=41) |  |
+
+### knowledge (MMLU-Pro)
+
+| rank | config | model | score | note |
+|---|---|---|---|---|
+| 1 | `g4_iq3m_cache16` | Gemma4-26B-A4B-IQ3_M | 81.4 ±4.6 (n=70) |  |
+| 2 | `g4_q2kp_cache19` | Gemma4-26B-A4B-Q2_K_P | 80.0 (<=81.4) ±4.8 (n=70) | tie with #1 within 1 SE |
+| 3 | `q36_iq2m_cache48` | Qwen3.6-35B-A3B-IQ2_M | 77.1! (<=87.1) ±5.0 (n=70) | floor only, not ranked against clean rows |
+| 4 | `g4_q3km_cache15` | Gemma4-26B-A4B-Q3_K_M | 75.7! (<=81.4) ±5.1 (n=70) | floor only, not ranked against clean rows |
+| 5 | `distill_iq2m` | Qwen3.8-35B-A3B-Distill-IQ2_M | 72.9! (<=80.0) ±5.3 (n=70) | floor only, not ranked against clean rows |
+
+### speed (decode tok/s)
+
+| rank | config | model | score | note |
+|---|---|---|---|---|
+| 1 | `ng_g4q2k_mtp2` | Gemma4-26B-A4B-Q2_K_P | 55.6 (mean 49.9 over 3 prompts) | slots 15, MTP n=2, VRAM 3306 MiB, commit f94da5aa9fdf |
+| 2 | `ng_g4q2k_ngmod16_mtp2` | Gemma4-26B-A4B-Q2_K_P | 55.3 (mean 50.1 over 3 prompts) | slots 15, MTP n=2, VRAM 3306 MiB, commit f94da5aa9fdf |
+| 3 | `st_g4q2k_c15_mtp2` | Gemma4-26B-A4B-Q2_K_P | 50.5 (mean 49.4 over 2 prompts) | slots 15, MTP n=2, VRAM 3306 MiB, commit f94da5aa9fdf |
+| 4 | `ng_q36_c28_ngmod3_mtp3` | Qwen3.6-35B-A3B-IQ2_M | 49.5 (mean 45.4 over 3 prompts) | slots 28, MTP n=3, VRAM 3440 MiB, commit f94da5aa9fdf |
+| 5 | `ng_q36_ngmod2_mtp2` | Qwen3.6-35B-A3B-IQ2_M | 49.0 (mean 46.5 over 3 prompts) | slots 30, MTP n=2, VRAM 3454 MiB, commit f94da5aa9fdf |
+
+## Fastest config per model file
+
+| rank | config | model | score | note |
+|---|---|---|---|---|
+| 1 | `ng_g4q2k_mtp2` | Gemma4-26B-A4B-Q2_K_P | 55.6 (mean 49.9 over 3 prompts) | slots 15, MTP n=2, VRAM 3306 MiB, commit f94da5aa9fdf |
+| 2 | `ng_q36_c28_ngmod3_mtp3` | Qwen3.6-35B-A3B-IQ2_M | 49.5 (mean 45.4 over 3 prompts) | slots 28, MTP n=3, VRAM 3440 MiB, commit f94da5aa9fdf |
+| 3 | `distill_c48` | Qwen3.8-35B-A3B-Distill-IQ2_M | 39.1 (mean 38.7 over 2 prompts) | slots 48, no spec, VRAM 3304 MiB, commit f94da5a |
+| 4 | `p4_g4q3k_c11_mtp2` | Gemma4-26B-A4B-Q3_K_M | 37.2 (mean 36.9 over 2 prompts) | slots 11, MTP n=2, VRAM 3382 MiB, commit f94da5a |
+| 5 | `p4_g4_c12_mtp2` | Gemma4-26B-A4B-IQ3_M | 29.7 (mean 28.9 over 2 prompts) | slots 12, MTP n=2, VRAM 3362 MiB, commit f94da5a |
+| 6 | `b75_best` | Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP | 5.3 (mean 5.2 over 2 prompts) | no cache, MTP n=2, VRAM 3590 MiB, commit 290857f |
+| 7 | `q38_ngl16` | Qwen3.8-27B-i1-IQ3_M | 1.4 (mean 1.4 over 2 prompts) | no cache, no spec, VRAM 3628 MiB, commit 290857f |
+
 ## Best config (fastest that holds quality)
 
 Eligible = every axis within 1 sigma of the best score (knowledge: best clean-or-clean-enough pct minus that row's SE) AND >= floor (math 90, code 85, knowledge 65). Winner = fastest eligible.
@@ -28,4 +82,12 @@ Eligible = every axis within 1 sigma of the best score (knowledge: best clean-or
 |---|---|---|---|---|---|
 | 1 | `g4_iq3m_cache16` | 29.7 | 100.0 | 92.7 | 81.4 |
 
-Excluded: `g4_iq3m` (knowledge contaminated (cut-off band wider than 1 SE)); `g4_q2kp_cache19` (math 96.0 >1sigma below best 100.0); `g4_q3km_cache15` (knowledge contaminated (cut-off band wider than 1 SE)); `q36_iq2m` (knowledge contaminated (cut-off band wider than 1 SE)); `q36_iq2m_cache48` (knowledge contaminated (cut-off band wider than 1 SE)); `distill_iq2m` (knowledge contaminated (cut-off band wider than 1 SE))
+Closest misses
+
+| rank | config | speed tok/s | why not |
+|---|---|---|---|
+| 1 | `g4_q2kp_cache19` | 55.6 | math 96.0 >1sigma below best 100.0 |
+| 2 | `q36_iq2m` | 49.5 | knowledge contaminated (cut-off band wider than 1 SE) |
+| 3 | `q36_iq2m_cache48` | 49.5 | knowledge contaminated (cut-off band wider than 1 SE) |
+| 4 | `distill_iq2m` | 39.1 | knowledge contaminated (cut-off band wider than 1 SE) |
+| 5 | `g4_q3km_cache15` | 37.2 | knowledge contaminated (cut-off band wider than 1 SE) |

@@ -2,12 +2,17 @@
 """Render bench/LEDGER.md (full per-run telemetry) AND bench/SCOREBOARD.md (per-axis model comparison)
 from box/ledger.jsonl (written by the harness) + ledger_backfill.jsonl.
 usage: ledger2md.py   (sync first: rsync root@i5.local:/ai/bench/ledger.jsonl box/)"""
-import json
+import json, re
 from pathlib import Path
 
 HERE = Path(__file__).parent
 SHORT = {"Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf": "Bonsai-27B PQ2_0-MTP", "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf": "Qwen3.6-35B-A3B IQ2_M",
          "Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf": "Gemma4-26B-A4B IQ3_M"}
+
+
+def smodel(m):
+    """Short display name for a model file (shared by every table)."""
+    return m.replace(".gguf", "").replace("-Uncensored-HauhauCS-Aggressive", "").replace("-Uncensored-HauhauCS-Balanced", "")
 AXES = [("math", "gsm8k"), ("code", "humaneval"), ("knowledge", "mmlu_pro")]
 # Absolute per-axis floors for the "best config" pick. Eligible = every axis BOTH within 1 sigma of the best
 # clean score on that axis AND >= its floor (1 sigma catches noise ties; the floor stops a statistically
@@ -75,7 +80,7 @@ def scoreboard(recs):
     rows = []
     for r in latest.values():
         lab, dec = r["label"], best_decode.get(r["model"])
-        row = {"label": lab, "model": r["model"], "se": {},
+        row = {"label": lab, "model": r["model"], "se": {}, "n": {},
                "speed": dec if dec is not None else r["quality"].get("mean_decode_tps"),
                "speed_tag": "" if dec is not None else "~"}
         for ax, name in AXES:
@@ -84,6 +89,7 @@ def scoreboard(recs):
             v = sd.get("pct")
             row[ax] = v
             row["se"][ax] = _se_pct(sd, v) if v is not None else None
+            row["n"][ax] = sd.get("n")
             if ax == "knowledge":
                 cut = mmlu_trunc(pr) if pr else -1
                 n = sd.get("n") or 0
@@ -125,8 +131,7 @@ def scoreboard(recs):
                 v = f"{v:.1f}"
             cells.append(v + mark)
         sp = "-" if r["speed"] is None else f"{r['speed_tag']}{r['speed']:.1f}" + (" ✅" if speed_win and r["label"] == speed_win["label"] else "")
-        short = r["model"].replace(".gguf", "").replace("-Uncensored-HauhauCS-Aggressive", "").replace("-Uncensored-HauhauCS-Balanced", "")
-        o.append(f"| {short} | `{r['label']}` | {cells[0]} | {cells[1]} | {cells[2]} | {sp} |")
+        o.append(f"| {smodel(r['model'])} | `{r['label']}` | {cells[0]} | {cells[1]} | {cells[2]} | {sp} |")
     o += ["", "**Axis winners:** " + ", ".join(f"{ax}=" + (wins[ax][0] or "?") for ax, _ in AXES) + (f", speed={speed_win['label']}" if speed_win else "")]
     if any(r["knowledge"] is not None and not r["kn_clean"] for r in rows):
         o += ["", "- `(<x)` = knowledge true score lies in [pct, x] with x = pct + 100*cut/n (cut = cut-off answers, which score wrong) — the pct is a FLOOR, not a point estimate.",
@@ -135,6 +140,92 @@ def scoreboard(recs):
         o += ["", "- knowledge winner unresolved: no clean or clean-enough MMLU-Pro record exists for any label; resolve with a rerun."]
     if any(r["speed_tag"] for r in rows):
         o += ["", "- `~` speed = the quality run's in-run mean decode tok/s (no specbench row for that model); not the tuned best."]
+
+    # --- Top 5 leaderboards (detail views; the matrix above stays canonical) ---
+    sruns = {}
+    for r in speed:
+        if not r.get("completed"):
+            continue
+        if r["label"] not in sruns or (r.get("ts") or "") >= (sruns[r["label"]].get("ts") or ""):
+            sruns[r["label"]] = r
+
+    sents = []
+    for lab, r in sruns.items():
+        ds = [p.get("decode_tps") for p in r["prompts"] if isinstance(p.get("decode_tps"), (int, float))]
+        sents.append({"label": lab, "model": r["model"], "mx": max(ds) if ds else None,
+                      "mn": (sum(ds) / len(ds)) if ds else None, "np": len(ds), "r": r})
+    sents.sort(key=lambda e: (e["mx"] is None, -(e["mx"] or 0.0), e["label"]))
+
+    def speed_note(r):
+        a = r.get("args") or ""
+        spec = "no spec"
+        if "--spec-type" in a or "-md" in a.split():
+            k = re.search(r"--spec-draft-n-max\D*(\d+)", a)
+            spec = f"MTP n={k.group(1) if k else '?'}"
+        c = r.get("moe_cache")
+        cache = "no cache" if not c else f"slots {c.get('slots', '?')}"
+        v = r.get("vram_mib")
+        return f"{cache}, {spec}, VRAM {v if v is not None else '-'} MiB, commit {(r.get('git') or {}).get('commit', '?')}"
+
+    def srow(i, e):
+        cell = "-" if e["mx"] is None else f"{e['mx']:.1f} (mean {e['mn']:.1f} over {e['np']} {'prompt' if e['np'] == 1 else 'prompts'})"
+        return f"| {i} | `{e['label']}` | {smodel(e['model'])} | {cell} | {speed_note(e['r'])} |"
+
+    def cell_score(r, ax):  # quality leaderboard score cell: pct ±se (n=N)
+        v = r[ax]
+        if v is None:
+            return "-"
+        return f"{v:.1f} ±{(r['se'][ax] or 0):.1f} (n={r['n'].get(ax) if r['n'].get(ax) is not None else '?'})"
+
+    def qsort(ax):
+        return lambda r: (r[ax] is None, -(r[ax] or 0.0), (r["speed"] is None, -(r["speed"] or 0.0)), r["label"])
+
+    o += ["", "## Top 5 by dimension"]
+    for ax in ("math", "code"):
+        ranked = sorted(rows, key=qsort(ax))[:5]
+        top = ranked[0] if ranked and ranked[0][ax] is not None else None
+        o += ["", f"### {ax} ({'GSM8K' if ax == 'math' else 'HumanEval'})", "", "| rank | config | model | score | note |", "|---|---|---|---|---|"]
+        for i, r in enumerate(ranked, 1):
+            note = ("tie with #1 within 1 SE" if top is not None and i > 1 and r[ax] is not None
+                    and top["se"][ax] is not None and r[ax] >= top[ax] - top["se"][ax] else "")
+            o.append(f"| {i} | `{r['label']}` | {smodel(r['model'])} | {cell_score(r, ax)} | {note} |")
+
+    comp = [r for r in rows if r["knowledge"] is not None and (r["kn_clean"] or r["kn_ok"])]
+    cont = [r for r in rows if r["knowledge"] is not None and not (r["kn_clean"] or r["kn_ok"])]
+    noks = sorted([r for r in rows if r["knowledge"] is None], key=lambda r: r["label"])
+    ksrt = lambda rs: sorted(rs, key=lambda r: (-(r["knowledge"] or 0.0), (r["speed"] is None, -(r["speed"] or 0.0)), r["label"]))
+    ct = max(comp, key=lambda r: r["knowledge"]) if comp else None
+
+    def kn_cell(r):
+        v = r["knowledge"]
+        if v is None:
+            return "-"
+        s = f"{v:.1f}" + ("" if r["kn_clean"] else ("" if r["kn_ok"] else "!"))
+        if not r["kn_clean"] and r["kn_ub"] is not None:
+            s += f" (<={r['kn_ub']:.1f})"
+        if r["se"]["knowledge"] is not None:
+            s += f" ±{(r['se']['knowledge'] or 0):.1f}"
+        return s + f" (n={r['n'].get('knowledge') if r['n'].get('knowledge') is not None else '?'})"
+
+    o += ["", "### knowledge (MMLU-Pro)", "", "| rank | config | model | score | note |", "|---|---|---|---|---|"]
+    for i, r in enumerate(ksrt(comp) + ksrt(cont) + noks, 1):
+        if i > 5:
+            break
+        if r["knowledge"] is None:
+            sc, note = "-", ""
+        elif r["kn_bad"]:
+            sc, note = kn_cell(r), "floor only, not ranked against clean rows"
+        else:
+            sc = kn_cell(r)
+            note = ("tie with #1 within 1 SE" if ct and r is not ct and r["knowledge"] >= ct["knowledge"] - (ct["se"]["knowledge"] or 0) else "")
+        o.append(f"| {i} | `{r['label']}` | {smodel(r['model'])} | {sc} | {note} |")
+    o += ["", "### speed (decode tok/s)", "", "| rank | config | model | score | note |", "|---|---|---|---|---|"] + [srow(i, e) for i, e in enumerate(sents[:5], 1)]
+
+    per_model = {}
+    for e in sents:
+        per_model.setdefault(e["model"], e)
+    o += ["", "## Fastest config per model file", "", "| rank | config | model | score | note |", "|---|---|---|---|---|"] + [
+        srow(i, e) for i, e in enumerate(sorted(per_model.values(), key=lambda e: (e["mx"] is None, -(e["mx"] or 0.0), e["label"])), 1)]
 
     # --- Best config: fastest that holds quality (within 1 sigma of best AND >= absolute floor, all axes;
     #     knowledge band = best clean-or-clean-enough pct minus THAT row's SE) ---
@@ -169,16 +260,19 @@ def scoreboard(recs):
           f"Eligible = every axis within 1 sigma of the best score (knowledge: best clean-or-clean-enough pct minus that row's SE) AND >= floor (math {FLOOR['math']:g}, code {FLOOR['code']:g}, knowledge {FLOOR['knowledge']:g}). Winner = fastest eligible.", ""]
     if elig:
         w = max(elig, key=lambda r: r["speed"])
-        short = w["model"].replace(".gguf", "").replace("-Uncensored-HauhauCS-Aggressive", "").replace("-Uncensored-HauhauCS-Balanced", "")
-        o.append(f"**WINNER: `{w['label']}` ({short}) at {w['speed_tag']}{w['speed']:.1f} tok/s** — GSM8K {w['math']:.1f}, HumanEval {w['code']:.1f}, MMLU-Pro {w['knowledge']:.1f}.")
+        o.append(f"**WINNER: `{w['label']}` ({smodel(w['model'])}) at {w['speed_tag']}{w['speed']:.1f} tok/s** — GSM8K {w['math']:.1f}, HumanEval {w['code']:.1f}, MMLU-Pro {w['knowledge']:.1f}.")
         o += ["", "| rank | config | speed tok/s | math | code | knowledge |", "|---|---|---|---|---|---|"]
-        for i, r in enumerate(sorted(elig, key=lambda r: -r["speed"]), 1):
+        for i, r in enumerate(sorted(elig, key=lambda r: -r["speed"])[:5], 1):
             o.append(f"| {i} | `{r['label']}` | {r['speed_tag']}{r['speed']:.1f} | {r['math']:.1f} | {r['code']:.1f} | {r['knowledge']:.1f} |")
-        excl = [r for r in rows if not eligible(r)[0] and r["knowledge"] is not None]
-        if excl:
-            o += ["", "Excluded: " + "; ".join(f"`{r['label']}` (" + ", ".join(eligible(r)[1]) + ")" for r in excl)]
     else:
         o.append("No config is eligible yet — every candidate is excluded (usually MMLU-Pro not clean; see truncation flags). Resolve with the cap-2048 reruns.")
+    misses = sorted([r for r in rows if not eligible(r)[0] and all(r[ax] is not None for ax, _ in AXES)],
+                    key=lambda r: (r["speed"] is None, -(r["speed"] or 0.0), r["label"]))[:5]
+    if misses:
+        o += ["", "Closest misses", "", "| rank | config | speed tok/s | why not |", "|---|---|---|---|"]
+        for i, r in enumerate(misses, 1):
+            sp = "-" if r["speed"] is None else f"{r['speed_tag']}{r['speed']:.1f}"
+            o.append(f"| {i} | `{r['label']}` | {sp} | {', '.join(eligible(r)[1])} |")
     return "\n".join(o) + "\n"
 
 
