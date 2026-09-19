@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """Build the fixed quality-eval item sets (deterministic selection, no extra deps).
 
-usage: fetch.py [OUT_DIR]   -> OUT_DIR/{gsm8k,humaneval,mmlu_pro}.jsonl
+usage: fetch.py [--gsm8k N] [--mmlu-rows R] [OUT_DIR]   -> OUT_DIR/{gsm8k,humaneval,mmlu_pro}.jsonl
 
 Source: Hugging Face datasets-server rows API. Selection is by fixed offsets so every model
 is scored on the identical items, and shorter runs (--limit) are nested prefixes of longer ones.
-    gsm8k      openai/gsm8k main/test, first 50
+    gsm8k      openai/gsm8k main/test, first N (default 50)
     humaneval  openai/openai_humaneval test, every 4th task (41)
-    mmlu_pro   TIGER-Lab/MMLU-Pro test, 70 items (14 evenly spaced pages x 5 rows) across all categories
+    mmlu_pro   TIGER-Lab/MMLU-Pro test, 14 pages x R rows (R default 5 => 70 items) across all categories
+Nested-prefix rule (qual.py resumes by item id, so enlarged sets must keep the old items FIRST):
+gsm8k stays the first N of the test split; per MMLU-Pro page today's base rows (offsets 0,20,40,60,80
+of the 100-row page) come first in the file, the extra rows (uniform grid 100//R) of every page follow
+after the base block. R must be a multiple of 5 so the base offsets stay on the grid (R=20 => 280).
 """
+import argparse
 import json
 import sys
 import time
@@ -17,6 +22,9 @@ import urllib.request
 from pathlib import Path
 
 API = "https://datasets-server.huggingface.co/rows"
+MMLU_PAGES = 14   # page-spaced sampling: 1 request per page, the API rate-limits hard
+PAGE_LEN = 100    # rows fetched per page
+BASE_STEP = PAGE_LEN // 5  # today's per-page base rows: 0, 20, 40, 60, 80
 
 
 def rows(dataset, config, split, offset, length):
@@ -40,39 +48,77 @@ def dump(path, items):
     print(f"{path}: {len(items)} items")
 
 
-def main():
-    out = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent / "data")
-    out.mkdir(parents=True, exist_ok=True)
+def _get(rows_fn, ds, cfg, split, off, n):
+    """Collect up to n rows from a split; the rows API caps a request at PAGE_LEN, so paginate."""
+    out, total = [], 0
+    while len(out) < n:
+        step = min(PAGE_LEN, n - len(out))
+        chunk, total = rows_fn(ds, cfg, split, off + len(out), step)
+        out += chunk
+        if len(chunk) < step:
+            break  # split exhausted
+    return out, total
 
-    g, _ = rows("openai/gsm8k", "main", "test", 0, 50)
-    dump(out / "gsm8k.jsonl", [
+
+def select_datasets(rows_fn, gsm_n=50, mmlu_rows=5, pause=None):
+    """Pure selection (injectable rows_fn so tests run offline). rows_fn returns ([row], num_rows_total)
+    like rows(); pause is called between MMLU-Pro page requests in the real fetch."""
+    sel = {}
+    g, _ = _get(rows_fn, "openai/gsm8k", "main", "test", 0, gsm_n)
+    sel["gsm8k"] = [
         {"id": f"gsm8k/{i}", "question": r["question"], "gold": r["answer"].split("####")[-1].strip().replace(",", "")}
         for i, r in enumerate(g)
-    ])
+    ]
 
     h = []
     for off in (0, 100):
-        h += rows("openai/openai_humaneval", "openai_humaneval", "test", off, 100)[0]
-    dump(out / "humaneval.jsonl", [
+        h += _get(rows_fn, "openai/openai_humaneval", "openai_humaneval", "test", off, 100)[0]
+    sel["humaneval"] = [
         {"id": r["task_id"], "prompt": r["prompt"], "test": r["test"], "entry_point": r["entry_point"]}
         for r in h[::4]
-    ])
+    ]
 
-    _, total = rows("TIGER-Lab/MMLU-Pro", "default", "test", 0, 1)
-    stride = total // 14  # 14 pages of 100 rows, 5 rows per page: few requests (the API rate-limits hard)
-    m = []
-    for k in range(14):
-        time.sleep(2)
-        page = rows("TIGER-Lab/MMLU-Pro", "default", "test", k * stride + stride // 2, 100)[0]
-        for r in page[::20]:
-            m.append({"id": f"mmlu_pro/{r['question_id']}", "category": r["category"], "question": r["question"],
-                      "options": r["options"], "gold": r["answer"]})
-    # interleave categories so a --limit prefix is still spread across subjects
+    _, total = rows_fn("TIGER-Lab/MMLU-Pro", "default", "test", 0, 1)
+    stride = total // MMLU_PAGES
+    base_pos = list(range(0, PAGE_LEN, BASE_STEP))
+    grid = PAGE_LEN // mmlu_rows
+    base, extra = [], []
+    for k in range(MMLU_PAGES):
+        if pause:
+            pause()
+        page = rows_fn("TIGER-Lab/MMLU-Pro", "default", "test", k * stride + stride // 2, PAGE_LEN)[0]
+        for p in base_pos:
+            if p < len(page):
+                r = page[p]
+                base.append({"id": f"mmlu_pro/{r['question_id']}", "category": r["category"], "question": r["question"],
+                             "options": r["options"], "gold": r["answer"]})
+        for p in (q * grid for q in range(mmlu_rows)):
+            if p not in base_pos and p < len(page):
+                r = page[p]
+                extra.append({"id": f"mmlu_pro/{r['question_id']}", "category": r["category"], "question": r["question"],
+                              "options": r["options"], "gold": r["answer"]})
+    # interleave categories so a --limit prefix is still spread across subjects (base block only,
+    # verbatim today's behavior; the extra block stays page-ordered and always comes after the 70)
     seen, keyed = {}, []
-    for it in m:
+    for it in base:
         seen[it["category"]] = seen.get(it["category"], 0) + 1
         keyed.append((seen[it["category"]], it["category"], it))
-    dump(out / "mmlu_pro.jsonl", [it for _, _, it in sorted(keyed, key=lambda x: x[:2])])
+    sel["mmlu_pro"] = [it for _, _, it in sorted(keyed, key=lambda x: x[:2])] + extra
+    return sel
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("out_dir", nargs="?", help="target dir (default: ./data next to this script)")
+    ap.add_argument("--gsm8k", type=int, default=50, help="gsm8k items, first N of the test split (prefix-safe)")
+    ap.add_argument("--mmlu-rows", type=int, default=5, help="rows sampled per MMLU-Pro page; multiple of 5 (20 => 280 items)")
+    a = ap.parse_args()
+    out = Path(a.out_dir) if a.out_dir else Path(__file__).parent / "data"
+    out.mkdir(parents=True, exist_ok=True)
+
+    sel = select_datasets(rows, gsm_n=a.gsm8k, mmlu_rows=a.mmlu_rows, pause=lambda: time.sleep(2))
+    for name in ("gsm8k", "humaneval", "mmlu_pro"):
+        dump(out / f"{name}.jsonl", sel[name])
 
 
 if __name__ == "__main__":

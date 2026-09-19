@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fixed-item quality eval against a running llama-server (chat endpoint, temp 0).
 
-usage: qual.py LABEL [--url http://localhost:8099] [--sets gsm8k,humaneval,mmlu_pro] [--limit N] [--think]
+usage: qual.py LABEL [--url http://localhost:8099] [--sets gsm8k,humaneval,mmlu_pro] [--limit N] [--data DIR] [--think]
 
 Scores are per MODEL FILE + thinking mode; placement / speculation flags do not change them beyond
 batch-variance noise, so run this once per file on its fastest config.
@@ -94,6 +94,7 @@ def main():
     ap.add_argument("--url", default="http://localhost:8099")
     ap.add_argument("--sets", default="gsm8k,humaneval,mmlu_pro")
     ap.add_argument("--limit", type=int, default=0, help="first N items per set (nested prefixes)")
+    ap.add_argument("--data", default="data", help="item dir; relative to this script unless absolute")
     ap.add_argument("--think", action="store_true", help="enable thinking (multiply max_tokens by 8)")
     a = ap.parse_args()
 
@@ -109,9 +110,12 @@ def main():
                 continue
             done[r["id"]] = r
     t0 = time.time()
+    data_dir = Path(a.data)
+    if not data_dir.is_absolute():
+        data_dir = HERE / data_dir
     with out_path.open("a") as out:
         for kind in a.sets.split(","):
-            items = [json.loads(l) for l in (HERE / "data" / f"{kind}.jsonl").open()]
+            items = [json.loads(l) for l in (data_dir / f"{kind}.jsonl").open()]
             for it in items[: a.limit or None]:
                 if it["id"] in done:
                     continue

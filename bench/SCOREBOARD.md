@@ -10,7 +10,7 @@ Axes: math=GSM8K, code=HumanEval, knowledge=MMLU-Pro (temp 0, thinking off); spe
 | Gemma4-26B-A4B-Q2_K_P | `g4_q2kp_cache19` | 96.0 | 92.7 | 80.0 (<=81.4) | 55.6 ✅ |
 | Gemma4-26B-A4B-Q3_K_M | `g4_q3km_cache15` | 100.0 | 90.2 | 75.7! (<=81.4) | 37.2 |
 | Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m` | 96.0 | 92.7 | 38.6! (<=94.3) | 49.5 |
-| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_cache48` | 100.0 | 95.1 ✅ | 62.9! (<=87.2) | 49.5 |
+| Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_cache48` | 100.0 | 95.1 ✅ | 77.1! (<=87.1) | 49.5 |
 | Qwen3.8-35B-A3B-Distill-IQ2_M | `distill_iq2m` | 92.0 | 82.9 | 72.9! (<=80.0) | 39.1 |
 
 **Axis winners:** math=g4_iq3m_cache16, code=q36_iq2m_cache48, knowledge=g4_iq3m_cache16, speed=g4_q2kp_cache19
