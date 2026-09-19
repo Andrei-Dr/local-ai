@@ -11,7 +11,7 @@ building with the listed cmake flags. `dirty` builds without a diff sha are from
 - cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
 - toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
 - **DIRTY** — diff blob `builds/diffs/cdfdadde4b8f.diff` (recreate: checkout commit, `git apply` that diff)
-- 7 runs (7 labels): `ng_g4q2k_mtp2`, `ng_g4q2k_ngmod16_mtp2`, `ng_q36_c28_mtp3`, `ng_q36_c28_ngmod3_mtp3`, `ng_q36_ngmod16`, `ng_q36_ngmod16_m16`, `ng_q36_ngmod16_mtp2`
+- 9 runs (9 labels): `ng_g4q2k_mtp2`, `ng_g4q2k_ngmod16_mtp2`, `ng_q36_c28_mtp3`, `ng_q36_c28_ngmod3_mtp3`, `ng_q36_ngmod16`, `ng_q36_ngmod16_m16`, `ng_q36_ngmod16_mtp2`, `st_g4q2k_c15_mtp2`, `st_q36_c30_mtp2`
 
 ## `/ai/src/llama.cpp-moecache/build75` @ prism-b10709-9a9394a-8-gf94da5a
 

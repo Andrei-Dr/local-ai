@@ -58,10 +58,12 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 
 | Model | Morning of 2026-09-19 | Now | Config |
 |---|---|---|---|
-| Qwen3.6-35B-A3B IQ2_M | 28.0 | 46.3 (200-token run, includes the cold cache; steady state at this config is unmeasured, queued as `steady1`) | cache 30 + MTP head n=2 |
+| Qwen3.6-35B-A3B IQ2_M | 28.0 | 46.3 (200-tok); **47.4/45.5 steady-state 600+ tok [M]** | cache 30 + MTP head n=2 |
 | Gemma4-26B-A4B IQ3_M | 16.2 | 28.7 (29.7 MTP) | cache 16 |
 | Gemma4-26B-A4B Q3_K_M | - | 33.7 (37.2 drafter n=2) | cache 15 / 11 |
-| Gemma4-26B-A4B Q2_K_P | - | 40.2 (48.2 drafter n=2) | cache 19 / 15 |
+| Gemma4-26B-A4B Q2_K_P | - | 40.2 (48.2 drafter n=2); **50.5/48.3 steady-state 800/587 tok [M]** | cache 19 / 15 |
+
+Steady-state (`steady1`, 2026-09-20) is HIGHER than the 200-tok headline for both, not lower: the cache warms and the cold start amortizes over the longer run, so the short-run numbers were conservative. The 200-tok caveat is retired.
 | Bonsai-27B PQ2_0 (dense) | 0.71 | 5.3 | - |
 
 **Hard constraints.**
@@ -134,7 +136,8 @@ Calibration note: the P4 overlap was projected at +10 / +15% and measured +17 / 
   - **Gate G2:** mainline within -2% tok/s of the fork on all four rows, identical temp-0 text on the fixed prompts, cache stats within noise => mainline becomes the default tree; the fork stays only as the Bonsai tree. If mainline is slower, bisect the delta (it is information about a regression or a missed flag) before deciding.
 - **U3 series.** Re-cut the cumulative diff into a reviewable series on mainline: (1) #27861-style cache core, (2) fused gate_up + scales + GELU experts, (3) gated admission, (4) multi-token cache graph, (5) scheduler barrier + overlap, (6) CLI. Each commit builds and passes the identity check.
 - **U4 upstream candidates** (each needs Andrei's go before anything public): scheduler barrier/overlap; `n_rs_seq` for n-gram drafters (N2); `ngram-mod` persistence (N3); AVX2 PQ2_0 kernel to the Prism fork + a +1 on its PR #205.
-- **U5 rebase cadence.** Once on mainline: rebase weekly, re-run the A/B pair as the regression test.
+- **U5 rebase cadence.** Once on mainline: rebase weekly, re-run the A/B pair as the regression test. **Rebase hazard [L, Qwen scout]: open PR #28391 makes `ngram-mod` a DEFAULT drafter on server/CLI — a rebase that pulls it in would silently activate two drafters; explicitly set `--spec-type` on every launch and check for it after each rebase.**
+- **N2 implementation lead [L, Qwen scout, verify]:** instead of editing `need_n_rs_seq()`, open PR **#26499** adds a `LLAMA_N_RS_SEQ` override; or simply `--spec-draft-n-max 3` raises `n_rs_seq` to 3 (but that also verifies n=3 MTP, which N1 showed is a net loss today — so the override is the cleaner path). Read #26499 before building N2.
 
 ## 6. Workstreams N and P: the runtime co-design
 
