@@ -1,7 +1,7 @@
 From 0e4103ffae3c44b425e0fca01eb9172f6125b860 Mon Sep 17 00:00:00 2001
 From: andrei <root@i5.local>
 Date: Sat, 19 Sep 2026 12:36:34 +0300
-Subject: [PATCH 5/5] feat: extend MoE expert cache to fused
+Subject: [PATCH 5/8] feat: extend MoE expert cache to fused
  gate_up/GELU/scaled experts with gated admission
 
 - cache fused gate_up_exps layers (gemma4) and GELU experts; apply per-expert

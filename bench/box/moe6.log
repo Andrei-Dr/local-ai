@@ -1,0 +1,16 @@
+##### p4_q36_c30_mtp2 | -ot exps=CPU --moe-expert-cache 30 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14452MiB swap_used=867MiB gpu=4MiB,48,P8
+p4_q36_c30_mtp2 code    200 tok | wall 36.61 t/s | decode 46.27 t/s | prefill   37.3 t/s | accept 126/144=0.88    | vram 3454 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p4_q36_c30_mtp2 reason  200 tok | wall 33.68 t/s | decode 44.78 t/s | prefill   40.2 t/s | accept 124/150=0.83    | vram 3454 MiB | 'Here is the step-by-step algebraic solution to f'
+    telemetry[p4_q36_c30_mtp2]: GPU util avg  68% max  94% | power avg  59W max  77W /100W | PCIe->GPU avg  0.74 max  2.26 GB/s (~13 cap) | CPU busy  479% of 1200% | DRAM read avg   6.1 max   8.1 GB/s (~38 cap)
+    moe-cache: steps 256 | hit rate 51.2% | uploads 3350 (3249.9 MiB, 12.69 MiB/step) | evictions 2150
+    moe-cache: steps 512 | hit rate 53.4% | uploads 6561 (6367.1 MiB, 12.44 MiB/step) | evictions 5361
+##### p4_q36_c28_mtp2 | -ot exps=CPU --moe-expert-cache 28 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14430MiB swap_used=872MiB gpu=4MiB,51,P0
+p4_q36_c28_mtp2 code    200 tok | wall 35.09 t/s | decode 43.36 t/s | prefill   38.7 t/s | accept 124/149=0.83    | vram 3378 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p4_q36_c28_mtp2 reason  200 tok | wall 33.74 t/s | decode 44.75 t/s | prefill   40.5 t/s | accept 125/148=0.84    | vram 3378 MiB | 'To find when the second train catches the first,'
+    telemetry[p4_q36_c28_mtp2]: GPU util avg  66% max 100% | power avg  60W max  76W /100W | PCIe->GPU avg  0.69 max  3.31 GB/s (~13 cap) | CPU busy  490% of 1200% | DRAM read avg   6.3 max   7.7 GB/s (~38 cap)
+    moe-cache: steps 256 | hit rate 50.8% | uploads 3534 (3428.7 MiB, 13.39 MiB/step) | evictions 2414
+    moe-cache: steps 512 | hit rate 51.7% | uploads 6875 (6671.0 MiB, 13.03 MiB/step) | evictions 5755
+##### p4_q36_c28_mtp3 | -ot exps=CPU --moe-expert-cache 28 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 3
+    preflight: governor=performance thp=[always] mem_avail=14494MiB swap_used=879MiB gpu=4MiB,52,P0

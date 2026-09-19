@@ -1,7 +1,7 @@
 From 8c8650b488ad812d9c20ea5bed2e3fc48c3e3d20 Mon Sep 17 00:00:00 2001
 From: andrei <root@i5.local>
 Date: Sat, 19 Sep 2026 11:40:56 +0300
-Subject: [PATCH 4/5] feat: port GPU-resident LRU cache for host-offloaded MoE
+Subject: [PATCH 4/8] feat: port GPU-resident LRU cache for host-offloaded MoE
  experts (ggml-org/llama.cpp#27861)
 
 ---

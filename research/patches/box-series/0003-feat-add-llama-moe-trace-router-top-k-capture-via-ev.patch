@@ -1,7 +1,7 @@
 From 290857f81efc5cf0b46530a4eec7ead01967c612 Mon Sep 17 00:00:00 2001
 From: andrei <root@i5.local>
 Date: Sat, 19 Sep 2026 11:02:38 +0300
-Subject: [PATCH 3/5] feat: add llama-moe-trace (router top-k capture via eval
+Subject: [PATCH 3/8] feat: add llama-moe-trace (router top-k capture via eval
  callback)
 
 ---

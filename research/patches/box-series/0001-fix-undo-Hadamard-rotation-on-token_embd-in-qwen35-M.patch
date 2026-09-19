@@ -1,7 +1,7 @@
 From bac645efc6a3afbdaa09a22c97eeab4e86b38db5 Mon Sep 17 00:00:00 2001
 From: andrei <root@i5.local>
 Date: Sat, 19 Sep 2026 09:34:14 +0300
-Subject: [PATCH 1/5] fix: undo Hadamard rotation on token_embd in qwen35 MTP
+Subject: [PATCH 1/8] fix: undo Hadamard rotation on token_embd in qwen35 MTP
  draft graph
 
 ---
