@@ -1,5 +1,6 @@
 qual3	skipped	0	-	-	-	grep -q QUAL3_DONE qual3.log 2>/dev/null || { bash /ai/bench/qual3.sh >> qual3.log 2>&1; grep -q QUAL3_DONE qual3.log; }
-q38	pending	0	-	-	-	bash /ai/bench/q38.sh > q38.log 2>&1; grep -q Q38_DONE q38.log
+q38	done	1	2026-09-19 23:35:29	2026-09-19 23:40:51	0	bash /ai/bench/q38.sh > q38.log 2>&1; grep -q Q38_DONE q38.log
+qmmlu	pending	0	-	-	-	bash /ai/bench/qmmlu.sh > qmmlu.log 2>&1; grep -q QMMLU_DONE qmmlu.log
 distill	pending	0	-	-	-	bash /ai/bench/distill.sh > distill.log 2>&1; grep -q DISTILL_DONE distill.log
 build_mainline	pending	0	-	-	-	bash /ai/bench/build_mainline.sh >> build_mainline.log 2>&1; grep -q BUILD_MAINLINE_DONE build_mainline.log
 mainline_ab	pending	0	-	-	-	grep -q BUILD_MAINLINE_DONE build_mainline.log && bash /ai/bench/mainline_ab.sh > mainline_ab.log 2>&1; grep -q MAINLINE_AB_DONE mainline_ab.log

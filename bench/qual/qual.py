@@ -23,7 +23,8 @@ from pathlib import Path
 HERE = Path(__file__).parent
 # caps were 400/512/350 at first: half of MMLU-Pro hit the cap and was scored wrong. Rows that were cut off below
 # the current cap are re-run on the next pass (an answer that finished is the same under a larger cap at temp 0).
-MAX_TOKENS = {"gsm8k": 768, "humaneval": 1024, "mmlu_pro": 1024}
+# mmlu_pro cap is overridable via MMLU_CAP (Qwen3.6 is wordier with thinking off; 19/70 hit 1024, so its score was a floor).
+MAX_TOKENS = {"gsm8k": 768, "humaneval": 1024, "mmlu_pro": int(os.environ.get("MMLU_CAP", "1024"))}
 LETTERS = "ABCDEFGHIJ"
 
 
