@@ -25,19 +25,19 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 |---|---|---|---|
 | H1 | Harness: preflight, mon, ledger, quality, death-aware waiters | done [M] | keep |
 | H2 | Workload set W1-W4 + larger-n quality set | todo | before any model-default decision is called final |
-| Q-box | Box queue: qual3 -> q38 -> distill -> mainline build -> A/B -> trace2 -> ngram1 | running, unattended; **durable: `/ai/bench/queue.tsv` + `ai-queue.service`** | ~8-10 h of box time. Enabled at boot (resumes by itself after a poweroff; `Restart=no`, so never after a crash); `systemctl start|stop|disable ai-queue`; status with `/ai/bench/queue.sh list` |
+| Q-box | Box queue. Done: q38, distill, build_mainline, mainline_ab, trace2, ngram1, steady1 (qual3/Bonsai skipped). Remaining: `mmlu2k` (clean MMLU-Pro at cap 2048) -> `mainqual` (G2 quality confirm) -> `trace2b` (`.tok` sidecars for P1) | running, unattended; **durable: `/ai/bench/queue.tsv` + `ai-queue.service`** | Stop a job ONLY with `systemctl stop ai-queue` (never pkill). Enabled at boot (resumes by itself after a poweroff; `Restart=no`, so never after a crash); `systemctl start|stop|disable ai-queue`; status with `/ai/bench/queue.sh list` |
 | S1 | Gemma default file (Q3_K_M vs Q2_K_P) | data in [M], provisional: Q2_K_P | H2 larger-n pass to confirm |
-| S2 | Qwen3.8-35B-A3B-Distill vs Qwen3.6-35B-A3B | queued (`distill.sh`) | decide on quality + tok/s; if it wins, Dave abliterates, re-bench |
-| S3 | Bonsai PQ2_0 vs stock Qwen3.8-27B IQ3_M (dense reference) | queued | informational; dense is not the i5 path |
-| S4 | **Whittle-Qwen-3.8-35B-A3B** (A3B body + 10B hashed n-gram memory, distilled from Qwen3.8-27B; `qwen4exp`, mainline only) | todo, blocked on U1/U2 | see 3.3; download Q3_K_M 16.7 GB after the queue drains, disk check first |
-| U1 | Mainline build of `moe-cache` on the box | queued (`build_mainline.sh`) | must compile + pass the identity check |
-| U2 | Fork vs mainline A/B | queued (`mainline_ab.sh`) | G2 |
+| S2 | Qwen3.8-35B-A3B-Distill vs Qwen3.6-35B-A3B | **done [M]: KEEP Qwen3.6** | distill regresses HumanEval -12 / GSM8K -8 (> 1 sigma), has no standalone MTP head, 39.1 vs 46.3 tok/s. Reopen only if the clean Qwen3.6 MMLU-Pro (`mmlu2k`) lands far below the distill's 72.9 |
+| S3 | Bonsai PQ2_0 vs stock Qwen3.8-27B IQ3_M (dense reference) | **done [M]: dense is dead here** | stock 27B = 1.38 tok/s (`-ngl 16`); Bonsai 5.15 tok/s, quality run dropped by Andrei. No quality rows; fix the `-ot` FFN regex before any future dense bench |
+| S4 | **Whittle-Qwen-3.8-35B-A3B** (A3B body + 10B hashed n-gram memory, distilled from Qwen3.8-27B; `qwen4exp`, mainline only) | todo, unblocked once `mainqual` confirms G2 | see 3.3; download Q3_K_M 16.7 GB after the queue drains, disk check first |
+| U1 | Mainline build of `moe-cache` on the box | **done [M]** | linked clean at CUDA arch 75 (`/ai/src/llama.cpp-mainline`) |
+| U2 | Fork vs mainline A/B | **G2 PASS on speed [M]** (+5-7%, VRAM flat); Qwen text bit-identical, Gemma code prompt flips a greedy tie after ~10 tokens | `mainqual` quality rows within 1 sigma of the fork rows => mainline is the default tree |
 | U3 | Split the cumulative mainline diff into a reviewable series | todo | after U2 |
 | U4 | Upstream candidates | todo | needs Andrei's explicit go (a fork of a public repo is public) |
 | N1 | Hybrid `ngram-mod,draft-mtp` bench | **done [M]** | G3 PASS (workload-shaped): keep MTP n=2, n-gram ON, cap Qwen<=2 / Gemma long; +3.8% Qwen edit, ~free Gemma, neutral code/reason |
 | N2 | Decouple `n_rs_seq` from the model drafter for n-gram drafts | **justified [M]**, todo | Qwen 16-tok n-gram = -24% via GDN replay; Gemma (no GDN) flat => lift `n_rs_seq` so long n-gram drafts are legal on Qwen. Build in Phase 2. |
 | N3 | Persistent, offline-seeded n-gram continuation store ("rainbow table") | design in section 6 | after N1 |
-| P1 | Token-n-gram -> expert predictability (`predict.py` on trace2) | queued behind trace2 | G4 |
+| P1 | Token-n-gram -> expert predictability (`predict.py` on trace2) | blocked on `trace2b` (first trace run wrote no `.tok` sidecars: `trace_tok.py` guard bug, fixed `1509285`) | G4 |
 | P2 | Draft-driven expert prefetch | blocked on P1 | G4 |
 | P3c | Cache graph beyond 4-token batches | todo | needed if N1 shows long drafts pay |
 | P4c | Prefill warm-up of the cache | todo | cheap, independent |
