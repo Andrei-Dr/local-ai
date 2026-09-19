@@ -1,0 +1,15 @@
+mtp_n3_ngl24   code    200 tok | wall  4.71 t/s | decode  4.86 t/s | prefill   28.1 t/s | accept 127/213=0.60    | vram 3680 MiB | '```python\nfrom collections import OrderedDict\nfr'
+mtp_n3_ngl24   reason  200 tok | wall  4.72 t/s | decode  4.89 t/s | prefill   37.9 t/s | accept 128/213=0.60    | vram 3680 MiB | 'To solve this problem, we need to determine the '
+    telemetry[mtp_n3_ngl24]: GPU util avg  89% max  91% | power avg  48W max  80W /100W | PCIe->GPU avg  8.01 max 10.61 GB/s (~13 cap) | CPU busy  550% of 1200% | DRAM read avg   8.5 max   9.0 GB/s (~38 cap)
+ngram_mod_ngl28 code    200 tok | wall  3.04 t/s | decode  3.09 t/s | prefill   30.5 t/s | accept -               | vram 3394 MiB | '```python\nfrom collections import OrderedDict\nfr'
+ngram_mod_ngl28 reason  200 tok | wall  3.04 t/s | decode  3.10 t/s | prefill   41.0 t/s | accept -               | vram 3394 MiB | 'To solve this problem, we need to determine the '
+    telemetry[ngram_mod_ngl28]: GPU util avg  14% max  94% | power avg  25W max  62W /100W | PCIe->GPU avg  0.18 max  9.81 GB/s (~13 cap) | CPU busy  571% of 1200% | DRAM read avg  12.9 max  13.7 GB/s (~38 cap)
+ngram+mtp_n2_ngl24 code    200 tok | wall  4.64 t/s | decode  4.78 t/s | prefill   28.5 t/s | accept 119/158=0.75    | vram 3630 MiB | '```python\nfrom collections import OrderedDict\nfr'
+ngram+mtp_n2_ngl24 reason  200 tok | wall  4.47 t/s | decode  4.61 t/s | prefill   39.0 t/s | accept 116/164=0.71    | vram 3630 MiB | 'To solve this problem, we need to determine the '
+mtp_n2_omppassive_ngl24 code    200 tok | wall  4.37 t/s | decode  4.50 t/s | prefill   27.7 t/s | accept 119/158=0.75    | vram 3630 MiB | '```python\nfrom collections import OrderedDict\nfr'
+mtp_n2_omppassive_ngl24 reason  200 tok | wall  4.21 t/s | decode  4.34 t/s | prefill   37.4 t/s | accept 116/164=0.71    | vram 3630 MiB | 'To solve this problem, we need to determine the '
+    telemetry[mtp_n2_omppassive_ngl24]: GPU util avg  84% max  89% | power avg  45W max  71W /100W | PCIe->GPU avg  8.22 max 10.58 GB/s (~13 cap) | CPU busy  128% of 1200% | DRAM read avg   8.5 max   9.8 GB/s (~38 cap)
+mtp_n2_kq8_ngl24 code    200 tok | wall  4.58 t/s | decode  4.72 t/s | prefill   28.4 t/s | accept 118/160=0.74    | vram 3614 MiB | '```python\nfrom collections import OrderedDict\nfr'
+mtp_n2_kq8_ngl24 reason  200 tok | wall  4.29 t/s | decode  4.42 t/s | prefill   38.9 t/s | accept 117/162=0.72    | vram 3614 MiB | 'To solve this problem, we need to determine the '
+    telemetry[mtp_n2_kq8_ngl24]: GPU util avg  88% max  92% | power avg  50W max  85W /100W | PCIe->GPU avg  9.21 max 10.57 GB/s (~13 cap) | CPU busy  547% of 1200% | DRAM read avg   8.7 max   9.9 GB/s (~38 cap)
+ROUND2_DONE

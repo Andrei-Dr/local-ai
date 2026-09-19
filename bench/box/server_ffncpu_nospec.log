@@ -1,0 +1,61 @@
+0.00.130.372 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.130.750 W srv  llama_server: -----------------
+0.00.130.751 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.130.751 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.130.752 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.130.752 W srv  llama_server: -----------------
+0.00.131.955 I srv    load_model: loading model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.00.777.202 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 99, abort
+0.01.203.138 W model has unused tensor blk.64.attn_norm.weight (size = 20480 bytes) -- ignoring
+0.01.203.144 W model has unused tensor blk.64.post_attention_norm.weight (size = 20480 bytes) -- ignoring
+0.01.203.169 W model has unused tensor blk.64.attn_q.weight (size = 66846720 bytes) -- ignoring
+0.01.203.172 W model has unused tensor blk.64.attn_k.weight (size = 5570560 bytes) -- ignoring
+0.01.203.175 W model has unused tensor blk.64.attn_v.weight (size = 5570560 bytes) -- ignoring
+0.01.203.186 W model has unused tensor blk.64.attn_output.weight (size = 33423360 bytes) -- ignoring
+0.01.203.189 W model has unused tensor blk.64.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.01.203.193 W model has unused tensor blk.64.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.01.203.196 W model has unused tensor blk.64.ffn_gate.weight (size = 94699520 bytes) -- ignoring
+0.01.203.199 W model has unused tensor blk.64.ffn_down.weight (size = 94699520 bytes) -- ignoring
+0.01.203.205 W model has unused tensor blk.64.ffn_up.weight (size = 94699520 bytes) -- ignoring
+0.01.203.208 W model has unused tensor blk.64.nextn.eh_proj.weight (size = 55705600 bytes) -- ignoring
+0.01.203.213 W model has unused tensor blk.64.nextn.enorm.weight (size = 20480 bytes) -- ignoring
+0.01.203.216 W model has unused tensor blk.64.nextn.hnorm.weight (size = 20480 bytes) -- ignoring
+0.01.203.226 W model has unused tensor blk.64.nextn.shared_head_norm.weight (size = 20480 bytes) -- ignoring
+0.03.274.645 I cmn          init: llama threadpool init, n_threads = 6
+0.04.273.574 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+0.04.278.393 I srv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+0.04.278.429 I srv  llama_server: model loaded
+0.04.278.433 I srv  llama_server: listening on http://127.0.0.1:8099
+0.04.387.050 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.04.387.108 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.31.579.766 I slot print_timing: id  0 | task 0 | n_gen =    100, tg =   3.88 t/s, tg_3s =   3.92 t/s
+0.34.664.772 I slot print_timing: id  0 | task 0 | n_gen =    112, tg =   3.88 t/s, tg_3s =   3.89 t/s
+0.37.755.420 I slot print_timing: id  0 | task 0 | n_gen =    124, tg =   3.88 t/s, tg_3s =   3.88 t/s
+0.40.844.860 I slot print_timing: id  0 | task 0 | n_gen =    136, tg =   3.88 t/s, tg_3s =   3.88 t/s
+0.43.928.573 I slot print_timing: id  0 | task 0 | n_gen =    148, tg =   3.88 t/s, tg_3s =   3.89 t/s
+0.47.049.763 I slot print_timing: id  0 | task 0 | n_gen =    160, tg =   3.88 t/s, tg_3s =   3.84 t/s
+0.50.139.497 I slot print_timing: id  0 | task 0 | n_gen =    172, tg =   3.88 t/s, tg_3s =   3.88 t/s
+0.53.223.331 I slot print_timing: id  0 | task 0 | n_gen =    184, tg =   3.88 t/s, tg_3s =   3.89 t/s
+0.56.313.564 I slot print_timing: id  0 | task 0 | n_gen =    196, tg =   3.88 t/s, tg_3s =   3.88 t/s
+0.57.344.786 I slot print_timing: id  0 | task 0 | prompt eval time =    1685.91 ms /    42 tokens (   40.14 ms per token,    24.91 tokens per second)
+0.57.344.790 I slot print_timing: id  0 | task 0 |        eval time =   51271.75 ms /   200 tokens (  257.65 ms per token,     3.88 tokens per second)
+0.57.344.792 I slot print_timing: id  0 | task 0 |       total time =   52957.66 ms /   242 tokens
+0.57.344.795 I slot print_timing: id  0 | task 0 |    graphs reused =        199
+0.57.344.827 I slot      release: id  0 | task 0 | stop processing: n_tokens = 241, truncated = 0
+0.57.346.830 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 7134767563
+0.57.406.434 I slot launch_slot_: id  0 | task 202 | processing task, is_child = 0
+1.24.832.602 I slot print_timing: id  0 | task 202 | n_gen =    100, tg =   3.87 t/s, tg_3s =   3.90 t/s
+1.27.928.581 I slot print_timing: id  0 | task 202 | n_gen =    112, tg =   3.87 t/s, tg_3s =   3.88 t/s
+1.31.072.414 I slot print_timing: id  0 | task 202 | n_gen =    124, tg =   3.86 t/s, tg_3s =   3.82 t/s
+1.34.255.488 I slot print_timing: id  0 | task 202 | n_gen =    136, tg =   3.85 t/s, tg_3s =   3.77 t/s
+1.37.415.219 I slot print_timing: id  0 | task 202 | n_gen =    148, tg =   3.85 t/s, tg_3s =   3.80 t/s
+1.40.566.025 I slot print_timing: id  0 | task 202 | n_gen =    160, tg =   3.85 t/s, tg_3s =   3.81 t/s
+1.43.722.644 I slot print_timing: id  0 | task 202 | n_gen =    172, tg =   3.84 t/s, tg_3s =   3.80 t/s
+1.46.871.353 I slot print_timing: id  0 | task 202 | n_gen =    184, tg =   3.84 t/s, tg_3s =   3.81 t/s
+1.50.083.774 I slot print_timing: id  0 | task 202 | n_gen =    196, tg =   3.83 t/s, tg_3s =   3.74 t/s
+1.51.146.800 I slot print_timing: id  0 | task 202 | prompt eval time =    1812.59 ms /    60 tokens (   30.21 ms per token,    33.10 tokens per second)
+1.51.146.803 I slot print_timing: id  0 | task 202 |        eval time =   51927.76 ms /   200 tokens (  260.94 ms per token,     3.83 tokens per second)
+1.51.146.804 I slot print_timing: id  0 | task 202 |       total time =   53740.35 ms /   260 tokens
+1.51.146.805 I slot print_timing: id  0 | task 202 |    graphs reused =        396
+1.51.146.821 I slot      release: id  0 | task 202 | stop processing: n_tokens = 259, truncated = 0
+1.51.679.561 I srv    operator(): operator(): cleaning up before exit...

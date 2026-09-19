@@ -1,0 +1,40 @@
+########## Gemma4 ##########
+##### p2_g4_off | -ot exps=CPU
+    preflight: governor=performance thp=[always] mem_avail=14380MiB swap_used=551MiB gpu=4MiB,39,P8
+p2_g4_off      code    200 tok | wall 15.01 t/s | decode 16.65 t/s | prefill   31.8 t/s | accept -               | vram 2128 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p2_g4_off      reason  200 tok | wall 14.97 t/s | decode 16.90 t/s | prefill   38.5 t/s | accept -               | vram 2128 MiB | 'To find when the second train catches the first,'
+    telemetry[p2_g4_off]: GPU util avg  34% max 100% | power avg  31W max  44W /100W | PCIe->GPU avg  0.48 max  5.63 GB/s (~13 cap) | CPU busy  557% of 1200% | DRAM read avg  10.4 max  11.7 GB/s (~38 cap)
+##### p2_g4_c8 | -ot exps=CPU --moe-expert-cache 8
+    preflight: governor=performance thp=[always] mem_avail=14355MiB swap_used=557MiB gpu=4MiB,43,P0
+p2_g4_c8       code    200 tok | wall 17.21 t/s | decode 19.45 t/s | prefill   31.7 t/s | accept -               | vram 2862 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p2_g4_c8       reason  200 tok | wall 16.52 t/s | decode 18.92 t/s | prefill   38.4 t/s | accept -               | vram 2862 MiB | 'To find when the second train catches the first,'
+    telemetry[p2_g4_c8]: GPU util avg  57% max 100% | power avg  52W max  57W /100W | PCIe->GPU avg  2.43 max  8.28 GB/s (~13 cap) | CPU busy  561% of 1200% | DRAM read avg   9.9 max  11.3 GB/s (~38 cap)
+##### p2_g4_c12 | -ot exps=CPU --moe-expert-cache 12
+    preflight: governor=performance thp=[always] mem_avail=14384MiB swap_used=562MiB gpu=4MiB,47,P0
+p2_g4_c12      code    200 tok | wall 19.37 t/s | decode 22.15 t/s | prefill   32.6 t/s | accept -               | vram 3186 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p2_g4_c12      reason  200 tok | wall 18.23 t/s | decode 21.22 t/s | prefill   38.5 t/s | accept -               | vram 3186 MiB | 'To find when the second train catches the first,'
+    telemetry[p2_g4_c12]: GPU util avg  58% max  92% | power avg  57W max  66W /100W | PCIe->GPU avg  2.24 max  6.65 GB/s (~13 cap) | CPU busy  551% of 1200% | DRAM read avg   8.4 max   9.9 GB/s (~38 cap)
+##### p2_g4_c15 | -ot exps=CPU --moe-expert-cache 15
+    preflight: governor=performance thp=[always] mem_avail=14396MiB swap_used=565MiB gpu=4MiB,49,P0
+p2_g4_c15      code    200 tok | wall 20.36 t/s | decode 23.57 t/s | prefill   32.0 t/s | accept -               | vram 3430 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p2_g4_c15      reason  200 tok | wall 19.51 t/s | decode 22.97 t/s | prefill   38.4 t/s | accept -               | vram 3430 MiB | 'To find when the second train catches the first,'
+    telemetry[p2_g4_c15]: GPU util avg  61% max 100% | power avg  61W max  75W /100W | PCIe->GPU avg  1.79 max  5.64 GB/s (~13 cap) | CPU busy  543% of 1200% | DRAM read avg   7.4 max   9.1 GB/s (~38 cap)
+##### p2_g4_c15_a1 | -ot exps=CPU --moe-expert-cache 15 --moe-expert-cache-admit 1
+    preflight: governor=performance thp=[always] mem_avail=14401MiB swap_used=566MiB gpu=4MiB,51,P0
+p2_g4_c15_a1   code    200 tok | wall 19.00 t/s | decode 21.76 t/s | prefill   31.8 t/s | accept -               | vram 3430 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p2_g4_c15_a1   reason  200 tok | wall 18.23 t/s | decode 21.21 t/s | prefill   38.5 t/s | accept -               | vram 3430 MiB | 'To find when the second train catches the first,'
+    telemetry[p2_g4_c15_a1]: GPU util avg  65% max 100% | power avg  58W max  72W /100W | PCIe->GPU avg  3.20 max  7.11 GB/s (~13 cap) | CPU busy  561% of 1200% | DRAM read avg   9.3 max  10.8 GB/s (~38 cap)
+##### p2_g4_c15_a2 | -ot exps=CPU --moe-expert-cache 15 --moe-expert-cache-admit 2
+    preflight: governor=performance thp=[always] mem_avail=14386MiB swap_used=566MiB gpu=4MiB,52,P0
+p2_g4_c15_a2   code    200 tok | wall 19.69 t/s | decode 22.54 t/s | prefill   33.0 t/s | accept -               | vram 3430 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p2_g4_c15_a2   reason  200 tok | wall 18.74 t/s | decode 21.97 t/s | prefill   37.9 t/s | accept -               | vram 3430 MiB | 'To find when the second train catches the first,'
+    telemetry[p2_g4_c15_a2]: GPU util avg  62% max 100% | power avg  57W max  73W /100W | PCIe->GPU avg  2.12 max  6.68 GB/s (~13 cap) | CPU busy  559% of 1200% | DRAM read avg   8.7 max  10.1 GB/s (~38 cap)
+##### p2_g4_c16_ub128 | -ot exps=CPU --moe-expert-cache 16 -ub 128 -b 256
+    preflight: governor=performance thp=[always] mem_avail=14401MiB swap_used=570MiB gpu=4MiB,54,P0
+p2_g4_c16_ub128 code    200 tok | wall 20.39 t/s | decode 23.65 t/s | prefill   31.6 t/s | accept -               | vram 3430 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p2_g4_c16_ub128 reason  200 tok | wall 19.68 t/s | decode 23.24 t/s | prefill   38.3 t/s | accept -               | vram 3430 MiB | 'To find when the second train catches the first,'
+    telemetry[p2_g4_c16_ub128]: GPU util avg  60% max  91% | power avg  60W max  74W /100W | PCIe->GPU avg  1.86 max  5.62 GB/s (~13 cap) | CPU busy  542% of 1200% | DRAM read avg   7.1 max   8.7 GB/s (~38 cap)
+########## Qwen3.6 ##########
+##### p2_q36_c32 | -ot exps=CPU --moe-expert-cache 32
+    preflight: governor=performance thp=[always] mem_avail=14426MiB swap_used=571MiB gpu=4MiB,55,P0
+p2_q36_c32     code    200 tok | wall 26.61 t/s | decode 31.01 t/s | prefill   39.2 t/s | accept -               | vram 2676 MiB | '```python\nfrom typing import Optional, Dict, Tup'

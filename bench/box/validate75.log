@@ -1,0 +1,11 @@
+########## 1a. best Bonsai config on build75 (61-virtual gave 5.24/5.05) ##########
+b75_best       code    200 tok | wall  5.05 t/s | decode  5.31 t/s | prefill   20.0 t/s | accept 119/158=0.75    | vram 3590 MiB | '```python\nfrom collections import OrderedDict\nfr'
+b75_best       reason  200 tok | wall  4.83 t/s | decode  5.17 t/s | prefill   22.1 t/s | accept 117/162=0.72    | vram 3590 MiB | 'To solve this problem, we need to determine the '
+    telemetry[b75_best]: GPU util avg  97% max 100% | power avg  45W max  54W /100W | PCIe->GPU avg  9.65 max 11.12 GB/s (~13 cap) | CPU busy  132% of 1200% | DRAM read avg   8.8 max   9.9 GB/s (~38 cap)
+########## 1b. streamed verify ms/pass (61-virtual: 517/563/647/693) ##########
+  build    b2   519ms  b4   558ms  b8   650ms  b16  694ms  
+  build75  b2   531ms  b4   570ms  b8   659ms  b16  955ms  
+########## 4-pre. PTQ1_0 vs PQ2_0 streamed verify (18% fewer bytes?) ##########
+  Ternary-Bonsai-2-27B-Abliterated-PQ2_0.gguf    b2   518ms  b4   559ms  b8   649ms  tg 2.94 t/s
+  Ternary-Bonsai-2-27B-Abliterated-PTQ1_0.gguf   b2   539ms  b4   694ms  b8   815ms  tg 0.58 t/s
+VALIDATE75_DONE

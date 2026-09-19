@@ -1,0 +1,78 @@
+0.00.049.868 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.050.302 W srv  llama_server: -----------------
+0.00.050.303 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.050.303 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.050.304 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.050.304 W srv  llama_server: -----------------
+0.00.051.540 I srv    load_model: loading model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.01.182.202 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 22, abort
+0.04.022.799 W resolve_fused_ops: layer 0 is assigned to device CPU but fused Gated Delta Net (autoregressive) is assigned to device CUDA0 (usually due to missing support)
+0.04.022.802 W resolve_fused_ops: fused Gated Delta Net (autoregressive) not supported, set to disabled
+0.04.025.534 W resolve_fused_ops: layer 0 is assigned to device CPU but fused Gated Delta Net (chunked) is assigned to device CUDA0 (usually due to missing support)
+0.04.025.536 W resolve_fused_ops: fused Gated Delta Net (chunked) not supported, set to disabled
+0.04.233.100 I cmn          init: llama threadpool init, n_threads = 6
+0.04.943.210 I common_speculative_init_result: creating MTP draft context against the target model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.05.591.992 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+0.05.630.385 I srv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+0.05.630.417 I srv  llama_server: model loaded
+0.05.630.420 I srv  llama_server: listening on http://127.0.0.1:8099
+0.06.765.711 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.06.765.765 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+/ai/src/llama.cpp/ggml/src/ggml-cuda/ggml-cuda.cu:107: CUDA error
+0.06.812.574 E CUDA error: the resource allocation failed
+0.06.812.577 E   current device: 0, in function cublas_handle at /ai/src/llama.cpp/ggml/src/ggml-cuda/../ggml-cuda/common.cuh:1544
+0.06.812.578 E   cublasCreate_v2(&cublas_handles[device][curr_stream_no])
+[New LWP 61877]
+[New LWP 61870]
+[New LWP 61869]
+[New LWP 61868]
+[New LWP 61867]
+[New LWP 61866]
+[New LWP 61857]
+[New LWP 61856]
+[New LWP 61855]
+[New LWP 61854]
+[New LWP 61853]
+[New LWP 61852]
+[New LWP 61851]
+[New LWP 61850]
+[New LWP 61849]
+[New LWP 61848]
+[New LWP 61847]
+[New LWP 61846]
+[New LWP 61845]
+[New LWP 61844]
+[New LWP 61836]
+[New LWP 61835]
+[New LWP 61834]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x00007eab94f10913 in __GI___wait4 (pid=61894, stat_loc=0x0, options=0, usage=0x0) at ../sysdeps/unix/sysv/linux/wait4.c:30
+warning: 30	../sysdeps/unix/sysv/linux/wait4.c: No such file or directory
+#0  0x00007eab94f10913 in __GI___wait4 (pid=61894, stat_loc=0x0, options=0, usage=0x0) at ../sysdeps/unix/sysv/linux/wait4.c:30
+30	in ../sysdeps/unix/sysv/linux/wait4.c
+#1  0x00007eab95c13d33 in ggml_print_backtrace () from /ai/src/llama.cpp/build/bin/libggml-base.so.0
+#2  0x00007eab95c13edb in ggml_abort () from /ai/src/llama.cpp/build/bin/libggml-base.so.0
+#3  0x00007eab8eea02d6 in ggml_cuda_error(char const*, char const*, char const*, int, char const*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#4  0x00007eab8eeae74c in void ggml_cuda_mul_mat_cublas_impl<(ggml_type)30>(ggml_backend_cuda_context&, ggml_tensor const*, ggml_tensor const*, ggml_tensor*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#5  0x00007eab8eeb1d79 in ggml_cuda_compute_forward(ggml_backend_cuda_context&, ggml_tensor*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#6  0x00007eab8eeb4cf6 in ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context*, ggml_cgraph*, bool, bool, void const*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#7  0x00007eab8eeb7062 in ggml_backend_cuda_graph_compute(ggml_backend*, ggml_cgraph*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#8  0x00007eab95c312a7 in ggml_backend_sched_graph_compute_async () from /ai/src/llama.cpp/build/bin/libggml-base.so.0
+#9  0x00007eab94502e21 in llama_context::graph_compute(ggml_cgraph*, bool) () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#10 0x00007eab9450774a in llama_context::process_ubatch(llama_ubatch const&, llm_graph_type, llama_memory_context_i*, ggml_status&) () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#11 0x00007eab9450f37d in llama_context::decode(llama_batch const&) () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#12 0x00007eab94510a3f in llama_decode () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#13 0x00007eab95750419 in std::_Function_handler<void (), server_context_impl::decode(int&, int, llama_batch&)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#14 0x00007eab95714ad6 in server_queue::yield_to_queue(std::function<void ()>&&) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#15 0x00007eab95764ae9 in server_context_impl::decode(int&, int, llama_batch&) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#16 0x00007eab95766581 in server_context_impl::update_slots() () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#17 0x00007eab95715715 in server_queue::start_loop(long) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#18 0x00007eab956cd7e8 in llama_server(common_params&, int, char**) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#19 0x00007eab956ce826 in llama_server(int, char**) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#20 0x00007eab94e2a1ca in __libc_start_call_main (main=main@entry=0x5839e42c9270 <main>, argc=argc@entry=22, argv=argv@entry=0x7ffc0e246608) at ../sysdeps/nptl/libc_start_call_main.h:58
+warning: 58	../sysdeps/nptl/libc_start_call_main.h: No such file or directory
+#21 0x00007eab94e2a28b in __libc_start_main_impl (main=0x5839e42c9270 <main>, argc=22, argv=0x7ffc0e246608, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, stack_end=0x7ffc0e2465f8) at ../csu/libc-start.c:360
+warning: 360	../csu/libc-start.c: No such file or directory
+#22 0x00005839e42c92a5 in _start ()
+[Inferior 1 (process 61829) detached]

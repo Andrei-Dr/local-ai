@@ -1,0 +1,65 @@
+########## thread sweep / CUDA graphs ##########
+  q36 t=2 A=1 : tg64 = 14.15 ± 0.12 t/s
+  q36 t=3 A=1 : tg64 = 18.93 ± 0.04 t/s
+  q36 t=4 A=1 : tg64 = 22.40 ± 0.07 t/s
+  q36 t=5 A=1 : tg64 = 25.20 ± 0.16 t/s
+  q36 t=6 A=1 : tg64 = 26.05 ± 0.08 t/s
+  q36 t=6 GGML_CUDA_DISABLE_GRAPHS=1 : tg64 = 26.63 ± 3.21 t/s
+  g4 t=3 A=1 : tg64 = 11.06 ± 0.07 t/s
+  g4 t=4 A=1 : tg64 = 13.66 ± 0.03 t/s
+  g4 t=5 A=1 : tg64 = 15.40 ± 0.02 t/s
+  g4 t=6 A=1 : tg64 = 16.72 ± 0.55 t/s
+  g4 t=6 GGML_CUDA_DISABLE_GRAPHS=1 : tg64 = 16.95 ± 0.15 t/s
+########## perf profile (decode only, -D 20s) ##########
+--- q36
+    49.06%  libggml-cpu.so.0.21.0    [.] ggml_vec_dot_iq2_s_q8_K                                                                                      
+    34.98%  libgomp.so.1.0.0         [.] 0x00000000000256c0                                                                                           
+     2.53%  libgomp.so.1.0.0         [.] 0x00000000000258a0                                                                                           
+     2.20%  libggml-cpu.so.0.21.0    [.] ggml_vec_dot_iq3_s_q8_K                                                                                      
+     1.94%  libggml-cpu.so.0.21.0    [.] ggml_graph_compute_thread.isra.0                                                                             
+     1.25%  libcuda.so.580.173.02    [.] 0x000000000022be17                                                                                           
+     0.35%  libcuda.so.580.173.02    [.] 0x000000000046088c                                                                                           
+     0.26%  [vdso]                   [.] 0x0000000000000b00                                                                                           
+     0.23%  libggml-base.so.0.21.0   [.] quantize_row_q8_K_ref                                                                                        
+     0.22%  libgomp.so.1.0.0         [.] 0x00000000000256cf                                                                                           
+     0.20%  libcuda.so.580.173.02    [.] 0x0000000000460891                                                                                           
+     0.18%  libcuda.so.580.173.02    [.] 0x0000000000460854                                                                                           
+     0.16%  libcuda.so.580.173.02    [.] 0x000000000021f6bd                                                                                           
+     0.11%  libcuda.so.580.173.02    [.] 0x0000000000460894                                                                                           
+     0.11%  libcuda.so.580.173.02    [.] 0x000000000046088e                                                                                           
+     0.10%  libcuda.so.580.173.02    [.] 0x0000000000460821                                                                                           
+     0.09%  libcuda.so.580.173.02    [.] 0x000000000021f6a0                                                                                           
+     0.09%  libcuda.so.580.173.02    [.] 0x00000000004608a1                                                                                           
+     0.09%  libcuda.so.580.173.02    [.] 0x000000000046095b                                                                                           
+     0.09%  libcuda.so.580.173.02    [.] 0x0000000000460954                                                                                           
+     0.08%  libcuda.so.580.173.02    [.] 0x0000000000460834                                                                                           
+     0.08%  libcuda.so.580.173.02    [.] 0x00000000003185e9                                                                                           
+--- g4
+    48.83%  libggml-cpu.so.0.21.0   [.] ggml_vec_dot_iq3_s_q8_K                                                                                       
+    27.39%  libgomp.so.1.0.0        [.] 0x00000000000256c0                                                                                            
+    12.27%  libggml-cpu.so.0.21.0   [.] ggml_vec_dot_iq4_nl_q8_0                                                                                      
+     1.88%  libgomp.so.1.0.0        [.] 0x00000000000258a0                                                                                            
+     1.77%  libggml-cpu.so.0.21.0   [.] ggml_vec_dot_q5_0_q8_0                                                                                        
+     0.91%  libggml-cpu.so.0.21.0   [.] ggml_graph_compute_thread.isra.0                                                                              
+     0.88%  libcuda.so.580.173.02   [.] 0x000000000022be17                                                                                            
+     0.57%  libcuda.so.580.173.02   [.] 0x000000000046088c                                                                                            
+     0.18%  [vdso]                  [.] 0x0000000000000b00                                                                                            
+     0.18%  libggml-cpu.so.0.21.0   [.] ggml_compute_forward_glu                                                                                      
+     0.17%  libgomp.so.1.0.0        [.] 0x00000000000256cf                                                                                            
+     0.17%  libcuda.so.580.173.02   [.] 0x0000000000460854                                                                                            
+     0.12%  libcuda.so.580.173.02   [.] 0x0000000000460891                                                                                            
+     0.11%  libcuda.so.580.173.02   [.] 0x000000000046084f                                                                                            
+     0.10%  libcuda.so.580.173.02   [.] 0x000000000046084b                                                                                            
+     0.10%  libcuda.so.580.173.02   [.] 0x000000000046088e                                                                                            
+     0.10%  libcuda.so.580.173.02   [.] 0x000000000021f6bd                                                                                            
+     0.08%  libcuda.so.580.173.02   [.] 0x000000000046087b                                                                                            
+     0.08%  libcuda.so.580.173.02   [.] 0x0000000000460894                                                                                            
+     0.07%  libcuda.so.580.173.02   [.] 0x0000000000f9dfb8                                                                                            
+     0.07%  libcuda.so.580.173.02   [.] 0x0000000000460848                                                                                            
+     0.07%  libcuda.so.580.173.02   [.] 0x0000000000460888                                                                                            
+########## router traces ##########
+  trace q36_code: exit 0 size 10247680
+  trace q36_prose: exit 0 size 10247680
+  trace g4_code: exit 0 size 7685760
+  trace g4_prose: exit 0 size 7685760
+PROF1_DONE

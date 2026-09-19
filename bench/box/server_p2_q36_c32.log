@@ -1,0 +1,23 @@
+0.00.016.975 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.017.343 W srv  llama_server: -----------------
+0.00.017.345 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.017.345 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.017.345 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.017.345 W srv  llama_server: -----------------
+0.00.018.538 I srv    load_model: loading model '/ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf'
+0.08.434.006 I cmn          init: llama threadpool init, n_threads = 6
+0.08.626.630 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+0.08.631.747 I srv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+0.08.631.846 I srv  llama_server: model loaded
+0.08.631.853 I srv  llama_server: listening on http://127.0.0.1:8099
+0.09.544.093 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.09.544.148 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.13.920.502 I slot print_timing: id  0 | task 0 | n_gen =    100, tg =  29.96 t/s, tg_3s =  30.26 t/s
+0.16.948.989 I slot print_timing: id  0 | task 0 | n_gen =    197, tg =  30.95 t/s, tg_3s =  32.03 t/s
+0.17.033.485 I slot print_timing: id  0 | task 0 | prompt eval time =    1071.84 ms /    42 tokens (   25.52 ms per token,    39.19 tokens per second)
+0.17.033.488 I slot print_timing: id  0 | task 0 |        eval time =    6417.48 ms /   200 tokens (   32.25 ms per token,    31.01 tokens per second)
+0.17.033.489 I slot print_timing: id  0 | task 0 |       total time =    7489.32 ms /   242 tokens
+0.17.033.493 I slot print_timing: id  0 | task 0 |    graphs reused =        199
+0.17.033.521 I slot      release: id  0 | task 0 | stop processing: n_tokens = 241, truncated = 0
+0.17.035.895 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 1350034675
+0.17.087.008 I slot launch_slot_: id  0 | task 202 | processing task, is_child = 0

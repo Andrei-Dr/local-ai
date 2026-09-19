@@ -1,0 +1,18 @@
+0.00.118.422 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.118.838 W srv  llama_server: -----------------
+0.00.118.839 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.118.840 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.118.840 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.118.840 W srv  llama_server: -----------------
+0.00.120.070 I srv    load_model: loading model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.01.268.803 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 99, abort
+0.03.826.542 I cmn          init: llama threadpool init, n_threads = 6
+0.04.359.613 I common_speculative_init_result: creating MTP draft context against the target model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.04.363.341 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 31.52 MiB on device 0: cudaMalloc failed: out of memory
+0.04.363.347 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 33054848
+0.04.363.348 E graph_reserve: failed to allocate compute buffers
+0.04.363.592 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+0.04.363.594 E common_speculative_init_result: failed to create MTP context
+0.04.363.599 E srv    load_model: failed to create MTP context
+0.04.363.603 I srv    operator(): operator(): cleaning up before exit...
+0.04.364.161 E srv  llama_server: exiting due to model loading error

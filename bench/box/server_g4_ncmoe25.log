@@ -1,0 +1,20 @@
+0.00.038.260 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.038.630 W srv  llama_server: -----------------
+0.00.038.632 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.038.632 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.038.632 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.038.632 W srv  llama_server: -----------------
+0.00.039.814 I srv    load_model: loading model '/ai/models/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf'
+0.00.883.547 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort
+0.01.352.757 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.353.232 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.378.064 W load: special_eog_ids contains '<|tool_response>', removing '</s>' token from EOG list
+0.08.913.604 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 250.48 MiB on device 0: cudaMalloc failed: out of memory
+0.08.913.610 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 262645888
+0.08.913.611 E graph_reserve: failed to allocate compute buffers
+0.08.914.600 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+0.08.914.604 E cmn  common_init_: failed to create context with model '/ai/models/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf'
+0.08.914.607 E cmn  common_init_: failed to create context with model '/ai/models/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf'
+0.08.914.612 E srv    load_model: failed to create_context with model '/ai/models/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf'
+0.08.914.613 I srv    operator(): operator(): cleaning up before exit...
+0.08.915.186 E srv  llama_server: exiting due to model loading error

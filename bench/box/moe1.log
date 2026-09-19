@@ -1,0 +1,84 @@
+########## Qwen3.6-35B-A3B IQ2_M ##########
+##### q36_expscpu | OFFLOAD=32 | -ot exps=CPU
+q36_expscpu    code    200 tok | wall 24.12 t/s | decode 27.74 t/s | prefill   38.4 t/s | accept -               | vram 1412 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+q36_expscpu    reason  200 tok | wall 23.49 t/s | decode 28.37 t/s | prefill   41.6 t/s | accept -               | vram 1412 MiB | 'To find when the second train catches the first,'
+    telemetry[q36_expscpu]: GPU util avg  42% max  88% | power avg  45W max  48W /100W | PCIe->GPU avg  0.56 max  4.42 GB/s (~13 cap) | CPU busy  525% of 1200% | DRAM read avg   8.1 max   9.3 GB/s (~38 cap)
+##### q36_ncmoe36 | OFFLOAD=32 | --n-cpu-moe 36
+q36_ncmoe36    code    200 tok | wall 24.18 t/s | decode 27.52 t/s | prefill   41.4 t/s | accept -               | vram 2394 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+q36_ncmoe36    reason  200 tok | wall 23.61 t/s | decode 28.42 t/s | prefill   42.5 t/s | accept -               | vram 2394 MiB | 'To find when the second train catches the first,'
+    telemetry[q36_ncmoe36]: GPU util avg  43% max  88% | power avg  46W max  49W /100W | PCIe->GPU avg  0.31 max  2.35 GB/s (~13 cap) | CPU busy  529% of 1200% | DRAM read avg   7.4 max   8.5 GB/s (~38 cap)
+##### q36_ncmoe34 | OFFLOAD=32 | --n-cpu-moe 34
+q36_ncmoe34    code    200 tok | wall 24.18 t/s | decode 27.62 t/s | prefill   40.7 t/s | accept -               | vram 2886 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+q36_ncmoe34    reason  200 tok | wall 21.97 t/s | decode 25.95 t/s | prefill   42.8 t/s | accept -               | vram 2886 MiB | 'To find when the second train catches the first,'
+    telemetry[q36_ncmoe34]: GPU util avg  44% max 100% | power avg  42W max  52W /100W | PCIe->GPU avg  0.28 max  3.85 GB/s (~13 cap) | CPU busy  565% of 1200% | DRAM read avg   6.7 max   8.5 GB/s (~38 cap)
+##### q36_ncmoe32 | OFFLOAD=32 | --n-cpu-moe 32
+q36_ncmoe32    code    200 tok | wall 25.69 t/s | decode 29.33 t/s | prefill   43.0 t/s | accept -               | vram 3378 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+q36_ncmoe32    reason  200 tok | wall 23.84 t/s | decode 28.54 t/s | prefill   43.6 t/s | accept -               | vram 3378 MiB | 'To find when the second train catches the first,'
+    telemetry[q36_ncmoe32]: GPU util avg  46% max  84% | power avg  48W max  52W /100W | PCIe->GPU avg  0.27 max  2.97 GB/s (~13 cap) | CPU busy  534% of 1200% | DRAM read avg   6.6 max   8.0 GB/s (~38 cap)
+##### q36_ncmoe30 | OFFLOAD=32 | --n-cpu-moe 30
+q36_ncmoe30: SERVER DIED: 0.07.221.612 E srv  llama_server: exiting due to model loading error
+##### q36_ub128_ncmoe34 | OFFLOAD=32 | --n-cpu-moe 34 -ub 128 -b 256
+q36_ub128_ncmoe34 code    200 tok | wall 25.39 t/s | decode 29.21 t/s | prefill   40.8 t/s | accept -               | vram 2846 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+q36_ub128_ncmoe34 reason  200 tok | wall 24.60 t/s | decode 29.69 t/s | prefill   43.6 t/s | accept -               | vram 2846 MiB | 'To find when the second train catches the first,'
+    telemetry[q36_ub128_ncmoe34]: GPU util avg  47% max  92% | power avg  48W max  52W /100W | PCIe->GPU avg  0.30 max  3.35 GB/s (~13 cap) | CPU busy  527% of 1200% | DRAM read avg   7.0 max   8.5 GB/s (~38 cap)
+##### q36_ub128_ncmoe32 | OFFLOAD=32 | --n-cpu-moe 32 -ub 128 -b 256
+q36_ub128_ncmoe32 code    200 tok | wall 25.76 t/s | decode 29.42 t/s | prefill   43.1 t/s | accept -               | vram 3338 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+q36_ub128_ncmoe32 reason  200 tok | wall 24.39 t/s | decode 29.28 t/s | prefill   44.2 t/s | accept -               | vram 3338 MiB | 'To find when the second train catches the first,'
+    telemetry[q36_ub128_ncmoe32]: GPU util avg  47% max  84% | power avg  48W max  53W /100W | PCIe->GPU avg  0.28 max  3.21 GB/s (~13 cap) | CPU busy  535% of 1200% | DRAM read avg   6.7 max   8.1 GB/s (~38 cap)
+##### q36_ub128_ncmoe30 | OFFLOAD=32 | --n-cpu-moe 30 -ub 128 -b 256
+q36_ub128_ncmoe30: SERVER DIED: 0.07.606.621 E srv  llama_server: exiting due to model loading error
+########## Gemma4-26B-A4B IQ3_M ##########
+##### g4_expscpu | OFFLOAD=32 | -ot exps=CPU
+g4_expscpu     code    200 tok | wall 14.55 t/s | decode 16.24 t/s | prefill   30.4 t/s | accept -               | vram 2144 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_expscpu     reason  200 tok | wall 14.61 t/s | decode 16.51 t/s | prefill   38.1 t/s | accept -               | vram 2144 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_expscpu]: GPU util avg  33% max  89% | power avg  32W max  45W /100W | PCIe->GPU avg  0.45 max  5.63 GB/s (~13 cap) | CPU busy  554% of 1200% | DRAM read avg   9.9 max  11.3 GB/s (~38 cap)
+##### g4_ncmoe28 | OFFLOAD=32 | --n-cpu-moe 28
+g4_ncmoe28     code    200 tok | wall 15.81 t/s | decode 17.50 t/s | prefill   34.3 t/s | accept -               | vram 2834 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_ncmoe28     reason  200 tok | wall 15.33 t/s | decode 17.33 t/s | prefill   39.1 t/s | accept -               | vram 2834 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_ncmoe28]: GPU util avg  36% max 100% | power avg  33W max  46W /100W | PCIe->GPU avg  0.32 max  3.39 GB/s (~13 cap) | CPU busy  556% of 1200% | DRAM read avg  10.0 max  11.3 GB/s (~38 cap)
+##### g4_ncmoe27 | OFFLOAD=32 | --n-cpu-moe 27
+g4_ncmoe27     code    200 tok | wall 15.81 t/s | decode 17.58 t/s | prefill   33.1 t/s | accept -               | vram 3176 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_ncmoe27     reason  200 tok | wall 15.70 t/s | decode 17.77 t/s | prefill   39.7 t/s | accept -               | vram 3176 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_ncmoe27]: GPU util avg  36% max  85% | power avg  33W max  47W /100W | PCIe->GPU avg  0.41 max  5.78 GB/s (~13 cap) | CPU busy  555% of 1200% | DRAM read avg   9.6 max  11.1 GB/s (~38 cap)
+##### g4_ncmoe26 | OFFLOAD=32 | --n-cpu-moe 26
+g4_ncmoe26     code    200 tok | wall 16.39 t/s | decode 18.18 t/s | prefill   35.1 t/s | accept -               | vram 3520 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_ncmoe26     reason  200 tok | wall 16.07 t/s | decode 18.20 t/s | prefill   40.2 t/s | accept -               | vram 3520 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_ncmoe26]: GPU util avg  38% max 100% | power avg  34W max  48W /100W | PCIe->GPU avg  0.17 max  2.89 GB/s (~13 cap) | CPU busy  561% of 1200% | DRAM read avg   9.7 max  11.0 GB/s (~38 cap)
+##### g4_ncmoe25 | OFFLOAD=32 | --n-cpu-moe 25
+g4_ncmoe25: SERVER DIED: 0.08.915.186 E srv  llama_server: exiting due to model loading error
+##### g4_ub128_ncmoe27 | OFFLOAD=32 | --n-cpu-moe 27 -ub 128 -b 256
+g4_ub128_ncmoe27 code    200 tok | wall 16.21 t/s | decode 18.06 t/s | prefill   33.2 t/s | accept -               | vram 3094 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_ub128_ncmoe27 reason  200 tok | wall 15.61 t/s | decode 17.67 t/s | prefill   39.3 t/s | accept -               | vram 3094 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_ub128_ncmoe27]: GPU util avg  37% max 100% | power avg  32W max  47W /100W | PCIe->GPU avg  0.47 max  6.14 GB/s (~13 cap) | CPU busy  559% of 1200% | DRAM read avg   9.6 max  11.0 GB/s (~38 cap)
+##### g4_ub128_ncmoe26 | OFFLOAD=32 | --n-cpu-moe 26 -ub 128 -b 256
+g4_ub128_ncmoe26 code    200 tok | wall 16.47 t/s | decode 18.31 t/s | prefill   34.8 t/s | accept -               | vram 3438 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_ub128_ncmoe26 reason  200 tok | wall 16.16 t/s | decode 18.33 t/s | prefill   40.2 t/s | accept -               | vram 3438 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_ub128_ncmoe26]: GPU util avg  38% max  78% | power avg  33W max  48W /100W | PCIe->GPU avg  0.17 max  2.66 GB/s (~13 cap) | CPU busy  549% of 1200% | DRAM read avg   9.6 max  11.0 GB/s (~38 cap)
+##### g4_ub128_ncmoe25 | OFFLOAD=32 | --n-cpu-moe 25 -ub 128 -b 256
+g4_ub128_ncmoe25: SERVER DIED: 0.08.956.990 E srv  llama_server: exiting due to model loading error
+########## Gemma4 + MTP drafter ##########
+##### g4_mtp_n1_o32 | OFFLOAD=32 | -ot exps=CPU -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 1
+g4_mtp_n1_o32  code    200 tok | wall 13.48 t/s | decode 14.86 t/s | prefill   30.2 t/s | accept 88/111=0.79     | vram 2444 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_mtp_n1_o32  reason  200 tok | wall 16.12 t/s | decode 18.39 t/s | prefill   38.3 t/s | accept 89/109=0.82     | vram 2444 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_mtp_n1_o32]: GPU util avg  22% max 100% | power avg  29W max  43W /100W | PCIe->GPU avg  0.39 max  5.18 GB/s (~13 cap) | CPU busy  599% of 1200% | DRAM read avg   8.8 max  11.2 GB/s (~38 cap)
+##### g4_mtp_n2_o32 | OFFLOAD=32 | -ot exps=CPU -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 2
+g4_mtp_n2_o32  code    200 tok | wall 13.76 t/s | decode 15.34 t/s | prefill   29.0 t/s | accept 114/170=0.67    | vram 2444 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_mtp_n2_o32  reason  200 tok | wall 15.29 t/s | decode 17.42 t/s | prefill   37.7 t/s | accept 119/160=0.74    | vram 2444 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_mtp_n2_o32]: GPU util avg  21% max  94% | power avg  29W max  42W /100W | PCIe->GPU avg  0.52 max  6.14 GB/s (~13 cap) | CPU busy  568% of 1200% | DRAM read avg   8.3 max  10.0 GB/s (~38 cap)
+##### g4_mtp_n3_o32 | OFFLOAD=32 | -ot exps=CPU -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 3
+g4_mtp_n3_o32  code    200 tok | wall 12.96 t/s | decode 14.29 t/s | prefill   30.3 t/s | accept 123/225=0.55    | vram 2444 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_mtp_n3_o32  reason  200 tok | wall 14.44 t/s | decode 16.31 t/s | prefill   37.7 t/s | accept 134/194=0.69    | vram 2444 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_mtp_n3_o32]: GPU util avg  23% max  86% | power avg  28W max  42W /100W | PCIe->GPU avg  0.55 max  5.64 GB/s (~13 cap) | CPU busy  549% of 1200% | DRAM read avg   7.8 max   9.4 GB/s (~38 cap)
+##### g4_mtp_n1_o2 | OFFLOAD=2 | -ot exps=CPU -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 1
+g4_mtp_n1_o2   code    200 tok | wall 13.66 t/s | decode 15.10 t/s | prefill   31.1 t/s | accept 91/107=0.85     | vram 2448 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_mtp_n1_o2   reason  200 tok | wall 13.72 t/s | decode 15.47 t/s | prefill   38.3 t/s | accept 92/107=0.86     | vram 2448 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_mtp_n1_o2]: GPU util avg  89% max  98% | power avg  45W max  51W /100W | PCIe->GPU avg  8.30 max 10.57 GB/s (~13 cap) | CPU busy  122% of 1200% | DRAM read avg   7.7 max   8.8 GB/s (~38 cap)
+##### g4_mtp_n2_o2 | OFFLOAD=2 | -ot exps=CPU -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 2
+g4_mtp_n2_o2   code    200 tok | wall 13.73 t/s | decode 15.20 t/s | prefill   30.9 t/s | accept 113/170=0.66    | vram 2448 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_mtp_n2_o2   reason  200 tok | wall 14.39 t/s | decode 16.24 t/s | prefill   37.9 t/s | accept 120/158=0.76    | vram 2448 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_mtp_n2_o2]: GPU util avg  90% max  99% | power avg  47W max  52W /100W | PCIe->GPU avg  7.65 max 10.88 GB/s (~13 cap) | CPU busy  111% of 1200% | DRAM read avg   7.8 max   8.6 GB/s (~38 cap)
+##### g4_mtp_n3_o2 | OFFLOAD=2 | -ot exps=CPU -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 3
+g4_mtp_n3_o2   code    200 tok | wall 13.58 t/s | decode 14.92 t/s | prefill   31.7 t/s | accept 124/223=0.56    | vram 2448 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+g4_mtp_n3_o2   reason  200 tok | wall 15.02 t/s | decode 16.96 t/s | prefill   38.3 t/s | accept 135/191=0.71    | vram 2448 MiB | 'To find when the second train catches the first,'
+    telemetry[g4_mtp_n3_o2]: GPU util avg  91% max  99% | power avg  49W max  54W /100W | PCIe->GPU avg  8.76 max 10.69 GB/s (~13 cap) | CPU busy  132% of 1200% | DRAM read avg   7.8 max   8.8 GB/s (~38 cap)
+MOE1_DONE

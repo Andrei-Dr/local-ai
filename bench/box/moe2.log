@@ -1,0 +1,26 @@
+##### p1_q36_off | -ot exps=CPU
+    preflight: governor=performance thp=[always] mem_avail=13885MiB swap_used=0MiB gpu=4MiB,36,P8
+p1_q36_off     code    200 tok | wall 24.10 t/s | decode 27.91 t/s | prefill   37.9 t/s | accept -               | vram 1396 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p1_q36_off     reason  200 tok | wall 23.26 t/s | decode 28.09 t/s | prefill   41.7 t/s | accept -               | vram 1396 MiB | 'To find when the second train catches the first,'
+    telemetry[p1_q36_off]: GPU util avg  43% max  97% | power avg  44W max  48W /100W | PCIe->GPU avg  0.80 max  5.08 GB/s (~13 cap) | CPU busy  517% of 1200% | DRAM read avg   8.2 max   9.3 GB/s (~38 cap)
+##### p1_q36_c16 | -ot exps=CPU --moe-expert-cache 16
+    preflight: governor=performance thp=[always] mem_avail=14333MiB swap_used=453MiB gpu=4MiB,41,P0
+p1_q36_c16     code    200 tok | wall 24.41 t/s | decode 28.16 t/s | prefill   38.4 t/s | accept -               | vram 2056 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p1_q36_c16     reason  200 tok | wall 23.43 t/s | decode 28.29 t/s | prefill   41.4 t/s | accept -               | vram 2056 MiB | 'To find when the second train catches the first,'
+    telemetry[p1_q36_c16]: GPU util avg  62% max 100% | power avg  51W max  61W /100W | PCIe->GPU avg  2.05 max  4.22 GB/s (~13 cap) | CPU busy  534% of 1200% | DRAM read avg   7.3 max   8.5 GB/s (~38 cap)
+##### p1_q36_c32 | -ot exps=CPU --moe-expert-cache 32
+    preflight: governor=performance thp=[always] mem_avail=14403MiB swap_used=515MiB gpu=4MiB,44,P0
+p1_q36_c32     code    200 tok | wall 26.15 t/s | decode 30.30 t/s | prefill   39.8 t/s | accept -               | vram 2676 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p1_q36_c32     reason  200 tok | wall 24.32 t/s | decode 29.62 t/s | prefill   41.3 t/s | accept -               | vram 2676 MiB | 'To find when the second train catches the first,'
+    telemetry[p1_q36_c32]: GPU util avg  63% max  80% | power avg  55W max  63W /100W | PCIe->GPU avg  1.80 max  4.28 GB/s (~13 cap) | CPU busy  534% of 1200% | DRAM read avg   6.4 max   7.5 GB/s (~38 cap)
+##### p1_q36_c48 | -ot exps=CPU --moe-expert-cache 48
+    preflight: governor=performance thp=[always] mem_avail=14416MiB swap_used=526MiB gpu=4MiB,46,P0
+p1_q36_c48     code    200 tok | wall 28.19 t/s | decode 33.38 t/s | prefill   38.2 t/s | accept -               | vram 3296 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p1_q36_c48     reason  200 tok | wall 26.57 t/s | decode 33.06 t/s | prefill   41.2 t/s | accept -               | vram 3296 MiB | 'To find when the second train catches the first,'
+    telemetry[p1_q36_c48]: GPU util avg  67% max 100% | power avg  57W max  67W /100W | PCIe->GPU avg  1.96 max  3.70 GB/s (~13 cap) | CPU busy  519% of 1200% | DRAM read avg   5.5 max   7.0 GB/s (~38 cap)
+##### p1_q36_c32_i1 | -ot exps=CPU --moe-expert-cache 32 --moe-expert-cache-inserts 1
+    preflight: governor=performance thp=[always] mem_avail=14433MiB swap_used=547MiB gpu=4MiB,48,P0
+p1_q36_c32_i1  code    200 tok | wall 26.55 t/s | decode 30.81 t/s | prefill   40.0 t/s | accept -               | vram 2676 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p1_q36_c32_i1  reason  200 tok | wall 25.17 t/s | decode 30.92 t/s | prefill   41.3 t/s | accept -               | vram 2676 MiB | 'To find when the second train catches the first,'
+    telemetry[p1_q36_c32_i1]: GPU util avg  61% max  89% | power avg  54W max  65W /100W | PCIe->GPU avg  0.85 max  2.13 GB/s (~13 cap) | CPU busy  531% of 1200% | DRAM read avg   5.7 max   7.5 GB/s (~38 cap)
+MOE2_DONE

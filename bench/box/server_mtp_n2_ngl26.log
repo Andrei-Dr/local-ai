@@ -1,0 +1,22 @@
+0.00.151.770 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.152.142 W srv  llama_server: -----------------
+0.00.152.143 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.152.143 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.152.143 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.152.144 W srv  llama_server: -----------------
+0.00.153.344 I srv    load_model: loading model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.01.228.274 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 26, abort
+0.03.816.117 W resolve_fused_ops: layer 0 is assigned to device CPU but fused Gated Delta Net (autoregressive) is assigned to device CUDA0 (usually due to missing support)
+0.03.816.120 W resolve_fused_ops: fused Gated Delta Net (autoregressive) not supported, set to disabled
+0.03.818.177 W resolve_fused_ops: layer 0 is assigned to device CPU but fused Gated Delta Net (chunked) is assigned to device CUDA0 (usually due to missing support)
+0.03.818.179 W resolve_fused_ops: fused Gated Delta Net (chunked) not supported, set to disabled
+0.03.856.432 I cmn          init: llama threadpool init, n_threads = 6
+0.04.900.036 I common_speculative_init_result: creating MTP draft context against the target model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.04.903.331 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 126.02 MiB on device 0: cudaMalloc failed: out of memory
+0.04.903.352 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 132137088
+0.04.903.353 E graph_reserve: failed to allocate compute buffers
+0.04.903.804 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+0.04.903.807 E common_speculative_init_result: failed to create MTP context
+0.04.903.811 E srv    load_model: failed to create MTP context
+0.04.903.816 I srv    operator(): operator(): cleaning up before exit...
+0.04.904.407 E srv  llama_server: exiting due to model loading error

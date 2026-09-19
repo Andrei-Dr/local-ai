@@ -1,0 +1,66 @@
+0.00.038.688 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.039.060 W srv  llama_server: -----------------
+0.00.039.062 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.039.062 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.039.062 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.039.062 W srv  llama_server: -----------------
+0.00.040.266 I srv    load_model: loading model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+0.01.257.066 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 20, abort
+0.04.766.021 W resolve_fused_ops: layer 0 is assigned to device CPU but fused Gated Delta Net (autoregressive) is assigned to device CUDA0 (usually due to missing support)
+0.04.766.025 W resolve_fused_ops: fused Gated Delta Net (autoregressive) not supported, set to disabled
+0.04.768.792 W resolve_fused_ops: layer 0 is assigned to device CPU but fused Gated Delta Net (chunked) is assigned to device CUDA0 (usually due to missing support)
+0.04.768.794 W resolve_fused_ops: fused Gated Delta Net (chunked) not supported, set to disabled
+0.04.894.529 I cmn          init: llama threadpool init, n_threads = 6
+0.05.611.888 I common_speculative_init_result: creating MTP draft context against the target model '/ai/models/Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf'
+/ai/src/llama.cpp/ggml/src/ggml-cuda/ggml-cuda.cu:107: CUDA error
+0.06.091.857 E CUDA error: out of memory
+0.06.091.861 E   current device: 0, in function ggml_cuda_graph_evaluate_and_capture at /ai/src/llama.cpp/ggml/src/ggml-cuda/ggml-cuda.cu:4493
+0.06.091.862 E   cudaGraphInstantiate(&graph->instance, graph->graph, __null, __null, 0)
+[New LWP 62106]
+[New LWP 62105]
+[New LWP 62104]
+[New LWP 62103]
+[New LWP 62102]
+[New LWP 62089]
+[New LWP 62088]
+[New LWP 62083]
+[New LWP 62082]
+[New LWP 62081]
+[New LWP 62080]
+[New LWP 62079]
+[New LWP 62078]
+[New LWP 62077]
+[New LWP 62076]
+[New LWP 62075]
+[New LWP 62074]
+[New LWP 62073]
+[New LWP 62072]
+[New LWP 62068]
+[New LWP 62067]
+[New LWP 62066]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x00007b9c5f110913 in __GI___wait4 (pid=62108, stat_loc=0x0, options=0, usage=0x0) at ../sysdeps/unix/sysv/linux/wait4.c:30
+warning: 30	../sysdeps/unix/sysv/linux/wait4.c: No such file or directory
+#0  0x00007b9c5f110913 in __GI___wait4 (pid=62108, stat_loc=0x0, options=0, usage=0x0) at ../sysdeps/unix/sysv/linux/wait4.c:30
+30	in ../sysdeps/unix/sysv/linux/wait4.c
+#1  0x00007b9c5f749d33 in ggml_print_backtrace () from /ai/src/llama.cpp/build/bin/libggml-base.so.0
+#2  0x00007b9c5f749edb in ggml_abort () from /ai/src/llama.cpp/build/bin/libggml-base.so.0
+#3  0x00007b9c590a02d6 in ggml_cuda_error(char const*, char const*, char const*, int, char const*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#4  0x00007b9c590b6e65 in ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context*, ggml_cgraph*, bool, bool, void const*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#5  0x00007b9c590b7062 in ggml_backend_cuda_graph_compute(ggml_backend*, ggml_cgraph*) () from /ai/src/llama.cpp/build/bin/libggml-cuda.so.0
+#6  0x00007b9c5f7672a7 in ggml_backend_sched_graph_compute_async () from /ai/src/llama.cpp/build/bin/libggml-base.so.0
+#7  0x00007b9c5e702e21 in llama_context::graph_compute(ggml_cgraph*, bool) () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#8  0x00007b9c5e70774a in llama_context::process_ubatch(llama_ubatch const&, llm_graph_type, llama_memory_context_i*, ggml_status&) () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#9  0x00007b9c5e70f37d in llama_context::decode(llama_batch const&) () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#10 0x00007b9c5e710a3f in llama_decode () from /ai/src/llama.cpp/build/bin/libllama.so.0
+#11 0x00007b9c5ebfc059 in common_context_can_seq_rm(llama_context*) () from /ai/src/llama.cpp/build/bin/libllama-common.so.0
+#12 0x00007b9c5f96b20f in server_context_impl::load_model(common_params&) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#13 0x00007b9c5f8cd247 in llama_server(common_params&, int, char**) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#14 0x00007b9c5f8ce826 in llama_server(int, char**) () from /ai/src/llama.cpp/build/bin/libllama-server-impl.so
+#15 0x00007b9c5f02a1ca in __libc_start_call_main (main=main@entry=0x5723987cd270 <main>, argc=argc@entry=22, argv=argv@entry=0x7ffdba3e7028) at ../sysdeps/nptl/libc_start_call_main.h:58
+warning: 58	../sysdeps/nptl/libc_start_call_main.h: No such file or directory
+#16 0x00007b9c5f02a28b in __libc_start_main_impl (main=0x5723987cd270 <main>, argc=22, argv=0x7ffdba3e7028, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, stack_end=0x7ffdba3e7018) at ../csu/libc-start.c:360
+warning: 360	../csu/libc-start.c: No such file or directory
+#17 0x00005723987cd2a5 in _start ()
+[Inferior 1 (process 62061) detached]
