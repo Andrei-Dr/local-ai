@@ -305,7 +305,7 @@ Scores belong to (model file, thinking mode). Placement and speculation flags do
 | Gemma4-26B-A4B IQ3_M, cache off | 3.9 | 16.7 | 100.0 (50/50) | 87.8 (36/41) | partial (*) | | killed by systemd-oomd at item 145/161 (15:06), resumed 21:05 |
 | Bonsai-27B PQ2_0-MTP | 2.13 | 5.15 | owed | | | | ~2.5 h run |
 | **Gemma4-26B-A4B Q3_K_M, cache 15** | ~3.4 | 33.7 (37.2 with drafter n=2; 31.5 in-run, 40 min sustained) | 100.0 | 90.2 ±4.6 | **71.4 ±5.4 (new caps)** | 11 / 0 | holds IQ3_M quality on GSM8K/HumanEval => Gemma default candidate; MMLU-Pro comparable only to other NEW-cap rows |
-| Gemma4 Q2_K_P, cache 19 | ~2.8 | 40.2 (48.2 with drafter n=2) | running (`qual3.sh`) | | | | |
+| **Gemma4 Q2_K_P, cache 19** | ~2.8 | 40.2 (48.2 with drafter n=2; 38.9 in-run, 33 min sustained) | 96.0 ±2.8 | 92.7 ±4.1 | 71.4 ±5.4 (new caps) | 11 / 0 | vs Q3_K_M: MMLU-Pro identical, HumanEval +2.5 (1 item, <1 sigma), GSM8K -4 (2 items, ~1.4 sigma at n=50) => no statistically resolvable quality loss at +24% in-run tok/s; Q2_K_P is the Gemma speed default unless a larger-n pass separates them |
 
 (*) MMLU-Pro first pass is NOT usable as an absolute score: 34–39 of 70 answers hit the 350-token cap and every cut-off answer scored wrong (accuracy among finished answers: Qwen 27/31, Gemma 31/36). Caps raised to 768/1024/1024; `qual.py` re-runs cut-off rows automatically on the next pass (`/ai/bench/qual3.sh`, to be run with the new quants + Bonsai).
 
