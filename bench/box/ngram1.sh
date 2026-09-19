@@ -15,9 +15,14 @@ GC="-ot exps=CPU --moe-expert-cache 15 -ub 128 -b 256"
 run() { local m=$1 l=$2; shift 2; echo "##### $l | $*"; MODEL=$m OFFLOAD=32 ./specbench.sh 999 "$l" "$@" 2>&1; grep -hE "MoE expert cache enabled|moe-cache: steps|draft acceptance|statistics +(ngram|draft)" server_$l.log | tail -5 | cut -c1-230 | sed -E 's/^[0-9.]+ +[A-Z] +/    /'; }
 # baselines with the edit prompt
 run $Q  ng_q36_mtp2          $QC $QH --spec-type draft-mtp --spec-draft-n-max 2
-# hybrid, draft kept inside the 4-token cache window
-run $Q  ng_q36_ngmod3_mtp2   $QC $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 2 --spec-ngram-mod-n-min 2 --spec-ngram-mod-n-max 3
-# hybrid, long n-gram drafts (verify batch leaves the cache window: does a 16-token copy still pay?)
+# hybrid, draft kept inside the 4-token cache window AND inside n_rs_seq: on the GDN hybrid need_n_rs_seq() (common/common.h)
+# = --spec-draft-n-max when a model drafter is listed, and any draft longer than that takes the checkpoint + replay path
+# (server-context.cpp), so the n-gram cap has to be <= --spec-draft-n-max.
+run $Q  ng_q36_ngmod2_mtp2   $QC $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 2 --spec-ngram-mod-n-min 2 --spec-ngram-mod-n-max 2
+QC28="-ot exps=CPU --moe-expert-cache 28 -ub 128 -b 256"
+run $Q  ng_q36_c28_mtp3      $QC28 $QH --spec-type draft-mtp --spec-draft-n-max 3
+run $Q  ng_q36_c28_ngmod3_mtp3 $QC28 $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 3 --spec-ngram-mod-n-min 3 --spec-ngram-mod-n-max 3
+# hybrid, long n-gram drafts (verify batch leaves the cache window and n_rs_seq => checkpoint path: does a 16-token copy still pay?)
 run $Q  ng_q36_ngmod16_mtp2  $QC $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 2 --spec-ngram-mod-n-min 4 --spec-ngram-mod-n-max 16
 run $Q  ng_q36_ngmod16_m16   $QC $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 2 --spec-ngram-mod-n-min 4 --spec-ngram-mod-n-max 16 --spec-ngram-mod-n-match 16
 # n-gram alone (no head in VRAM)
