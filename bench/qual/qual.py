@@ -139,7 +139,8 @@ def main():
         ks = [r for r in rs if r["set"] == kind]
         if ks:
             p = sum(r["ok"] for r in ks) / len(ks)
-            summary["sets"][kind] = {"n": len(ks), "correct": sum(r["ok"] for r in ks), "pct": round(100 * p, 1), "se_pct": round(100 * math.sqrt(p * (1 - p) / len(ks)), 1)}
+            summary["sets"][kind] = {"n": len(ks), "correct": sum(r["ok"] for r in ks), "pct": round(100 * p, 1), "se_pct": round(100 * math.sqrt(p * (1 - p) / len(ks)), 1),
+                                     "truncated": sum(r["finish"] == "length" for r in ks), "empty": sum(r["empty"] for r in ks)}
     json.dump(summary, open(HERE / "results" / f"{a.label}.summary.json", "w"))
     print(f"QUALITY[{a.label}] think={'on' if a.think else 'off'} | " + " | ".join(cells)
           + f" | mean {sum(r['tokens'] for r in rs) / len(rs):.0f} tok, {sum(r['tps'] for r in rs) / len(rs):.1f} t/s"

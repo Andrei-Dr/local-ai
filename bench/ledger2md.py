@@ -11,6 +11,20 @@ SHORT = {"Ternary-Bonsai-2-27B-Abliterated-PQ2_0-MTP.gguf": "Bonsai-27B PQ2_0-MT
 AXES = [("math", "gsm8k"), ("code", "humaneval"), ("knowledge", "mmlu_pro")]
 
 
+def mmlu_trunc(r):
+    """MMLU-Pro-specific truncation count (a GSM8K/HumanEval cut-off must NOT flag the knowledge column).
+    Prefer the per-set field (qual.py writes it now); else recompute from the per-item results jsonl;
+    else -1 = unknown, treated as 'possibly contaminated' since the run had some truncation."""
+    mp = (r["quality"].get("sets") or {}).get("mmlu_pro") or {}
+    if "truncated" in mp:
+        return mp["truncated"]
+    f = HERE / "qual" / "results" / f"{r['label']}.jsonl"
+    if f.exists():
+        rr = [json.loads(l) for l in f.open()]
+        return sum(1 for x in rr if x.get("set") == "mmlu_pro" and x.get("finish") == "length")
+    return -1 if r["quality"].get("truncated", 0) else 0
+
+
 def scoreboard(recs):
     """Per-axis model comparison. Answers which model wins on math / code / knowledge / speed, so the
     comparison lives in tooling, not in prose in notes.md. A winner is marked only among CLEAN scores:
@@ -32,14 +46,14 @@ def scoreboard(recs):
     for r in latest.values():
         s = r["quality"]["sets"]
         dec = best_decode.get(r["model"])
-        rows.append({"label": r["label"], "model": r["model"], "trunc": r["quality"].get("truncated", 0),
+        rows.append({"label": r["label"], "model": r["model"], "trunc": mmlu_trunc(r),
                      "math": s.get("gsm8k", {}).get("pct"), "code": s.get("humaneval", {}).get("pct"),
                      "knowledge": s.get("mmlu_pro", {}).get("pct"),
                      "speed": dec if dec is not None else r["quality"].get("mean_decode_tps"),
                      "speed_tag": "" if dec is not None else "~"})
     rows.sort(key=lambda r: r["model"])
 
-    def win(axis):  # winner among clean scores (knowledge clean = zero truncation); flag if the raw leader is dirty
+    def win(axis):  # winner among clean scores (knowledge clean = zero MMLU-Pro truncation; -1 = unknown, excluded)
         clean = [r for r in rows if r[axis] is not None and (axis != "knowledge" or r["trunc"] == 0)]
         if not clean:
             return None, any(r[axis] is not None for r in rows)
@@ -60,13 +74,14 @@ def scoreboard(recs):
             if v is None:
                 cells.append("-"); continue
             mark = " ✅" if wins[ax][0] == r["label"] else ""
-            cells.append(f"{v:.1f}{'!' if ax == 'knowledge' and r['trunc'] else ''}{mark}")
+            flag = "!" if ax == "knowledge" and r["trunc"] != 0 else ""  # r['trunc'] is MMLU-Pro-specific; -1 = unknown
+            cells.append(f"{v:.1f}{flag}{mark}")
         sp = "-" if r["speed"] is None else f"{r['speed_tag']}{r['speed']:.1f}" + (" ✅" if speed_win and r["label"] == speed_win["label"] else "")
         short = r["model"].replace(".gguf", "").replace("-Uncensored-HauhauCS-Aggressive", "").replace("-Uncensored-HauhauCS-Balanced", "")
         o.append(f"| {short} | `{r['label']}` | {cells[0]} | {cells[1]} | {cells[2]} | {sp} |")
     o += ["", "**Axis winners:** " + ", ".join(f"{ax}=" + (wins[ax][0] or "?") for ax, _ in AXES) + (f", speed={speed_win['label']}" if speed_win else "")]
-    if any(r["trunc"] for r in rows):
-        o += ["", "- `!` = MMLU-Pro run had truncated answers (cut-offs score wrong => that pct is a FLOOR, not comparable); winner marked only among zero-truncation runs."]
+    if any(r["trunc"] != 0 for r in rows):
+        o += ["", "- `!` = this run's MMLU-Pro answers include cut-offs (score wrong => the pct is a FLOOR, not comparable); winner marked only among zero-truncation runs. `!` on an unknown count (old records) means truncation could not be attributed per-set."]
     if any(wins[ax][1] for ax, _ in AXES):
         o += ["", "- knowledge leader is contaminated by truncation; the true knowledge winner is unresolved until a clean (zero-truncation) re-run."]
     if any(r["speed_tag"] for r in rows):

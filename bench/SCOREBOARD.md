@@ -15,6 +15,6 @@ Axes: math=GSM8K, code=HumanEval, knowledge=MMLU-Pro (temp 0, thinking off); spe
 
 **Axis winners:** math=g4_iq3m_cache16, code=q36_iq2m_cache48, knowledge=?, speed=g4_q2kp_cache19
 
-- `!` = MMLU-Pro run had truncated answers (cut-offs score wrong => that pct is a FLOOR, not comparable); winner marked only among zero-truncation runs.
+- `!` = this run's MMLU-Pro answers include cut-offs (score wrong => the pct is a FLOOR, not comparable); winner marked only among zero-truncation runs. `!` on an unknown count (old records) means truncation could not be attributed per-set.
 
 - knowledge leader is contaminated by truncation; the true knowledge winner is unresolved until a clean (zero-truncation) re-run.
