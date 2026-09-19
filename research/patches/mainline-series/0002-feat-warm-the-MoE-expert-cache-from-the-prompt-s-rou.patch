@@ -1,7 +1,7 @@
 From 684dd3f8a327f1d697fc435df3b5b6ade08ff728 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Sun, 20 Sep 2026 01:41:08 +0300
-Subject: [PATCH 2/4] feat: warm the MoE expert cache from the prompt's routing
+Subject: [PATCH 2/6] feat: warm the MoE expert cache from the prompt's routing
  (--moe-expert-cache-warm)
 
 ---
