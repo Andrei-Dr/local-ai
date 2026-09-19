@@ -1,0 +1,1125 @@
+From 0af8ea3cdb00c9eab7062269be1b227260c846fb Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Sat, 19 Sep 2026 21:38:53 +0300
+Subject: [PATCH 1/3] feat: GPU-resident expert cache for host-offloaded MoE
+ weights
+
+Rebase of the moe-cache series (PrismML fork, 8c8650b..e29d5bd) onto mainline:
+- device-side slot cache with gated LRU admission, async uploads, misses always computed on the host
+- fused gate_up / GELU / per-expert scales, 1-4 token batches (speculative verify)
+- GGML_TENSOR_FLAG_SCHED_BARRIER: host misses run concurrently with device hits
+---
+ common/arg.cpp               |  28 +++
+ common/common.cpp            |   4 +
+ common/common.h              |   4 +
+ ggml/include/ggml.h          |  11 +
+ ggml/src/ggml-backend.cpp    |  72 ++++--
+ ggml/src/ggml-cpu/ggml-cpu.c |  26 ++
+ ggml/src/ggml.c              |  15 ++
+ include/llama.h              |   6 +
+ src/CMakeLists.txt           |   1 +
+ src/llama-context.cpp        |  22 ++
+ src/llama-graph.cpp          | 114 +++++++++
+ src/llama-moecache.cpp       | 469 +++++++++++++++++++++++++++++++++++
+ src/llama-moecache.h         |  78 ++++++
+ 13 files changed, 836 insertions(+), 14 deletions(-)
+ create mode 100644 src/llama-moecache.cpp
+ create mode 100644 src/llama-moecache.h
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index c4c4e14..4028c49 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -2535,6 +2535,34 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             LOG_WRN("DEPRECATED: --defrag-thold is deprecated and no longer necessary to specify\n");
+         }
+     ).set_env("LLAMA_ARG_DEFRAG_THOLD"));
++    add_opt(common_arg(
++        {"--moe-expert-cache"}, "N",
++        string_format("GPU cache slots per host-resident MoE expert layer, 0 = disabled (default: %d)", params.n_moe_cache_slots),
++        [](common_params & params, int value) {
++            params.n_moe_cache_slots = value;
++        }
++    ).set_env("LLAMA_ARG_MOE_EXPERT_CACHE"));
++    add_opt(common_arg(
++        {"--moe-expert-cache-inserts"}, "N",
++        string_format("max expert uploads per layer per decode step for the MoE expert cache (default: %d)", params.n_moe_cache_inserts),
++        [](common_params & params, int value) {
++            params.n_moe_cache_inserts = value;
++        }
++    ).set_env("LLAMA_ARG_MOE_EXPERT_CACHE_INSERTS"));
++    add_opt(common_arg(
++        {"--moe-expert-cache-window"}, "N",
++        string_format("MoE expert cache admission window in tokens (default: %d)", params.n_moe_cache_window),
++        [](common_params & params, int value) {
++            params.n_moe_cache_window = value;
++        }
++    ).set_env("LLAMA_ARG_MOE_EXPERT_CACHE_WINDOW"));
++    add_opt(common_arg(
++        {"--moe-expert-cache-admit"}, "N",
++        string_format("misses within the window before an expert is uploaded to the MoE expert cache, 1 = ungated (default: %d)", params.n_moe_cache_admit),
++        [](common_params & params, int value) {
++            params.n_moe_cache_admit = value;
++        }
++    ).set_env("LLAMA_ARG_MOE_EXPERT_CACHE_ADMIT"));
+     if (ex == LLAMA_EXAMPLE_SERVER) {
+         // this is to make sure this option appears in the server-specific section of the help message
+         add_opt(common_arg(
+diff --git a/common/common.cpp b/common/common.cpp
+index d8319cd..2c17513 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -1725,6 +1725,10 @@ struct llama_context_params common_context_params_to_llama(const common_params &
+     cparams.n_outputs_max_per_seq = std::max(params.n_outputs_max_per_seq, 0);
+     cparams.n_batch           = params.n_batch;
+     cparams.n_ubatch          = params.n_ubatch;
++    cparams.n_moe_cache_slots   = params.n_moe_cache_slots;
++    cparams.n_moe_cache_inserts = params.n_moe_cache_inserts;
++    cparams.n_moe_cache_window  = params.n_moe_cache_window;
++    cparams.n_moe_cache_admit   = params.n_moe_cache_admit;
+     cparams.n_threads         = params.cpuparams.n_threads;
+     cparams.n_threads_batch   = params.cpuparams_batch.n_threads == -1 ?
+                                 params.cpuparams.n_threads : params.cpuparams_batch.n_threads;
+diff --git a/common/common.h b/common/common.h
+index 63d0bad..1e79a14 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -450,6 +450,10 @@ struct common_params {
+     int32_t n_ctx                 =     0; // context size, 0 == context the model was trained with
+     int32_t n_batch               =  2048; // logical batch size for prompt processing (must be >=32 to use BLAS)
+     int32_t n_ubatch              =   512; // physical batch size for prompt processing (must be >=32 to use BLAS)
++    int32_t n_moe_cache_slots     = 0;    // GPU cache slots per host-resident MoE expert layer (0 = disabled)
++    int32_t n_moe_cache_inserts   = 2;    // max expert uploads per layer per decode step
++    int32_t n_moe_cache_window    = 16;   // admission window in tokens
++    int32_t n_moe_cache_admit     = 3;    // misses within the window before an expert is uploaded (1 = ungated)
+     int32_t n_keep                =     0; // number of tokens to keep from initial prompt
+     int32_t n_chunks              =    -1; // max number of chunks to process (-1 = unlimited)
+     int32_t n_parallel            =     1; // number of parallel sequences to decode
+diff --git a/ggml/include/ggml.h b/ggml/include/ggml.h
+index 224bdef..f2088ef 100644
+--- a/ggml/include/ggml.h
++++ b/ggml/include/ggml.h
+@@ -352,6 +352,15 @@ extern "C" {
+     // Returns the old callback for chaining
+     GGML_API ggml_abort_callback_t ggml_set_abort_callback(ggml_abort_callback_t callback);
+ 
++    struct ggml_tensor;
++
++    // MoE expert-routing observation callback: invoked by the CPU mul_mat_id (thread 0) with the layer
++    // index and the op's expert-id tensor (I32 [n_expert_used, n_tokens]), for ops that carry an expert
++    // cache table in src[3] and have op_params[1] set (op_params[2] = layer). Drives the llama MoE expert cache.
++    typedef void (*ggml_moe_obs_cb_t)(int32_t il, const struct ggml_tensor * ids, void * ud);
++    GGML_API void            ggml_set_moe_obs_callback(ggml_moe_obs_cb_t cb, void * ud);
++    GGML_API ggml_moe_obs_cb_t ggml_get_moe_obs_callback(void ** ud);
++
+     GGML_NORETURN GGML_ATTRIBUTE_FORMAT(3, 4)
+     GGML_API void ggml_abort(const char * file, int line, const char * fmt, ...);
+ 
+@@ -665,6 +674,8 @@ extern "C" {
+         GGML_TENSOR_FLAG_PARAM   =  4, // ...contains trainable parameters
+         GGML_TENSOR_FLAG_LOSS    =  8, // ...defines loss for numerical optimization (multiple loss tensors add up)
+         GGML_TENSOR_FLAG_COMPUTE = 16, // ...must be computed
++        GGML_TENSOR_FLAG_SCHED_BARRIER = 32, // ...starts a new ggml-backend scheduler split; if the next split runs on another backend and
++                                             //    takes no input from this one, its inputs are copied first so both backends run concurrently
+     };
+ 
+     enum ggml_tri_type {
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index 20bf965..886abb3 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -779,6 +779,8 @@ struct ggml_backend_sched_split {
+     struct ggml_tensor ** inputs;
+     int n_inputs;
+     int inputs_capacity;
++    // the split starts at a GGML_TENSOR_FLAG_SCHED_BARRIER node (see ggml_backend_sched_compute_splits)
++    bool barrier;
+     // graph view of this split
+     struct ggml_cgraph graph;
+ };
+@@ -1309,6 +1311,7 @@ void ggml_backend_sched_split_graph(ggml_backend_sched_t sched, struct ggml_cgra
+         }
+         split->i_start = 0;
+         split->n_inputs = 0;
++        split->barrier = false;
+         int cur_backend_id = split->backend_id;
+         for (; i < graph->n_nodes; i++) {
+             struct ggml_tensor * node = graph->nodes[i];
+@@ -1341,6 +1344,12 @@ void ggml_backend_sched_split_graph(ggml_backend_sched_t sched, struct ggml_cgra
+                 }
+             }
+ 
++            // an explicit barrier: lets the scheduler synchronize the work before it on its own
++            const bool barrier = (node->flags & GGML_TENSOR_FLAG_SCHED_BARRIER) != 0;
++            if (barrier && node_backend_id == cur_backend_id && i > split->i_start) {
++                need_new_split = true;
++            }
++
+             if (node_backend_id != cur_backend_id || need_new_split) {
+                 split->i_end = i;
+                 i_split++;
+@@ -1358,6 +1367,7 @@ void ggml_backend_sched_split_graph(ggml_backend_sched_t sched, struct ggml_cgra
+                 split->backend_id = node_backend_id;
+                 split->i_start = i;
+                 split->n_inputs = 0;
++                split->barrier = barrier;
+                 cur_backend_id = node_backend_id;
+             }
+ 
+@@ -1653,22 +1663,18 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+ 
+     int prev_backend_id = -1;
+ 
+-    for (int split_id = 0; split_id < sched->n_splits; split_id++) {
+-        struct ggml_backend_sched_split * split = &splits[split_id];
+-        int split_backend_id = split->backend_id;
+-        ggml_backend_t split_backend = sched->backends[split_backend_id];
+-
+-        // ensure the previous split's async work has completed before we start
+-        // this split, the allocator may have reused buffer regions across splits
+-        if (split->n_inputs == 0 && prev_backend_id >= 0 && prev_backend_id != split_backend_id) {
+-            if (sched->events[prev_backend_id][sched->cur_copy] != NULL) {
+-                ggml_backend_event_synchronize(sched->events[prev_backend_id][sched->cur_copy]);
+-            } else {
+-                ggml_backend_synchronize(sched->backends[prev_backend_id]);
+-            }
++    // copy the input tensors of a split to its backend
++    std::vector<bool> inputs_copied(sched->n_splits, false);
++    auto copy_split_inputs = [&](int i_split) {
++        if (inputs_copied[i_split]) {
++            return;
+         }
++        inputs_copied[i_split] = true;
++
++        struct ggml_backend_sched_split * split = &splits[i_split];
++        const int split_backend_id = split->backend_id;
++        ggml_backend_t split_backend = sched->backends[split_backend_id];
+ 
+-        // copy the input tensors to the split backend
+         for (int input_id = 0; input_id < split->n_inputs; input_id++) {
+             ggml_backend_t input_backend = ggml_backend_sched_get_tensor_backend(sched, split->inputs[input_id]);
+             struct ggml_tensor * input = split->inputs[input_id];
+@@ -1794,6 +1800,44 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+                 }
+             }
+         }
++    };
++
++    for (int split_id = 0; split_id < sched->n_splits; split_id++) {
++        struct ggml_backend_sched_split * split = &splits[split_id];
++        int split_backend_id = split->backend_id;
++        ggml_backend_t split_backend = sched->backends[split_backend_id];
++
++        // ensure the previous split's async work has completed before we start
++        // this split, the allocator may have reused buffer regions across splits
++        if (split->n_inputs == 0 && prev_backend_id >= 0 && prev_backend_id != split_backend_id) {
++            if (sched->events[prev_backend_id][sched->cur_copy] != NULL) {
++                ggml_backend_event_synchronize(sched->events[prev_backend_id][sched->cur_copy]);
++            } else {
++                ggml_backend_synchronize(sched->backends[prev_backend_id]);
++            }
++        }
++
++        copy_split_inputs(split_id);
++
++        // barrier split: when the next split runs on another backend and consumes nothing computed here, copy
++        // its inputs BEFORE this split is enqueued. The copy only waits for the work submitted so far, and the
++        // next backend then computes concurrently with this split instead of after it.
++        if (split->barrier && split_id + 1 < sched->n_splits) {
++            struct ggml_backend_sched_split * next = &splits[split_id + 1];
++            bool independent = next->backend_id != split_backend_id;
++            for (int i = 0; independent && i < next->n_inputs; i++) {
++                const ggml_tensor * inp = next->inputs[i];
++                for (int j = 0; j < split->graph.n_nodes; j++) {
++                    if (split->graph.nodes[j] == inp || split->graph.nodes[j] == inp->view_src) {
++                        independent = false;
++                        break;
++                    }
++                }
++            }
++            if (independent) {
++                copy_split_inputs(split_id + 1);
++            }
++        }
+ 
+         if (!sched->callback_eval) {
+             enum ggml_status ec = ggml_backend_graph_compute_async(split_backend, &split->graph);
+diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+index 8bb0ff7..8d2fde8 100644
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -1649,6 +1649,17 @@ static void ggml_compute_forward_mul_mat_id(
+         // initialize matrix_row_counts
+         memset(matrix_row_counts, 0, n_as*sizeof(int64_t));
+ 
++        // llama MoE expert cache: when src[3] is set it is an I32 table mapping
++        // expert id -> device cache slot, with op_params[0] holding the "not
++        // cached" dummy value. Cached ids are served by the device-side cache
++        // chain, so this op skips them and zeroes their dst rows instead.
++        const int32_t * moe_tbl   = NULL;
++        int32_t         moe_dummy = 0;
++        if (dst->src[3]) {
++            moe_tbl   = (const int32_t *) dst->src[3]->data;
++            moe_dummy = ggml_get_op_params_i32(dst, 0);
++        }
++
+         // group rows by src0 matrix
+         for (int64_t iid1 = 0; iid1 < ids->ne[1]; ++iid1) {
+             for (int id = 0; id < n_ids; ++id) {
+@@ -1656,10 +1667,25 @@ static void ggml_compute_forward_mul_mat_id(
+ 
+                 assert(i02 >= 0 && i02 < n_as);
+ 
++                if (moe_tbl && moe_tbl[i02] != moe_dummy) {
++                    memset((char *) dst->data + id*nb1 + iid1*nb2, 0, ne0*sizeof(float));
++                    continue;
++                }
++
+                 MMID_MATRIX_ROW(i02, matrix_row_counts[i02]) = (struct mmid_row_mapping) {id, iid1};
+                 matrix_row_counts[i02] += 1;
+             }
+         }
++
++        // routing observation for the llama MoE expert cache: exactly one op per cached layer
++        // has op_params[1] set, with the layer index in op_params[2]
++        if (moe_tbl && ggml_get_op_params_i32(dst, 1)) {
++            void * moe_obs_ud = NULL;
++            ggml_moe_obs_cb_t moe_obs_cb = ggml_get_moe_obs_callback(&moe_obs_ud);
++            if (moe_obs_cb) {
++                moe_obs_cb(ggml_get_op_params_i32(dst, 2), ids, moe_obs_ud);
++            }
++        }
+     }
+ 
+     // reset current_chunk
+diff --git a/ggml/src/ggml.c b/ggml/src/ggml.c
+index 1752814..521edba 100644
+--- a/ggml/src/ggml.c
++++ b/ggml/src/ggml.c
+@@ -250,6 +250,21 @@ GGML_API ggml_abort_callback_t ggml_set_abort_callback(ggml_abort_callback_t cal
+     return ret_val;
+ }
+ 
++static ggml_moe_obs_cb_t g_moe_obs_cb = NULL;
++static void *             g_moe_obs_ud = NULL;
++
++void ggml_set_moe_obs_callback(ggml_moe_obs_cb_t cb, void * ud) {
++    g_moe_obs_cb = cb;
++    g_moe_obs_ud = ud;
++}
++
++ggml_moe_obs_cb_t ggml_get_moe_obs_callback(void ** ud) {
++    if (ud) {
++        *ud = g_moe_obs_ud;
++    }
++    return g_moe_obs_cb;
++}
++
+ void ggml_abort(const char * file, int line, const char * fmt, ...) {
+     fflush(stdout);
+ 
+diff --git a/include/llama.h b/include/llama.h
+index 31bbf8b..d628644 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -384,6 +384,12 @@ extern "C" {
+         uint32_t yarn_orig_ctx;    // YaRN original context size
+         float    defrag_thold;     // [DEPRECATED] defragment the KV cache if holes/size > thold, <= 0 disabled (default)
+ 
++        // GPU-resident LRU cache for host-offloaded MoE expert weights [EXPERIMENTAL]
++        int32_t  n_moe_cache_slots;   // cache slots per host-resident expert layer (0 = disabled)
++        int32_t  n_moe_cache_inserts; // max expert uploads per layer per decode step
++        int32_t  n_moe_cache_window;  // admission window in tokens
++        int32_t  n_moe_cache_admit;   // misses within the window before an expert is uploaded (1 = ungated)
++
+         ggml_backend_sched_eval_callback cb_eval;
+         void * cb_eval_user_data;
+ 
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index afdaddc..d73ae9d 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -36,6 +36,7 @@ set(LLAMA_CORE_SOURCES
+     llama-model-loader.cpp
+     llama-model-saver.cpp
+     llama-model.cpp
++    llama-moecache.cpp
+     llama-quant.cpp
+     llama-sampler.cpp
+     llama-vocab.cpp
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index ef53728..d9e942d 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -1,5 +1,7 @@
+ #include "llama-context.h"
+ 
++#include "llama-moecache.h"
++
+ #include "ggml.h"
+ #include "llama-arch.h"
+ #include "llama-graph.h"
+@@ -91,6 +93,15 @@ llama_context::llama_context(
+     //     may need to be backend-dependent
+     LLAMA_LOG_INFO("%s: constructing llama_context\n", __func__);
+ 
++    {
++        llama_moe_cache_params mc_params;
++        mc_params.n_slots     = params.n_moe_cache_slots;
++        mc_params.max_inserts = params.n_moe_cache_inserts;
++        mc_params.window      = params.n_moe_cache_window;
++        mc_params.admit       = params.n_moe_cache_admit;
++        llama_moe_cache_init(model, mc_params);
++    }
++
+     t_start_us = model.t_start_us;
+     t_load_us  = model.t_load_us;
+ 
+@@ -2045,6 +2056,13 @@ int llama_context::decode(const llama_batch & batch_inp) {
+     // wait for the computation to finish (automatically done when obtaining the model output)
+     //synchronize();
+ 
++    // apply throttled MoE expert-cache updates between graph executions: the table writes and the
++    // slot evictions must not race the tail of the graph that was just submitted
++    if (llama_moe_cache_active()) {
++        synchronize();
++        llama_moe_cache_step();
++    }
++
+     return 0;
+ }
+ 
+@@ -3667,6 +3685,10 @@ llama_context_params llama_context_default_params() {
+         /*.yarn_beta_slow              =*/ -1.0f,
+         /*.yarn_orig_ctx               =*/ 0,
+         /*.defrag_thold                =*/ -1.0f,
++        /*.n_moe_cache_slots           =*/ 0,
++        /*.n_moe_cache_inserts         =*/ 2,
++        /*.n_moe_cache_window          =*/ 16,
++        /*.n_moe_cache_admit           =*/ 3,
+         /*.cb_eval                     =*/ nullptr,
+         /*.cb_eval_user_data           =*/ nullptr,
+         /*.type_k                      =*/ GGML_TYPE_F16,
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index fd4290c..143415c 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -1,5 +1,7 @@
+ #include "llama-graph.h"
+ 
++#include "llama-moecache.h"
++
+ #include "llama-impl.h"
+ #include "llama-model.h"
+ #include "llama-batch.h"
+@@ -2154,8 +2156,108 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
+     //call early so that topk-moe can be used
+     ggml_build_forward_expand(gf, weights);
+ 
++    // MoE expert cache (see llama-moecache.h): during decode (and speculative verify) on a layer whose
++    // experts live in host memory, run a parallel mul_mat_id chain over a device-resident
++    // cache of hot experts. Cached ids are skipped by the CPU chain (src[3] table) and served
++    // by the cache chain; uncached ids map to the cache's zero slot. The two outputs sum to
++    // the full result.
++    const llama_moe_cache_layer * mcache = nullptr;
++    {
++        const bool mc_gated   = gate_up_exps || gate_exps;
++        // small batches only: the device chain must stay inside the MMVQ mul_mat_id window (6 tokens for
++        // IQ3_S on Turing), the one CUDA path that tolerates the repeated dummy slot id
++        constexpr int64_t mc_max_tokens = 4;
++        if (n_tokens >= 1 && n_tokens <= mc_max_tokens && il >= 0 && mc_gated && down_exps &&
++            !up_exps_b && !gate_exps_b && !down_exps_b && !gate_up_exps_b &&
++            (type_op == LLM_FFN_SILU || type_op == LLM_FFN_GELU) && !weight_before_ffn && loras->empty()) {
++            mcache = llama_moe_cache_lookup(gate_up_exps ? gate_up_exps : up_exps);
++        }
++    }
+     cur = ggml_reshape_3d(ctx0, cur, n_embd, 1, n_tokens);
+ 
++    // device side of the MoE expert cache. It only depends on the router output, so it is built and
++    // expanded BEFORE the host chain and starts with a scheduler barrier: ggml-backend then copies the
++    // host split's inputs first and the host experts (misses) run concurrently with this chain (hits).
++    ggml_tensor * mc_out = nullptr; // [n_embd, n_expert_used, n_tokens], zero rows for uncached ids
++    if (mcache) {
++        // the top-k ids are a strided view of the argsort once there is more than one token
++        ggml_tensor * mc_ids   = n_tokens > 1 ? ggml_cont(ctx0, selected_experts) : selected_experts;
++        ggml_tensor * mc_first = n_tokens > 1 ? mc_ids : nullptr;
++        mc_ids = ggml_reshape_1d(ctx0, mc_ids, n_expert_used*n_tokens);
++        ggml_tensor * mc_slot_ids = ggml_get_rows(ctx0, mcache->dev_table, mc_ids); // [1, n_expert_used*n_tokens]
++        (mc_first ? mc_first : mc_slot_ids)->flags |= GGML_TENSOR_FLAG_SCHED_BARRIER;
++        mc_slot_ids = ggml_reshape_2d(ctx0, mc_slot_ids, n_expert_used, n_tokens);
++        cb(mc_slot_ids, "ffn_moe_cache_slots", il);
++
++        // same matmul as the host chain, over the cache slots; per-expert scales are indexed by the real expert ids
++        auto mc_mm = [&](ggml_tensor * w_c, ggml_tensor * inp, ggml_tensor * s_c, const char * name) -> ggml_tensor * {
++            ggml_tensor * g = ggml_mul_mat_id(ctx0, w_c, inp, mc_slot_ids);
++            if (s_c) {
++                ggml_tensor * s = ggml_reshape_3d(ctx0, s_c, 1, s_c->ne[0], 1);
++                s = ggml_repeat_4d(ctx0, s, 1, s_c->ne[0], n_tokens, 1);
++                g = ggml_mul(ctx0, g, ggml_get_rows(ctx0, s, selected_experts));
++            }
++            cb(g, name, il);
++            return g;
++        };
++
++        ggml_tensor * mc_up   = nullptr;
++        ggml_tensor * mc_gate = nullptr;
++        if (gate_up_exps) {
++            ggml_tensor * gu = mc_mm(mcache->gate_up_c, cur, mcache->up_s_c, "ffn_moe_cache_gate_up");
++            const int64_t n_ff_c = gu->ne[0] / 2;
++            mc_gate = ggml_view_3d(ctx0, gu, n_ff_c, gu->ne[1], gu->ne[2], gu->nb[1], gu->nb[2], 0);
++            mc_up   = ggml_view_3d(ctx0, gu, n_ff_c, gu->ne[1], gu->ne[2], gu->nb[1], gu->nb[2], n_ff_c * gu->nb[0]);
++        } else {
++            mc_up   = mc_mm(mcache->up_c,   cur, mcache->up_s_c,   "ffn_moe_cache_up");
++            mc_gate = mc_mm(mcache->gate_c, cur, mcache->gate_s_c, "ffn_moe_cache_gate");
++        }
++
++        // mirrors the type_op switch below for the two enabled ops
++        ggml_tensor * mc_act = nullptr;
++        if (type_op == LLM_FFN_GELU) {
++            mc_act = ggml_geglu_split(ctx0, mc_gate, mc_up);
++        } else {
++            const float limit = hparams.swiglu_clamp_exp[il];
++            constexpr float eps = 1e-6f;
++            if (gate_exps && limit > eps) {
++                mc_up = ggml_clamp(ctx0, mc_up, -limit, limit);
++                if (arch == LLM_ARCH_DEEPSEEK4 || (arch == LLM_ARCH_DFLASH && hparams.dsv4_hc_mult > 0)) {
++                    mc_gate = ggml_clamp(ctx0, mc_gate, -INFINITY, limit);
++                    mc_act  = ggml_swiglu_split(ctx0, mc_gate, mc_up);
++                } else {
++                    ggml_tensor * ga = ggml_silu(ctx0, mc_gate);
++                    ga     = ggml_clamp(ctx0, ga, -INFINITY, limit);
++                    mc_act = ggml_mul(ctx0, ga, mc_up);
++                }
++            } else {
++                mc_act = ggml_swiglu_split(ctx0, mc_gate, mc_up);
++            }
++        }
++        cb(mc_act, "ffn_moe_cache_act", il);
++
++        mc_out = mc_mm(mcache->down_c, mc_act, mcache->down_s_c, "ffn_moe_cache_down");
++        ggml_build_forward_expand(gf, mc_out);
++    }
++
++    // host side: hand the expert table to the CPU mul_mat_id so it skips cached ids, and keep the op on the
++    // CPU (the device kernels do not read src[3]). build_lora_mm_id wraps the MUL_MAT_ID in a MUL when a
++    // per-expert scale is present.
++    bool mc_observe = true; // the first expert matmul of the layer reports the routing
++    auto mc_host = [&](ggml_tensor * res) {
++        if (!mcache) {
++            return;
++        }
++        ggml_tensor * mmid = res->op == GGML_OP_MUL_MAT_ID ? res : res->src[0];
++        GGML_ASSERT(mmid->op == GGML_OP_MUL_MAT_ID);
++        mmid->src[3] = mcache->host_table;
++        mmid->op_params[0] = mcache->n_slots;
++        mmid->op_params[1] = mc_observe ? 1 : 0;
++        mmid->op_params[2] = il;
++        mc_observe = false;
++        ggml_backend_sched_set_tensor_backend(sched, mmid, backend_cpu);
++    };
++
+     if (weight_before_ffn) {
+         // repeat cur to [n_embd, n_expert_used, n_tokens]
+         ggml_tensor * repeated = ggml_repeat_4d(ctx0, cur, n_embd, n_expert_used, n_tokens, 1);
+@@ -2175,6 +2277,8 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
+             cb(gate_up, "ffn_moe_gate_up_scaled", il);
+         }
+ 
++        mc_host(gate_up);
++
+         if (gate_up_exps_b) {
+             gate_up = ggml_add_id(ctx0, gate_up, gate_up_exps_b, selected_experts);
+             cb(gate_up, "ffn_moe_gate_up_biased", il);
+@@ -2190,6 +2294,8 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
+         up = build_lora_mm_id(up_exps, cur, selected_experts, up_exps_s); // [n_ff, n_expert_used, n_tokens]
+         cb(up, "ffn_moe_up", il);
+ 
++        mc_host(up);
++
+         if (up_exps_s) {
+             cb(up, "ffn_moe_up_scaled", il);
+         }
+@@ -2202,6 +2308,8 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
+         if (gate_exps) {
+             cur = build_lora_mm_id(gate_exps, cur, selected_experts, gate_exps_s); // [n_ff, n_expert_used, n_tokens]
+             cb(cur, "ffn_moe_gate", il);
++
++            mc_host(cur);
+         } else {
+             cur = up;
+         }
+@@ -2304,6 +2412,12 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
+     experts = build_lora_mm_id(down_exps, cur, selected_experts, down_exps_s); // [n_embd, n_expert_used, n_tokens]
+     cb(experts, "ffn_moe_down", il);
+ 
++    if (mcache) {
++        mc_host(experts);
++        experts = ggml_add(ctx0, experts, mc_out);
++        cb(experts, "ffn_moe_cache_merged", il);
++    }
++
+     if (down_exps_s) {
+         cb(experts, "ffn_moe_down_scaled", il);
+     }
+diff --git a/src/llama-moecache.cpp b/src/llama-moecache.cpp
+new file mode 100644
+index 0000000..e565584
+--- /dev/null
++++ b/src/llama-moecache.cpp
+@@ -0,0 +1,469 @@
++#include "llama-moecache.h"
++
++#include "llama-impl.h"
++#include "llama-model.h"
++
++#include "ggml.h"
++#include "ggml-backend.h"
++
++#include <algorithm>
++#include <cinttypes>
++#include <condition_variable>
++#include <cstring>
++#include <deque>
++#include <map>
++#include <mutex>
++#include <thread>
++#include <unordered_map>
++#include <vector>
++
++namespace {
++
++struct layer_state {
++    llama_moe_cache_layer pub;
++
++    // LRU bookkeeping (host side; the tables mirror expert_slot)
++    std::vector<int32_t>  slot_expert;      // slot -> expert id, -1 when empty
++    std::vector<int32_t>  expert_slot;      // expert id -> slot, -1 when uncached
++    std::vector<uint64_t> slot_last_use;    // slot -> lamport clock of last hit
++    std::vector<bool>     slot_in_flight;   // slot has an upload pending
++    std::vector<bool>     expert_in_flight; // expert has an upload pending
++    const ggml_tensor *   scale_src[3] = { nullptr, nullptr, nullptr }; // host up/gate/down scales that need a device copy
++    std::vector<int32_t>  pending;          // admitted uncached ids since the last step (dedup, obs order)
++    int32_t               n_free = 0;       // slots that have never been assigned
++
++    // gated admission: token clocks of the last `admit` misses of every expert
++    std::vector<uint32_t> miss_ring; // [n_expert * admit]
++    std::vector<uint8_t>  miss_pos;  // [n_expert]
++    uint32_t              tok_clock = 0;
++};
++
++struct upload_job {
++    size_t  layer_idx;
++    int32_t expert;
++    int32_t slot;
++};
++
++struct moe_cache {
++    llama_moe_cache_params params;
++
++    uint64_t clock   = 0;
++    uint64_t n_steps = 0;
++
++    uint64_t n_hit       = 0;
++    uint64_t n_miss      = 0;
++    uint64_t n_upload    = 0;
++    uint64_t n_evict     = 0;
++    uint64_t upload_bytes = 0;
++
++    std::mutex mtx; // guards layer bookkeeping (observe runs during graph exec)
++
++    std::vector<layer_state> layers;
++    std::vector<int>         il_to_idx;
++    std::unordered_map<const ggml_tensor *, size_t> by_key;
++
++    std::vector<ggml_context *>        ctxs;
++    std::vector<ggml_backend_buffer_t> bufs;
++
++    // async upload worker: slices are copied to the device off the decode thread; the new
++    // table mapping is only published at a later step() once the upload has completed, so
++    // a running graph never reads a torn slot
++    std::thread             worker;
++    std::mutex              wmtx;
++    std::condition_variable wcv;
++    std::deque<upload_job>  todo;
++    std::vector<upload_job> done;
++    bool                    stop = false;
++};
++
++moe_cache * g_cache = nullptr;
++std::mutex  g_init_mtx;
++bool        g_init_done = false;
++
++// called by the CPU mul_mat_id (thread 0) for the first expert matmul of a cached layer
++void moe_obs_cb(int32_t il, const struct ggml_tensor * ids, void * ud) {
++    moe_cache * mc = (moe_cache *) ud;
++
++    if (il < 0 || il >= (int32_t) mc->il_to_idx.size() || mc->il_to_idx[il] < 0) {
++        return;
++    }
++    layer_state & ls = mc->layers[mc->il_to_idx[il]];
++
++    const int64_t  n_ids    = ids->ne[0];
++    const int64_t  n_tokens = ids->ne[1];
++    const int32_t  admit    = mc->params.admit;
++    const uint32_t window   = (uint32_t) mc->params.window;
++
++    std::lock_guard<std::mutex> lock(mc->mtx);
++    for (int64_t t = 0; t < n_tokens; ++t) {
++        const uint32_t tok = ++ls.tok_clock;
++        for (int64_t i = 0; i < n_ids; ++i) {
++            const int32_t id = *(const int32_t *) ((const char *) ids->data + t*ids->nb[1] + i*ids->nb[0]);
++            if (id < 0 || id >= (int32_t) ls.expert_slot.size()) {
++                continue;
++            }
++            const int32_t slot = ls.expert_slot[id];
++            if (slot >= 0) {
++                mc->n_hit++;
++                ls.slot_last_use[slot] = ++mc->clock;
++                continue;
++            }
++            mc->n_miss++;
++            if (ls.expert_in_flight[id]) {
++                continue;
++            }
++
++            // free slots are filled on first miss (cold start); the gate only guards evictions
++            bool admitted = admit <= 1 || (int32_t) ls.pending.size() < ls.n_free;
++            if (!admitted) {
++                uint32_t * ring = &ls.miss_ring[(size_t) id*admit];
++                uint8_t  & pos  = ls.miss_pos[id];
++                ring[pos] = tok;
++                pos = (pos + 1) % admit;
++                const uint32_t oldest = ring[pos]; // the miss `admit` misses ago, 0 = never
++                admitted = oldest != 0 && tok - oldest < window;
++            }
++            if (!admitted) {
++                continue;
++            }
++
++            bool dup = false;
++            for (int32_t p : ls.pending) {
++                if (p == id) { dup = true; break; }
++            }
++            if (!dup) {
++                ls.pending.push_back(id);
++            }
++        }
++    }
++}
++
++size_t upload_slice(ggml_tensor * dst_c, const ggml_tensor * src, int32_t expert, int32_t slot) {
++    const size_t sz = src->nb[2];
++    GGML_ASSERT(dst_c->nb[2] == sz);
++    GGML_ASSERT((size_t) (slot + 1)*sz <= ggml_nbytes(dst_c) && (size_t) (expert + 1)*sz <= ggml_nbytes(src));
++    ggml_backend_tensor_set(dst_c, (const char *) src->data + (size_t) expert*sz, (size_t) slot*sz, sz);
++    return sz;
++}
++
++void set_table_entry(llama_moe_cache_layer & pub, int32_t expert, int32_t slot_or_dummy) {
++    const int32_t v = slot_or_dummy;
++    ggml_backend_tensor_set(pub.dev_table,  &v, (size_t) expert*sizeof(int32_t), sizeof(int32_t));
++    ggml_backend_tensor_set(pub.host_table, &v, (size_t) expert*sizeof(int32_t), sizeof(int32_t));
++}
++
++bool on_host(const ggml_tensor * t) {
++    return t && t->data && t->buffer && ggml_backend_buffer_is_host(t->buffer);
++}
++
++} // namespace
++
++void llama_moe_cache_init(const llama_model & model, const llama_moe_cache_params & params) {
++    std::lock_guard<std::mutex> init_lock(g_init_mtx);
++    if (g_init_done) {
++        return;
++    }
++    if (params.n_slots <= 0) {
++        g_init_done = true;
++        return;
++    }
++
++    auto * mc = new moe_cache();
++    mc->params = params;
++    mc->params.max_inserts = std::max(1, params.max_inserts);
++    mc->params.admit       = std::min(255, std::max(1, params.admit));
++    mc->params.window      = std::max(1, params.window);
++    const int32_t n_slots = params.n_slots;
++
++    // collect the host-resident expert layers, grouped by the buffer type of the device that
++    // runs the layer. (Not the router's buffer: bf16 routers land on CUDA_Host on GPUs without
++    // bf16 support, which would silently disable the cache.)
++    std::map<ggml_backend_buffer_type_t, std::vector<size_t>> groups;
++
++    mc->il_to_idx.assign(model.layers.size(), -1);
++    for (size_t il = 0; il < model.layers.size(); ++il) {
++        const auto & l = model.layers[il];
++        const bool fused = l.ffn_gate_up_exps != nullptr;
++        if (!l.ffn_down_exps || (!fused && (!l.ffn_up_exps || !l.ffn_gate_exps))) {
++            continue;
++        }
++        // weights not loaded (dry-run / memory estimation) or already on a device: nothing to cache
++        if (!on_host(l.ffn_down_exps) || (fused ? !on_host(l.ffn_gate_up_exps) : (!on_host(l.ffn_up_exps) || !on_host(l.ffn_gate_exps)))) {
++            continue;
++        }
++        ggml_backend_dev_t dev = model.dev_layer((int) il);
++        if (!dev || ggml_backend_dev_type(dev) == GGML_BACKEND_DEVICE_TYPE_CPU) {
++            continue; // no device home for the cache
++        }
++
++        layer_state ls;
++        ls.pub.il          = (int) il;
++        ls.pub.n_slots     = n_slots;
++        ls.pub.gate_up_src = fused ? l.ffn_gate_up_exps : nullptr;
++        ls.pub.up_src      = fused ? nullptr : l.ffn_up_exps;
++        ls.pub.gate_src    = fused ? nullptr : l.ffn_gate_exps;
++        ls.pub.down_src    = l.ffn_down_exps;
++        {
++            ggml_tensor * const   scales[3] = { l.ffn_up_exps_s, l.ffn_gate_exps_s, l.ffn_down_exps_s };
++            ggml_tensor ** const  dst[3]    = { &ls.pub.up_s_c, &ls.pub.gate_s_c, &ls.pub.down_s_c };
++            for (int i = 0; i < 3; ++i) {
++                if (scales[i] && on_host(scales[i])) {
++                    ls.scale_src[i] = scales[i]; // device copy allocated below
++                } else {
++                    *dst[i] = scales[i];
++                }
++            }
++        }
++
++        mc->il_to_idx[il] = (int) mc->layers.size();
++        groups[ggml_backend_dev_buffer_type(dev)].push_back(mc->layers.size());
++        mc->layers.push_back(std::move(ls));
++    }
++
++    if (mc->layers.empty()) {
++        LLAMA_LOG_INFO("%s: --moe-expert-cache %d but no host-resident expert layers found - disabled\n", __func__, n_slots);
++        delete mc;
++        return; // not final: a later model (e.g. after a dry-run estimate) may qualify
++    }
++
++    auto new_cache_tensor = [&](ggml_context * ctx, const ggml_tensor * src, const char * name, int il) {
++        ggml_tensor * t = ggml_new_tensor_3d(ctx, src->type, src->ne[0], src->ne[1], n_slots + 1);
++        ggml_format_name(t, "moe_cache_%s.%d", name, il);
++        return t;
++    };
++
++    auto alloc_group = [&](ggml_backend_buffer_type_t buft, const std::vector<size_t> & idxs, bool tables_only) -> bool {
++        ggml_init_params ip = {
++            /*.mem_size  =*/ ggml_tensor_overhead()*(idxs.size()*8 + 8),
++            /*.mem_buffer=*/ nullptr,
++            /*.no_alloc  =*/ true,
++        };
++        ggml_context * ctx = ggml_init(ip);
++        if (!ctx) {
++            return false;
++        }
++        mc->ctxs.push_back(ctx);
++
++        for (size_t idx : idxs) {
++            llama_moe_cache_layer & pub = mc->layers[idx].pub;
++            const int64_t n_expert = pub.down_src->ne[2];
++            if (tables_only) {
++                pub.host_table = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, 1, n_expert);
++                ggml_format_name(pub.host_table, "moe_cache_htbl.%d", pub.il);
++                continue;
++            }
++            if (pub.gate_up_src) {
++                pub.gate_up_c = new_cache_tensor(ctx, pub.gate_up_src, "gate_up", pub.il);
++            } else {
++                pub.up_c   = new_cache_tensor(ctx, pub.up_src,   "up",   pub.il);
++                pub.gate_c = new_cache_tensor(ctx, pub.gate_src, "gate", pub.il);
++            }
++            pub.down_c    = new_cache_tensor(ctx, pub.down_src, "down", pub.il);
++            {
++                ggml_tensor ** const dst[3] = { &pub.up_s_c, &pub.gate_s_c, &pub.down_s_c };
++                for (int i = 0; i < 3; ++i) {
++                    if (const ggml_tensor * s = mc->layers[idx].scale_src[i]) {
++                        *dst[i] = ggml_dup_tensor(ctx, s);
++                        ggml_format_name(*dst[i], "moe_cache_scale%d.%d", i, pub.il);
++                    }
++                }
++            }
++            pub.dev_table = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, 1, n_expert);
++            ggml_format_name(pub.dev_table, "moe_cache_tbl.%d", pub.il);
++        }
++
++        ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors_from_buft(ctx, buft);
++        if (!buf) {
++            LLAMA_LOG_WARN("%s: failed to allocate MoE cache buffer on %s - cache disabled\n", __func__, ggml_backend_buft_name(buft));
++            return false;
++        }
++        ggml_backend_buffer_clear(buf, 0);
++        mc->bufs.push_back(buf);
++        return true;
++    };
++
++    std::vector<size_t> all(mc->layers.size());
++    for (size_t i = 0; i < all.size(); ++i) {
++        all[i] = i;
++    }
++    bool ok = alloc_group(ggml_backend_cpu_buffer_type(), all, /*tables_only=*/true);
++    for (auto & g : groups) {
++        ok = ok && alloc_group(g.first, g.second, /*tables_only=*/false);
++    }
++    if (!ok) {
++        for (auto * b : mc->bufs) { ggml_backend_buffer_free(b); }
++        for (auto * c : mc->ctxs) { ggml_free(c); }
++        delete mc;
++        g_init_done = true; // a real model was seen and allocation failed: stay disabled
++        return;
++    }
++
++    // init bookkeeping + tables (everything uncached -> dummy slot n_slots)
++    size_t vram = 0;
++    for (size_t idx = 0; idx < mc->layers.size(); ++idx) {
++        layer_state & ls = mc->layers[idx];
++        const int64_t n_expert = ls.pub.down_src->ne[2];
++        ls.slot_expert.assign(n_slots, -1);
++        ls.expert_slot.assign(n_expert, -1);
++        ls.slot_last_use.assign(n_slots, 0);
++        ls.slot_in_flight.assign(n_slots, false);
++        ls.n_free = n_slots;
++        ls.expert_in_flight.assign(n_expert, false);
++        ls.miss_ring.assign((size_t) n_expert*mc->params.admit, 0);
++        ls.miss_pos.assign(n_expert, 0);
++
++        {
++            ggml_tensor * const dst[3] = { ls.pub.up_s_c, ls.pub.gate_s_c, ls.pub.down_s_c };
++            for (int i = 0; i < 3; ++i) {
++                if (ls.scale_src[i]) {
++                    ggml_backend_tensor_set(dst[i], ls.scale_src[i]->data, 0, ggml_nbytes(ls.scale_src[i]));
++                }
++            }
++        }
++
++        std::vector<int32_t> dummy(n_expert, n_slots);
++        ggml_backend_tensor_set(ls.pub.dev_table,  dummy.data(), 0, n_expert*sizeof(int32_t));
++        ggml_backend_tensor_set(ls.pub.host_table, dummy.data(), 0, n_expert*sizeof(int32_t));
++
++        mc->by_key[ls.pub.gate_up_src ? ls.pub.gate_up_src : ls.pub.up_src] = idx;
++        for (const ggml_tensor * t : { ls.pub.up_c, ls.pub.gate_c, ls.pub.gate_up_c, ls.pub.down_c }) {
++            vram += t ? ggml_nbytes(t) : 0;
++        }
++    }
++
++    mc->worker = std::thread([mc]() {
++        for (;;) {
++            upload_job j;
++            {
++                std::unique_lock<std::mutex> lk(mc->wmtx);
++                mc->wcv.wait(lk, [mc]() { return mc->stop || !mc->todo.empty(); });
++                if (mc->stop) {
++                    return;
++                }
++                j = mc->todo.front();
++                mc->todo.pop_front();
++            }
++            llama_moe_cache_layer & pub = mc->layers[j.layer_idx].pub;
++            if (pub.gate_up_src) {
++                upload_slice(pub.gate_up_c, pub.gate_up_src, j.expert, j.slot);
++            } else {
++                upload_slice(pub.up_c,   pub.up_src,   j.expert, j.slot);
++                upload_slice(pub.gate_c, pub.gate_src, j.expert, j.slot);
++            }
++            upload_slice(pub.down_c, pub.down_src, j.expert, j.slot);
++            {
++                std::lock_guard<std::mutex> lk(mc->wmtx);
++                mc->done.push_back(j);
++            }
++        }
++    });
++
++    ggml_set_moe_obs_callback(moe_obs_cb, mc);
++    g_cache     = mc;
++    g_init_done = true;
++
++    LLAMA_LOG_INFO("%s: MoE expert cache enabled: %zu layers x %d slots, %d inserts/step, admit %d misses / %d tokens, %.1f MiB device memory\n",
++            __func__, mc->layers.size(), n_slots, mc->params.max_inserts, mc->params.admit, mc->params.window, vram/1024.0/1024.0);
++}
++
++bool llama_moe_cache_active() {
++    return g_cache != nullptr;
++}
++
++const llama_moe_cache_layer * llama_moe_cache_lookup(const ggml_tensor * key) {
++    if (!g_cache || !key) {
++        return nullptr;
++    }
++    auto it = g_cache->by_key.find(key);
++    if (it == g_cache->by_key.end()) {
++        return nullptr;
++    }
++    return &g_cache->layers[it->second].pub;
++}
++
++void llama_moe_cache_step() {
++    moe_cache * mc = g_cache;
++    if (!mc) {
++        return;
++    }
++
++    // 1) publish completed uploads (sync point: no graph is executing)
++    {
++        std::lock_guard<std::mutex> wlk(mc->wmtx);
++        std::lock_guard<std::mutex> lk(mc->mtx);
++        for (const auto & j : mc->done) {
++            layer_state & ls = mc->layers[j.layer_idx];
++            ls.slot_expert[j.slot]        = j.expert;
++            ls.expert_slot[j.expert]      = j.slot;
++            ls.slot_last_use[j.slot]      = ++mc->clock;
++            ls.slot_in_flight[j.slot]     = false;
++            ls.expert_in_flight[j.expert] = false;
++            set_table_entry(ls.pub, j.expert, j.slot);
++        }
++        mc->done.clear();
++    }
++
++    std::lock_guard<std::mutex> lock(mc->mtx);
++    mc->n_steps++;
++
++    // 2) schedule new uploads: evict at a sync point (clear the victim's table entry now),
++    //    then hand the slice copies to the worker
++    bool queued = false;
++    for (size_t li = 0; li < mc->layers.size(); ++li) {
++        layer_state & ls = mc->layers[li];
++
++        int budget = mc->params.max_inserts;
++        for (auto it = ls.pending.rbegin(); it != ls.pending.rend() && budget > 0; ++it) {
++            const int32_t id = *it;
++            if (ls.expert_slot[id] >= 0 || ls.expert_in_flight[id]) {
++                continue;
++            }
++
++            // victim: an empty non-in-flight slot if any, else the LRU non-in-flight slot
++            int32_t  slot = -1;
++            uint64_t best = UINT64_MAX;
++            for (int32_t s = 0; s < mc->params.n_slots; ++s) {
++                if (ls.slot_in_flight[s]) {
++                    continue;
++                }
++                if (ls.slot_expert[s] < 0) { slot = s; break; }
++                if (ls.slot_last_use[s] < best) { best = ls.slot_last_use[s]; slot = s; }
++            }
++            if (slot < 0) {
++                break; // every slot is in flight; try again next step
++            }
++
++            const int32_t victim = ls.slot_expert[slot];
++            if (victim < 0) {
++                ls.n_free--;
++            } else {
++                ls.expert_slot[victim] = -1;
++                ls.slot_expert[slot]   = -1;
++                set_table_entry(ls.pub, victim, mc->params.n_slots);
++                mc->n_evict++;
++            }
++            ls.slot_in_flight[slot]  = true;
++            ls.expert_in_flight[id]  = true;
++
++            const llama_moe_cache_layer & pub = ls.pub;
++            mc->n_upload++;
++            mc->upload_bytes += pub.down_src->nb[2] + (pub.gate_up_src ? pub.gate_up_src->nb[2] : pub.up_src->nb[2] + pub.gate_src->nb[2]);
++
++            std::lock_guard<std::mutex> wlk(mc->wmtx);
++            mc->todo.push_back({li, id, slot});
++            queued = true;
++            --budget;
++        }
++        ls.pending.clear();
++    }
++    if (queued) {
++        mc->wcv.notify_one();
++    }
++
++    if (mc->n_steps % 256 == 0) {
++        const uint64_t n = mc->n_hit + mc->n_miss;
++        LLAMA_LOG_INFO("moe-cache: steps %" PRIu64 " | hit rate %.1f%% | uploads %" PRIu64 " (%.1f MiB, %.2f MiB/step) | evictions %" PRIu64 "\n",
++                mc->n_steps, n ? 100.0*mc->n_hit/n : 0.0, mc->n_upload, mc->upload_bytes/1024.0/1024.0,
++                mc->upload_bytes/1024.0/1024.0/mc->n_steps, mc->n_evict);
++    }
++}
+diff --git a/src/llama-moecache.h b/src/llama-moecache.h
+new file mode 100644
+index 0000000..9791c6a
+--- /dev/null
++++ b/src/llama-moecache.h
+@@ -0,0 +1,78 @@
++#pragma once
++
++// GPU-resident cache for MoE expert weights that -ot / --n-cpu-moe pinned to host memory.
++// Based on ggml-org/llama.cpp#27861, extended for fused gate_up experts, per-expert scales,
++// GELU experts and gated admission.
++//
++// Mechanism (no custom kernels):
++//  - per cached layer, companion tensors of shape [ne0, ne1, n_slots+1] live in the device
++//    buffer type of that layer; slot n_slots is permanently zero (the "dummy" slot).
++//  - an I32 table maps expert id -> slot, or n_slots when uncached. One copy on the device
++//    (read by get_rows to remap ids for the cache-side mul_mat_id chain) and one on the host
++//    (read by the CPU mul_mat_id via src[3] to SKIP cached ids, zeroing their dst rows).
++//  - the two down-projection outputs are summed; uncached ids contribute 0 through the cache
++//    chain (zero slot) and cached ids contribute 0 through the CPU chain (skip), so the sum
++//    is the full result.
++//  - misses are always computed on the CPU; nothing ever stalls on an upload. Uploads run on
++//    a worker thread and a slot is only published once its copy has completed.
++//  - admission is gated: an expert is uploaded only after `admit` misses within the last
++//    `window` tokens of its layer. Ungated admission churns (uploads ~= evictions) and
++//    saturates PCIe; eviction is plain LRU.
++//
++// Enabled via llama_context_params.n_moe_cache_slots (CLI: --moe-expert-cache).
++
++#include <cstdint>
++
++struct llama_model;
++struct ggml_tensor;
++
++struct llama_moe_cache_params {
++    int32_t n_slots     = 0;  // slots per host-resident expert layer (0 = disabled)
++    int32_t max_inserts = 2;  // max expert uploads per layer per decode step
++    int32_t window      = 16; // admission window, in tokens
++    int32_t admit       = 3;  // misses within the window before an expert is uploaded (1 = ungated)
++};
++
++struct llama_moe_cache_layer {
++    int il = -1;
++
++    int32_t n_slots = 0;
++
++    // host-resident source weights (the authoritative experts);
++    // either gate_up_src, or up_src + gate_src
++    ggml_tensor * up_src      = nullptr;
++    ggml_tensor * gate_src    = nullptr;
++    ggml_tensor * gate_up_src = nullptr;
++    ggml_tensor * down_src    = nullptr;
++
++    // device-resident cache slots, ne[2] == n_slots + 1 (last slot all zeros)
++    ggml_tensor * up_c      = nullptr;
++    ggml_tensor * gate_c    = nullptr;
++    ggml_tensor * gate_up_c = nullptr;
++    ggml_tensor * down_c    = nullptr;
++
++    // per-expert scales readable on the device (a device copy when the model keeps them on the host), or nullptr;
++    // up_s_c scales gate_up when the layer is fused
++    ggml_tensor * up_s_c   = nullptr;
++    ggml_tensor * gate_s_c = nullptr;
++    ggml_tensor * down_s_c = nullptr;
++
++    // expert id -> slot (or n_slots when uncached); I32 [1, n_expert]
++    ggml_tensor * dev_table  = nullptr;
++    ggml_tensor * host_table = nullptr;
++};
++
++// build the cache for every host-resident expert layer of the model.
++// Safe to call more than once; only the first call does work.
++void llama_moe_cache_init(const llama_model & model, const llama_moe_cache_params & params);
++
++// true once a cache has been built
++bool llama_moe_cache_active();
++
++// key = the layer's gate_up_exps tensor when fused, else its up_exps tensor.
++// nullptr when the cache is disabled or this tensor has no cached layer
++const llama_moe_cache_layer * llama_moe_cache_lookup(const ggml_tensor * key);
++
++// publish finished uploads and schedule new ones. Call between graph executions only,
++// after the backend has been synchronized.
++void llama_moe_cache_step();
+-- 
+2.55.0
+

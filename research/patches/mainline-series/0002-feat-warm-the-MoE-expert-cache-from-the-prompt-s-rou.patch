@@ -1,0 +1,409 @@
+From 684dd3f8a327f1d697fc435df3b5b6ade08ff728 Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Sun, 20 Sep 2026 01:41:08 +0300
+Subject: [PATCH 2/3] feat: warm the MoE expert cache from the prompt's routing
+ (--moe-expert-cache-warm)
+
+---
+ common/arg.cpp         |   7 ++
+ common/common.cpp      |   1 +
+ common/common.h        |   1 +
+ include/llama.h        |   1 +
+ src/llama-context.cpp  |   2 +
+ src/llama-graph.cpp    |  13 +++-
+ src/llama-moecache.cpp | 171 +++++++++++++++++++++++++++++++++--------
+ src/llama-moecache.h   |  11 +++
+ 8 files changed, 171 insertions(+), 36 deletions(-)
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index 4028c49..bae4e21 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -2563,6 +2563,13 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.n_moe_cache_admit = value;
+         }
+     ).set_env("LLAMA_ARG_MOE_EXPERT_CACHE_ADMIT"));
++    add_opt(common_arg(
++        {"--moe-expert-cache-warm"}, "N",
++        string_format("prompt batches of at least N tokens re-rank the MoE expert cache slots by their routing frequency, 0 = disabled (default: %d)", params.n_moe_cache_warm),
++        [](common_params & params, int value) {
++            params.n_moe_cache_warm = value;
++        }
++    ).set_env("LLAMA_ARG_MOE_EXPERT_CACHE_WARM"));
+     if (ex == LLAMA_EXAMPLE_SERVER) {
+         // this is to make sure this option appears in the server-specific section of the help message
+         add_opt(common_arg(
+diff --git a/common/common.cpp b/common/common.cpp
+index 2c17513..c1b5748 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -1729,6 +1729,7 @@ struct llama_context_params common_context_params_to_llama(const common_params &
+     cparams.n_moe_cache_inserts = params.n_moe_cache_inserts;
+     cparams.n_moe_cache_window  = params.n_moe_cache_window;
+     cparams.n_moe_cache_admit   = params.n_moe_cache_admit;
++    cparams.n_moe_cache_warm    = params.n_moe_cache_warm;
+     cparams.n_threads         = params.cpuparams.n_threads;
+     cparams.n_threads_batch   = params.cpuparams_batch.n_threads == -1 ?
+                                 params.cpuparams.n_threads : params.cpuparams_batch.n_threads;
+diff --git a/common/common.h b/common/common.h
+index 1e79a14..62d2164 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -454,6 +454,7 @@ struct common_params {
+     int32_t n_moe_cache_inserts   = 2;    // max expert uploads per layer per decode step
+     int32_t n_moe_cache_window    = 16;   // admission window in tokens
+     int32_t n_moe_cache_admit     = 3;    // misses within the window before an expert is uploaded (1 = ungated)
++    int32_t n_moe_cache_warm      = 32;   // batches of at least this many tokens re-rank the slots by their routing (0 = disabled)
+     int32_t n_keep                =     0; // number of tokens to keep from initial prompt
+     int32_t n_chunks              =    -1; // max number of chunks to process (-1 = unlimited)
+     int32_t n_parallel            =     1; // number of parallel sequences to decode
+diff --git a/include/llama.h b/include/llama.h
+index d628644..24df54c 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -389,6 +389,7 @@ extern "C" {
+         int32_t  n_moe_cache_inserts; // max expert uploads per layer per decode step
+         int32_t  n_moe_cache_window;  // admission window in tokens
+         int32_t  n_moe_cache_admit;   // misses within the window before an expert is uploaded (1 = ungated)
++        int32_t  n_moe_cache_warm;    // batches of at least this many tokens re-rank the slots by their routing (0 = disabled)
+ 
+         ggml_backend_sched_eval_callback cb_eval;
+         void * cb_eval_user_data;
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index d9e942d..f43a2a1 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -99,6 +99,7 @@ llama_context::llama_context(
+         mc_params.max_inserts = params.n_moe_cache_inserts;
+         mc_params.window      = params.n_moe_cache_window;
+         mc_params.admit       = params.n_moe_cache_admit;
++        mc_params.warm        = params.n_moe_cache_warm;
+         llama_moe_cache_init(model, mc_params);
+     }
+ 
+@@ -3689,6 +3690,7 @@ llama_context_params llama_context_default_params() {
+         /*.n_moe_cache_inserts         =*/ 2,
+         /*.n_moe_cache_window          =*/ 16,
+         /*.n_moe_cache_admit           =*/ 3,
++        /*.n_moe_cache_warm            =*/ 32,
+         /*.cb_eval                     =*/ nullptr,
+         /*.cb_eval_user_data           =*/ nullptr,
+         /*.type_k                      =*/ GGML_TYPE_F16,
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 143415c..d3e5288 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -2167,10 +2167,19 @@ ggml_tensor * llm_graph_context::build_moe_ffn(
+         // small batches only: the device chain must stay inside the MMVQ mul_mat_id window (6 tokens for
+         // IQ3_S on Turing), the one CUDA path that tolerates the repeated dummy slot id
+         constexpr int64_t mc_max_tokens = 4;
+-        if (n_tokens >= 1 && n_tokens <= mc_max_tokens && il >= 0 && mc_gated && down_exps &&
++        const bool mc_ok = n_tokens >= 1 && il >= 0 && mc_gated && down_exps &&
+             !up_exps_b && !gate_exps_b && !down_exps_b && !gate_up_exps_b &&
+-            (type_op == LLM_FFN_SILU || type_op == LLM_FFN_GELU) && !weight_before_ffn && loras->empty()) {
++            (type_op == LLM_FFN_SILU || type_op == LLM_FFN_GELU) && !weight_before_ffn && loras->empty();
++        if (mc_ok && n_tokens <= mc_max_tokens) {
+             mcache = llama_moe_cache_lookup(gate_up_exps ? gate_up_exps : up_exps);
++        } else if (mc_ok) {
++            // too large for the cache chain (a prompt): report the routing so the next step can warm the slots
++            ggml_tensor * mc_warm = llama_moe_cache_build_warm_obs(ctx0, gate_up_exps ? gate_up_exps : up_exps, selected_experts);
++            if (mc_warm) {
++                cb(mc_warm, "ffn_moe_cache_warm_obs", il);
++                ggml_backend_sched_set_tensor_backend(sched, mc_warm, backend_cpu);
++                ggml_build_forward_expand(gf, mc_warm);
++            }
+         }
+     }
+     cur = ggml_reshape_3d(ctx0, cur, n_embd, 1, n_tokens);
+diff --git a/src/llama-moecache.cpp b/src/llama-moecache.cpp
+index e565584..f5502d4 100644
+--- a/src/llama-moecache.cpp
++++ b/src/llama-moecache.cpp
+@@ -36,6 +36,10 @@ struct layer_state {
+     std::vector<uint32_t> miss_ring; // [n_expert * admit]
+     std::vector<uint8_t>  miss_pos;  // [n_expert]
+     uint32_t              tok_clock = 0;
++
++    // prompt warm-up: routing counts of the large batches since the last step()
++    std::vector<uint32_t> warm_cnt; // [n_expert]
++    bool                  warm_seen = false;
+ };
+ 
+ struct upload_job {
+@@ -54,6 +58,7 @@ struct moe_cache {
+     uint64_t n_miss      = 0;
+     uint64_t n_upload    = 0;
+     uint64_t n_evict     = 0;
++    uint64_t n_warm      = 0; // uploads scheduled by the prompt warm-up (included in n_upload)
+     uint64_t upload_bytes = 0;
+ 
+     std::mutex mtx; // guards layer bookkeeping (observe runs during graph exec)
+@@ -138,6 +143,29 @@ void moe_obs_cb(int32_t il, const struct ggml_tensor * ids, void * ud) {
+     }
+ }
+ 
++// custom op over the top-k ids of a large batch (runs on the CPU backend, one task)
++void moe_warm_obs_op(ggml_tensor * dst, const ggml_tensor * a, int ith, int nth, void * ud) {
++    GGML_UNUSED(dst);
++    GGML_UNUSED(nth);
++    moe_cache * mc = g_cache;
++    const size_t idx = (size_t) (uintptr_t) ud;
++    if (ith != 0 || !mc || idx >= mc->layers.size() || a->type != GGML_TYPE_I32 || !ggml_is_contiguous(a)) {
++        return;
++    }
++    layer_state & ls = mc->layers[idx];
++
++    const int32_t * ids = (const int32_t *) a->data;
++    const int64_t   n   = ggml_nelements(a);
++
++    std::lock_guard<std::mutex> lock(mc->mtx);
++    for (int64_t i = 0; i < n; ++i) {
++        if (ids[i] >= 0 && ids[i] < (int32_t) ls.warm_cnt.size()) {
++            ls.warm_cnt[ids[i]]++;
++        }
++    }
++    ls.warm_seen = true;
++}
++
+ size_t upload_slice(ggml_tensor * dst_c, const ggml_tensor * src, int32_t expert, int32_t slot) {
+     const size_t sz = src->nb[2];
+     GGML_ASSERT(dst_c->nb[2] == sz);
+@@ -173,6 +201,7 @@ void llama_moe_cache_init(const llama_model & model, const llama_moe_cache_param
+     mc->params.max_inserts = std::max(1, params.max_inserts);
+     mc->params.admit       = std::min(255, std::max(1, params.admit));
+     mc->params.window      = std::max(1, params.window);
++    mc->params.warm        = params.warm <= 0 ? 0 : std::max(5, params.warm); // 1-4 tokens belong to the cache chain
+     const int32_t n_slots = params.n_slots;
+ 
+     // collect the host-resident expert layers, grouped by the buffer type of the device that
+@@ -311,6 +340,7 @@ void llama_moe_cache_init(const llama_model & model, const llama_moe_cache_param
+         ls.expert_in_flight.assign(n_expert, false);
+         ls.miss_ring.assign((size_t) n_expert*mc->params.admit, 0);
+         ls.miss_pos.assign(n_expert, 0);
++        ls.warm_cnt.assign(n_expert, 0);
+ 
+         {
+             ggml_tensor * const dst[3] = { ls.pub.up_s_c, ls.pub.gate_s_c, ls.pub.down_s_c };
+@@ -364,6 +394,7 @@ void llama_moe_cache_init(const llama_model & model, const llama_moe_cache_param
+ 
+     LLAMA_LOG_INFO("%s: MoE expert cache enabled: %zu layers x %d slots, %d inserts/step, admit %d misses / %d tokens, %.1f MiB device memory\n",
+             __func__, mc->layers.size(), n_slots, mc->params.max_inserts, mc->params.admit, mc->params.window, vram/1024.0/1024.0);
++    LLAMA_LOG_INFO("%s: MoE expert cache prompt warm-up: %s (batches >= %d tokens)\n", __func__, mc->params.warm ? "on" : "off", mc->params.warm);
+ }
+ 
+ bool llama_moe_cache_active() {
+@@ -381,6 +412,20 @@ const llama_moe_cache_layer * llama_moe_cache_lookup(const ggml_tensor * key) {
+     return &g_cache->layers[it->second].pub;
+ }
+ 
++ggml_tensor * llama_moe_cache_build_warm_obs(ggml_context * ctx, const ggml_tensor * key, ggml_tensor * selected_experts) {
++    moe_cache * mc = g_cache;
++    if (!mc || !key || mc->params.warm <= 0 || selected_experts->ne[1] < mc->params.warm) {
++        return nullptr;
++    }
++    auto it = mc->by_key.find(key);
++    if (it == mc->by_key.end()) {
++        return nullptr;
++    }
++    // the top-k ids are a strided view of the argsort
++    ggml_tensor * ids = ggml_cont(ctx, selected_experts);
++    return ggml_map_custom1(ctx, ids, moe_warm_obs_op, 1, (void *) (uintptr_t) it->second);
++}
++
+ void llama_moe_cache_step() {
+     moe_cache * mc = g_cache;
+     if (!mc) {
+@@ -409,6 +454,95 @@ void llama_moe_cache_step() {
+     // 2) schedule new uploads: evict at a sync point (clear the victim's table entry now),
+     //    then hand the slice copies to the worker
+     bool queued = false;
++
++    // victim for `id`: an empty non-in-flight slot if any, else the LRU non-in-flight slot whose expert is not in
++    // `keep`. Evicts, marks the upload in flight and queues it; false when no slot can be taken
++    auto place = [&](size_t li, int32_t id, const std::vector<bool> * keep) -> bool {
++        layer_state & ls = mc->layers[li];
++
++        int32_t  slot = -1;
++        uint64_t best = UINT64_MAX;
++        for (int32_t s = 0; s < mc->params.n_slots; ++s) {
++            if (ls.slot_in_flight[s]) {
++                continue;
++            }
++            if (ls.slot_expert[s] < 0) { slot = s; break; }
++            if (keep && (*keep)[ls.slot_expert[s]]) {
++                continue;
++            }
++            if (ls.slot_last_use[s] < best) { best = ls.slot_last_use[s]; slot = s; }
++        }
++        if (slot < 0) {
++            return false;
++        }
++
++        const int32_t victim = ls.slot_expert[slot];
++        if (victim < 0) {
++            ls.n_free--;
++        } else {
++            ls.expert_slot[victim] = -1;
++            ls.slot_expert[slot]   = -1;
++            set_table_entry(ls.pub, victim, mc->params.n_slots);
++            mc->n_evict++;
++        }
++        ls.slot_in_flight[slot]  = true;
++        ls.expert_in_flight[id]  = true;
++
++        const llama_moe_cache_layer & pub = ls.pub;
++        mc->n_upload++;
++        mc->upload_bytes += pub.down_src->nb[2] + (pub.gate_up_src ? pub.gate_up_src->nb[2] : pub.up_src->nb[2] + pub.gate_src->nb[2]);
++
++        std::lock_guard<std::mutex> wlk(mc->wmtx);
++        mc->todo.push_back({li, id, slot});
++        queued = true;
++        return true;
++    };
++
++    // 2a) prompt warm-up: a large batch ran since the last step. Its most-routed experts take the slots, best
++    //     first, displacing cached experts the batch used less (or never); no insert budget, the worker drains
++    //     the queue while decoding starts, and a slot only counts once its upload is published
++    uint64_t n_warm = 0;
++    for (size_t li = 0; li < mc->layers.size(); ++li) {
++        layer_state & ls = mc->layers[li];
++        if (!ls.warm_seen) {
++            continue;
++        }
++        const int32_t n_expert = (int32_t) ls.warm_cnt.size();
++        const int32_t n_want   = std::min(mc->params.n_slots, n_expert);
++
++        std::vector<int32_t> order(n_expert);
++        for (int32_t e = 0; e < n_expert; ++e) {
++            order[e] = e;
++        }
++        std::partial_sort(order.begin(), order.begin() + n_want, order.end(), [&](int32_t a, int32_t b) {
++            return ls.warm_cnt[a] != ls.warm_cnt[b] ? ls.warm_cnt[a] > ls.warm_cnt[b] : a < b;
++        });
++
++        std::vector<bool> keep(n_expert, false);
++        for (int32_t i = 0; i < n_want && ls.warm_cnt[order[i]] > 0; ++i) {
++            keep[order[i]] = true;
++        }
++        for (int32_t i = 0; i < n_want && ls.warm_cnt[order[i]] > 0; ++i) {
++            const int32_t id = order[i];
++            if (ls.expert_slot[id] >= 0 || ls.expert_in_flight[id]) {
++                continue;
++            }
++            if (!place(li, id, &keep)) {
++                break;
++            }
++            n_warm++;
++        }
++
++        std::fill(ls.warm_cnt.begin(), ls.warm_cnt.end(), 0);
++        std::fill(ls.miss_ring.begin(), ls.miss_ring.end(), 0); // the admission history predates the new contents
++        ls.warm_seen = false;
++    }
++    if (n_warm > 0) {
++        mc->n_warm += n_warm;
++        LLAMA_LOG_INFO("moe-cache: prompt warm-up: %" PRIu64 " uploads\n", n_warm);
++    }
++
++    // 2b) gated admissions observed by the cache chain
+     for (size_t li = 0; li < mc->layers.size(); ++li) {
+         layer_state & ls = mc->layers[li];
+ 
+@@ -418,40 +552,9 @@ void llama_moe_cache_step() {
+             if (ls.expert_slot[id] >= 0 || ls.expert_in_flight[id]) {
+                 continue;
+             }
+-
+-            // victim: an empty non-in-flight slot if any, else the LRU non-in-flight slot
+-            int32_t  slot = -1;
+-            uint64_t best = UINT64_MAX;
+-            for (int32_t s = 0; s < mc->params.n_slots; ++s) {
+-                if (ls.slot_in_flight[s]) {
+-                    continue;
+-                }
+-                if (ls.slot_expert[s] < 0) { slot = s; break; }
+-                if (ls.slot_last_use[s] < best) { best = ls.slot_last_use[s]; slot = s; }
+-            }
+-            if (slot < 0) {
++            if (!place(li, id, nullptr)) {
+                 break; // every slot is in flight; try again next step
+             }
+-
+-            const int32_t victim = ls.slot_expert[slot];
+-            if (victim < 0) {
+-                ls.n_free--;
+-            } else {
+-                ls.expert_slot[victim] = -1;
+-                ls.slot_expert[slot]   = -1;
+-                set_table_entry(ls.pub, victim, mc->params.n_slots);
+-                mc->n_evict++;
+-            }
+-            ls.slot_in_flight[slot]  = true;
+-            ls.expert_in_flight[id]  = true;
+-
+-            const llama_moe_cache_layer & pub = ls.pub;
+-            mc->n_upload++;
+-            mc->upload_bytes += pub.down_src->nb[2] + (pub.gate_up_src ? pub.gate_up_src->nb[2] : pub.up_src->nb[2] + pub.gate_src->nb[2]);
+-
+-            std::lock_guard<std::mutex> wlk(mc->wmtx);
+-            mc->todo.push_back({li, id, slot});
+-            queued = true;
+             --budget;
+         }
+         ls.pending.clear();
+@@ -462,8 +565,8 @@ void llama_moe_cache_step() {
+ 
+     if (mc->n_steps % 256 == 0) {
+         const uint64_t n = mc->n_hit + mc->n_miss;
+-        LLAMA_LOG_INFO("moe-cache: steps %" PRIu64 " | hit rate %.1f%% | uploads %" PRIu64 " (%.1f MiB, %.2f MiB/step) | evictions %" PRIu64 "\n",
++        LLAMA_LOG_INFO("moe-cache: steps %" PRIu64 " | hit rate %.1f%% | uploads %" PRIu64 " (%.1f MiB, %.2f MiB/step) | evictions %" PRIu64 " | warm-up uploads %" PRIu64 "\n",
+                 mc->n_steps, n ? 100.0*mc->n_hit/n : 0.0, mc->n_upload, mc->upload_bytes/1024.0/1024.0,
+-                mc->upload_bytes/1024.0/1024.0/mc->n_steps, mc->n_evict);
++                mc->upload_bytes/1024.0/1024.0/mc->n_steps, mc->n_evict, mc->n_warm);
+     }
+ }
+diff --git a/src/llama-moecache.h b/src/llama-moecache.h
+index 9791c6a..1a9c614 100644
+--- a/src/llama-moecache.h
++++ b/src/llama-moecache.h
+@@ -18,12 +18,17 @@
+ //  - admission is gated: an expert is uploaded only after `admit` misses within the last
+ //    `window` tokens of its layer. Ungated admission churns (uploads ~= evictions) and
+ //    saturates PCIe; eviction is plain LRU.
++//  - the cache chain only serves (and the CPU op only observes) batches of 1-4 tokens, so a prompt
++//    would teach the cache nothing. Batches of at least `warm` tokens therefore report their routing
++//    through a CPU custom op, and the next step() re-ranks every slot by that frequency (experts the
++//    batch never used keep their slots only as filler). The uploads are asynchronous like any other.
+ //
+ // Enabled via llama_context_params.n_moe_cache_slots (CLI: --moe-expert-cache).
+ 
+ #include <cstdint>
+ 
+ struct llama_model;
++struct ggml_context;
+ struct ggml_tensor;
+ 
+ struct llama_moe_cache_params {
+@@ -31,6 +36,7 @@ struct llama_moe_cache_params {
+     int32_t max_inserts = 2;  // max expert uploads per layer per decode step
+     int32_t window      = 16; // admission window, in tokens
+     int32_t admit       = 3;  // misses within the window before an expert is uploaded (1 = ungated)
++    int32_t warm        = 32; // batches of at least this many tokens re-rank the slots by their routing (0 = disabled)
+ };
+ 
+ struct llama_moe_cache_layer {
+@@ -73,6 +79,11 @@ bool llama_moe_cache_active();
+ // nullptr when the cache is disabled or this tensor has no cached layer
+ const llama_moe_cache_layer * llama_moe_cache_lookup(const ggml_tensor * key);
+ 
++// graph hook for a batch that is too large for the cache chain: a CPU node that reports the batch's top-k
++// expert ids [n_expert_used, n_tokens] to the cache. The caller expands it into the graph and pins it to the
++// CPU backend. nullptr when this tensor has no cached layer, warm-up is disabled or the batch is too small
++ggml_tensor * llama_moe_cache_build_warm_obs(ggml_context * ctx, const ggml_tensor * key, ggml_tensor * selected_experts);
++
+ // publish finished uploads and schedule new ones. Call between graph executions only,
+ // after the backend has been synchronized.
+ void llama_moe_cache_step();
+-- 
+2.55.0
+
