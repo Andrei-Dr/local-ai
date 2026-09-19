@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """Build the fixed quality-eval item sets (deterministic selection, no extra deps).
 
-usage: fetch.py [--gsm8k N] [--mmlu-rows R] [OUT_DIR]   -> OUT_DIR/{gsm8k,humaneval,mmlu_pro}.jsonl
+usage: fetch.py [--gsm8k N] [--mmlu-rows R] [--overrefusal N] [OUT_DIR]   -> OUT_DIR/{gsm8k,humaneval,mmlu_pro[,overrefusal]}.jsonl
 
 Source: Hugging Face datasets-server rows API. Selection is by fixed offsets so every model
 is scored on the identical items, and shorter runs (--limit) are nested prefixes of longer ones.
     gsm8k      openai/gsm8k main/test, first N (default 50)
     humaneval  openai/openai_humaneval test, every 4th task (41)
     mmlu_pro   TIGER-Lab/MMLU-Pro test, 14 pages x R rows (R default 5 => 70 items) across all categories
+    overrefusal N per source (0 = skip): bench-llm/or-bench @ or-bench-hard-1k train (NEVER the toxic
+               config) plus Paul/XSTest train SAFE rows only (contrast/unsafe rows are dropped by label)
 Nested-prefix rule (qual.py resumes by item id, so enlarged sets must keep the old items FIRST):
 gsm8k stays the first N of the test split; per MMLU-Pro page today's base rows (offsets 0,20,40,60,80
 of the 100-row page) come first in the file, the extra rows (uniform grid 100//R) of every page follow
 after the base block. R must be a multiple of 5 so the base offsets stay on the grid (R=20 => 280).
+overrefusal builds ONE fixed global order per source: groups cycle alphabetically in rounds, and inside
+each group rows are consumed in van der Corput (bit-reversed index) order, so any N is a prefix of the
+same order and stays evenly spread across the split and balanced across categories/types.
 """
 import argparse
 import json
@@ -25,6 +30,8 @@ API = "https://datasets-server.huggingface.co/rows"
 MMLU_PAGES = 14   # page-spaced sampling: 1 request per page, the API rate-limits hard
 PAGE_LEN = 100    # rows fetched per page
 BASE_STEP = PAGE_LEN // 5  # today's per-page base rows: 0, 20, 40, 60, 80
+OR_DS = ("bench-llm/or-bench", "or-bench-hard-1k", "train")     # hard rule: never or-bench-toxic
+XS_DS = ("Paul/XSTest", "default", "train")                     # label=="safe" rows only
 
 
 def rows(dataset, config, split, offset, length):
@@ -48,11 +55,13 @@ def dump(path, items):
     print(f"{path}: {len(items)} items")
 
 
-def _get(rows_fn, ds, cfg, split, off, n):
+def _get(rows_fn, ds, cfg, split, off, n, pause=None):
     """Collect up to n rows from a split; the rows API caps a request at PAGE_LEN, so paginate."""
     out, total = [], 0
     while len(out) < n:
         step = min(PAGE_LEN, n - len(out))
+        if pause:
+            pause()
         chunk, total = rows_fn(ds, cfg, split, off + len(out), step)
         out += chunk
         if len(chunk) < step:
@@ -107,11 +116,61 @@ def select_datasets(rows_fn, gsm_n=50, mmlu_rows=5, pause=None):
     return sel
 
 
+def _vdc(i):
+    """van der Corput radical inverse base 2: 0, .5, .25, .75, ... — evenly spread, prefix-stable."""
+    rev, x = 0, i
+    while x:
+        rev = (rev << 1) | (x & 1)
+        x >>= 1
+    return rev / (1 << max(i.bit_length(), 1))
+
+
+def stratified_pick(by_group, n):
+    """Fixed global order: rounds over groups (alphabetical); inside a group, rows are consumed in
+    van der Corput index order. Any prefix of the result is balanced across groups (within 1) and
+    evenly spread inside each group; N=50 is a prefix of N=100 automatically."""
+    queues = [[g[i] for i in sorted(range(len(g)), key=lambda i: (_vdc(i), i))] for _, g in sorted(by_group.items())]
+    out, r = [], 0
+    while True:
+        took = False
+        for q in queues:
+            if r < len(q):
+                out.append(q[r])
+                took = True
+        if not took:
+            break
+        r += 1
+    return out[:n]
+
+
+def select_overrefusal(rows_fn, n=100, pause=None):
+    """Published items only, verbatim: OR-Bench-Hard-1K (benign-looking prompts measuring over-refusal;
+    the toxic config is never touched) and XSTest rows whose label marks them SAFE (contrast/unsafe
+    dropped). rows_fn like rows(); returns {"orbench": [...], "xstest": [...]}, <= n per source."""
+    sel = {}
+    _, tot = rows_fn(*OR_DS, 0, 1)
+    by_cat = {}
+    for i, r in enumerate(_get(rows_fn, *OR_DS, 0, tot, pause=pause)[0]):
+        c = r.get("category", "?")
+        by_cat.setdefault(c, []).append({"id": f"orbench/{i}", "source": "orbench", "category": c, "prompt": r["prompt"]})
+    sel["orbench"] = stratified_pick(by_cat, n)
+    _, tot = rows_fn(*XS_DS, 0, 1)
+    by_type = {}
+    for r in _get(rows_fn, *XS_DS, 0, tot, pause=pause)[0]:
+        if str(r.get("label", "")).lower() != "safe":
+            continue  # hard rule: XSTest unsafe/contrast items never enter the set
+        it = {"id": f"xstest/{r['id']}", "source": "xstest", "category": r.get("type", "?"), "prompt": r["prompt"]}
+        by_type.setdefault(it["category"], []).append(it)
+    sel["xstest"] = stratified_pick(by_type, n)
+    return sel
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out_dir", nargs="?", help="target dir (default: ./data next to this script)")
     ap.add_argument("--gsm8k", type=int, default=50, help="gsm8k items, first N of the test split (prefix-safe)")
     ap.add_argument("--mmlu-rows", type=int, default=5, help="rows sampled per MMLU-Pro page; multiple of 5 (20 => 280 items)")
+    ap.add_argument("--overrefusal", type=int, default=0, help="over-refusal items PER SOURCE (or-bench-hard-1k + XSTest safe); 0 skips")
     a = ap.parse_args()
     out = Path(a.out_dir) if a.out_dir else Path(__file__).parent / "data"
     out.mkdir(parents=True, exist_ok=True)
@@ -119,6 +178,9 @@ def main():
     sel = select_datasets(rows, gsm_n=a.gsm8k, mmlu_rows=a.mmlu_rows, pause=lambda: time.sleep(2))
     for name in ("gsm8k", "humaneval", "mmlu_pro"):
         dump(out / f"{name}.jsonl", sel[name])
+    if a.overrefusal:
+        sel = select_overrefusal(rows, n=a.overrefusal, pause=lambda: time.sleep(2))
+        dump(out / "overrefusal.jsonl", sel["orbench"] + sel["xstest"])
 
 
 if __name__ == "__main__":
