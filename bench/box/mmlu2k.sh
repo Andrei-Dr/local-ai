@@ -8,5 +8,5 @@ M=/ai/models; MC=/ai/src/llama.cpp-moecache/build75
 MODEL=$M/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q2_K_P.gguf BUILD=$MC ./qualbench.sh g4_q2kp_cache19 -ngl 999 -ot "exps=CPU" --moe-expert-cache 19 -ub 128 -b 256
 MODEL=$M/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-Q3_K_M.gguf BUILD=$MC ./qualbench.sh g4_q3km_cache15 -ngl 999 -ot "exps=CPU" --moe-expert-cache 15 -ub 128 -b 256
 MODEL=$M/Gemma4-26B-A4B-Uncensored-HauhauCS-Balanced-IQ3_M.gguf  BUILD=$MC ./qualbench.sh g4_iq3m_cache16 -ngl 999 -ot "exps=CPU" --moe-expert-cache 16 -ub 128 -b 256
-# Qwen3.6 is covered by the qmmlu job (already running, fresh label q36_iq2m_mmlu2k at cap 2048); not repeated here.
+MODEL=$M/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf BUILD=$MC ./qualbench.sh q36_iq2m_cache48 -ngl 999 -ot "exps=CPU" --moe-expert-cache 48
 echo MMLU2K_DONE
