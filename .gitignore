@@ -3,3 +3,5 @@ __pycache__/
 .DS_Store
 # router traces are 8-10 MB each and reproducible on the box (notes.md: "Trace run")
 bench/traces/*.bin
+# local clones used for rebasing the patch series
+src/
