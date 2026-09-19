@@ -6,7 +6,7 @@ source /ai/bench/preflight.sh || exit 1
 LABEL=$1; shift
 export MODEL BUILD=${BUILD:-/ai/src/llama.cpp/build75} OFFLOAD=${OFFLOAD:-32}
 export LEDGER_ARGS="$*"
-GGML_OP_OFFLOAD_MIN_BATCH=$OFFLOAD $BUILD/bin/llama-server -m $MODEL -fa on -c 4096 -t 6 --load-mode none --jinja --parallel 1 --port 8099 -lv 4 "$@" > /ai/bench/server_qual_$LABEL.log 2>&1 &
+GGML_OP_OFFLOAD_MIN_BATCH=$OFFLOAD $BUILD/bin/llama-server -m $MODEL -fa on -c 4096 -t 6 --load-mode none --jinja --parallel 1 --port 8099 --cache-ram 0 -lv 4 "$@" > /ai/bench/server_qual_$LABEL.log 2>&1 &
 PID=$!
 for i in $(seq 1 150); do curl -sf localhost:8099/health >/dev/null 2>&1 && break
   kill -0 $PID 2>/dev/null || { echo "$LABEL: SERVER DIED: $(grep -iE 'error|failed|out of memory' /ai/bench/server_qual_$LABEL.log | tail -1 | cut -c1-140)"; exit 1; }; sleep 2; done

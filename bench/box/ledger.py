@@ -31,7 +31,7 @@ rec = {
     "build": build, "git": {"branch": sh("git", "-C", src, "rev-parse", "--abbrev-ref", "HEAD"), "commit": sh("git", "-C", src, "rev-parse", "--short", "HEAD"),
                             "dirty": bool(sh("git", "-C", src, "status", "--porcelain", "--untracked-files=no"))},
     "args": os.environ.get("LEDGER_ARGS", ""), "offload_min_batch": int(os.environ.get("OFFLOAD", "2")),
-    "fixed": "-fa on -c 4096 -t 6 --load-mode none --jinja --parallel 1; 2 prompts, 200 tok, temp 0, thinking off",
+    "fixed": "-fa on -c 4096 -t 6 --load-mode none --jinja --parallel 1 --cache-ram 0 -lv 4; 2 prompts, 200 tok, temp 0, thinking off",
     "host": {"governor": open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").read().strip(),
              "thp": re.search(r"\[(\w+)\]", open("/sys/kernel/mm/transparent_hugepage/enabled").read()).group(1),
              "kernel": os.uname().release, "driver": sh("nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader")},
@@ -39,7 +39,7 @@ rec = {
     "telemetry": load(f"{B}/runs/{label}.mon.json"), "moe_cache": cache, "quality": quality, "completed": bool(client.get("rows")) or bool(quality),
 }
 if "--quality" in sys.argv:
-    rec["fixed"] = "-fa on -c 4096 -t 6 --load-mode none --jinja --parallel 1; GSM8K 50 + HumanEval 41 + MMLU-Pro 70, temp 0, thinking off"
+    rec["fixed"] = "-fa on -c 4096 -t 6 --load-mode none --jinja --parallel 1 --cache-ram 0 -lv 4; GSM8K 50 + HumanEval 41 + MMLU-Pro 70, temp 0, thinking off"
 if not rec["completed"]:
     rec["error"] = (re.findall(r"(?i)[^\n]*(?:out of memory|failed to|error)[^\n]*", log) or [""])[-1][-200:]
 open(f"{B}/ledger.jsonl", "a").write(json.dumps(rec) + "\n")

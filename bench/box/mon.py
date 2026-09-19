@@ -10,10 +10,12 @@ if cmd == "start":
     a = subprocess.Popen(["nvidia-smi", "dmon", "-s", "put", "-d", "1"], stdout=open(gp, "w"), stderr=subprocess.DEVNULL)
     b = subprocess.Popen(["perf", "stat", "-a", "-x,", "-I", "1000", "-e", "uncore_imc/data_reads/,uncore_imc/data_writes/"],
                          stdout=subprocess.DEVNULL, stderr=open(pp, "w"))
-    open(pidf, "w").write(f"{a.pid} {b.pid}"); open(sp, "w").write("%d %d" % cpu())
+    c = subprocess.Popen(["sh", "-c", "while :; do awk '/MemAvailable/{a=$2}/SwapTotal/{t=$2}/SwapFree/{f=$2}END{print int(a/1024), int((t-f)/1024)}' /proc/meminfo; sleep 1; done"],
+                         stdout=open(f"{D}/{label}.mem", "w"), stderr=subprocess.DEVNULL)
+    open(pidf, "w").write(f"{a.pid} {b.pid} {c.pid}"); open(sp, "w").write("%d %d" % cpu())
 else:
     for p in open(pidf).read().split():
-        try: os.kill(int(p), signal.SIGINT)
+        try: os.kill(int(p), signal.SIGTERM if p == open(pidf).read().split()[-1] else signal.SIGINT)
         except ProcessLookupError: pass
     time.sleep(0.5)
     t0, i0 = map(int, open(sp).read().split()); t1, i1 = cpu()
@@ -23,6 +25,7 @@ else:
     pwr, temp, sm, mem, rx, tx = f(1), f(2), f(4), f(5), f(10), f(11)
     def imc(ev): return [float(l.split(",")[1]) for l in open(pp) if ev in l and l.split(",")[1].replace(".", "").isdigit()]
     rd, wr = imc("data_reads"), imc("data_writes")
+    memrows = [list(map(int, l.split())) for l in open(f"{D}/{label}.mem") if len(l.split()) == 2] if os.path.exists(f"{D}/{label}.mem") else []
     m = lambda x: sum(x) / len(x) if x else 0
     mx = lambda x: max(x, default=0)
     print(f"    telemetry[{label}]: GPU util avg {m(sm):3.0f}% max {mx(sm):3.0f}% | power avg {m(pwr):3.0f}W max {mx(pwr):3.0f}W /100W"
@@ -34,5 +37,6 @@ else:
                "pcie_rx_gbs_avg": r2(m(rx) / 1000), "pcie_rx_gbs_max": r2(mx(rx) / 1000), "pcie_tx_gbs_avg": r2(m(tx) / 1000), "pcie_tx_gbs_max": r2(mx(tx) / 1000),
                "cpu_busy_pct": r2(busy, 0), "cpu_pct_total": 100 * os.cpu_count(),
                "dram_read_gbs_avg": r2(m(rd) / 1024, 1), "dram_read_gbs_max": r2(mx(rd) / 1024, 1),
-               "dram_write_gbs_avg": r2(m(wr) / 1024, 1), "dram_write_gbs_max": r2(mx(wr) / 1024, 1)},
+               "dram_write_gbs_avg": r2(m(wr) / 1024, 1), "dram_write_gbs_max": r2(mx(wr) / 1024, 1),
+               "mem_avail_mib_min": min((r[0] for r in memrows), default=None), "swap_used_mib_max": max((r[1] for r in memrows), default=None)},
               open(f"/ai/bench/runs/{label}.mon.json", "w"))
