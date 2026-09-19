@@ -4,7 +4,7 @@
 # match src/llama.cpp-mainline on the Mac. A/B = same binary, one flag: --moe-expert-cache-warm 0 vs 32, run ABAB for noise.
 # Prompts: code, reason, edit (EDIT=1), long (LONG=1, W4). The first prompt of a run is the cold case, the rest are topic shifts.
 source /ai/bench/preflight.sh || exit 1
-WANT=e3066f1
+WANT=498696c
 D=/ai/src/llama.cpp-mainline
 cd $D || exit 1
 git fetch -q /ai/bench/builds/moe-cache-$WANT.bundle moe-cache:moe-cache-mac || { echo P4C1_FETCH_FAILED; exit 1; }
