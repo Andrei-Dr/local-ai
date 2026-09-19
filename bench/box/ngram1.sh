@@ -19,6 +19,8 @@ run $Q  ng_q36_mtp2          $QC $QH --spec-type draft-mtp --spec-draft-n-max 2
 # = --spec-draft-n-max when a model drafter is listed, and any draft longer than that takes the checkpoint + replay path
 # (server-context.cpp), so the n-gram cap has to be <= --spec-draft-n-max.
 run $Q  ng_q36_ngmod2_mtp2   $QC $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 2 --spec-ngram-mod-n-min 2 --spec-ngram-mod-n-max 2
+# n_min is a cliff: a walk that dies before n_min tokens discards the whole draft, so n_min 2 throws away valid 1-token hits
+run $Q  ng_q36_ngmod12_mtp2  $QC $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 2 --spec-ngram-mod-n-min 1 --spec-ngram-mod-n-max 2
 QC28="-ot exps=CPU --moe-expert-cache 28 -ub 128 -b 256"
 run $Q  ng_q36_c28_mtp3      $QC28 $QH --spec-type draft-mtp --spec-draft-n-max 3
 run $Q  ng_q36_c28_ngmod3_mtp3 $QC28 $QH --spec-type ngram-mod,draft-mtp --spec-draft-n-max 3 --spec-ngram-mod-n-min 3 --spec-ngram-mod-n-max 3

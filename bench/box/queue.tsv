@@ -5,3 +5,4 @@ build_mainline	pending	0	-	-	-	bash /ai/bench/build_mainline.sh >> build_mainlin
 mainline_ab	pending	0	-	-	-	grep -q BUILD_MAINLINE_DONE build_mainline.log && bash /ai/bench/mainline_ab.sh > mainline_ab.log 2>&1; grep -q MAINLINE_AB_DONE mainline_ab.log
 trace2	pending	0	-	-	-	bash /ai/bench/trace2.sh > trace2.log 2>&1; grep -q TRACE2_DONE trace2.log
 ngram1	pending	0	-	-	-	bash /ai/bench/ngram1.sh > ngram1.log 2>&1; grep -q NGRAM1_DONE ngram1.log
+steady1	pending	0	-	-	-	bash /ai/bench/steady1.sh > steady1.log 2>&1; grep -q STEADY1_DONE steady1.log
