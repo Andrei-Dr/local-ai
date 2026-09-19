@@ -256,6 +256,23 @@ P4 = the device cache chain is built/expanded BEFORE the host chain and starts w
 - P3 works: MTP verify batches are served from the cache. Gemma MTP n=1/2 = +3% over no-MTP even after giving 4 slots/layer to the drafter; n=3 loses. Qwen's standalone Q4_0 head gets 0.88–0.94 acceptance on the abliterated trunk (no graft needed) and 42.7 tok/s at n=2, but 36 slots + head does not fit (CUDA OOM at 3688 MiB) -> `moe6.sh` re-fits with 28–30 slots.
 - `-t 5` loses on both (thread 0 is not the bottleneck). Keep `-t 6`.
 
+### MTP on top of the cache, re-fitted to VRAM (`/ai/bench/moe6.sh` -> `moe6.log`, commit `f94da5a`; full telemetry in `bench/LEDGER.md`)
+
+| model / config (`-ot exps=CPU -ub 128 -b 256`, OFFLOAD=32) | decode tok/s (code / reason) | accept | VRAM | cache hit @512 steps | upload MiB/step |
+|---|---|---|---|---|---|
+| **Qwen3.6 IQ2_M, 30 slots + `mtp-Qwen3.6` Q4_0 head, n=2** | **46.27 / 44.78** | 0.88 / 0.83 | 3454 | 53.4% | 12.4 |
+| Qwen3.6, 28 slots + head, n=2 | 43.36 / 44.75 | 0.83 / 0.84 | 3378 | 51.7% | 13.0 |
+| Qwen3.6, 28 slots + head, n=3 | 41.04 / 42.36 | 0.75 / 0.76 | 3440 | 50.9% | 12.1 |
+| Gemma4 Q3_K_M, 11 slots + drafter, n=1 | 33.79 / 34.58 | 0.78 / 0.78 | 3382 | 45.2% | 71.2 |
+| **Gemma4 Q3_K_M, 11 slots + drafter, n=2** | **37.17 / 36.60** | 0.69 / 0.74 | 3382 | 46.3% | 53.9 |
+| Gemma4 Q2_K_P, 15 slots + drafter, n=1 | 48.16 / 43.58 | 0.81 / 0.74 | 3306 | 56.1% | 42.6 |
+| **Gemma4 Q2_K_P, 15 slots + drafter, n=2** | **48.23 / 46.58** | 0.69 / 0.72 | 3306 | 56.9% | 35.3 |
+
+- **Best configs (2026-09-19 ~21:40):** Qwen3.6 `-ngl 999 -ot exps=CPU --moe-expert-cache 30 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2` = **46.3 tok/s** (28.0 this morning, +65%). Gemma4 Q3_K_M `--moe-expert-cache 11 ... -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 2` = **37.2**; Gemma4 Q2_K_P with 15 slots = **48.2** (16.2 this morning). Binaries: `/ai/src/llama.cpp-moecache/build75/bin`. Which Gemma file is the default is a QUALITY decision (`qual3.sh` rows).
+- n=2 is the sweet spot everywhere; n=3 loses (acceptance decay + bigger verify batches). Trading ~1/3 of the cache slots for the drafter is worth it on all three files.
+
+**Mainline rebase (for Qwen3.8-Flash-Next, arch `qwen4exp`, absent from the PrismML fork):** `research/patches/mainline-moecache-e613ef2.diff` = the whole cache series squashed onto ggml-org master `e613ef2` (local clone `src/llama.cpp-mainline`, branch `moe-cache`, gitignored). Three trivial rejects + the fork-only Hadamard check removed; libllama compiles (CPU-only check on the Mac). Mainline already has #28549 and #28739. Flash-Next facts (config + HF listings): 48 layers, 512 experts x 4.9M params, 10 routed (2.4B routed active), MTP head; smallest GGUF 72.5 GB (unsloth UD-IQ1_S), uncensored IQ2_XXS 74.9 GB (orcarouter), REAP-256 62 GB => NVMe-streamed (Samsung 980, PCIe3 x4), expected 3-8 tok/s (INFERRED). Needs ~75 GB disk (70 free; the superseded GGUFs = ~27 GB) => waiting for the user's go before deleting/downloading.
+
 ### Next levers on the MoE path (ordered; each gets ledger rows + a quality row where the model file changes)
 
 1. **P3 multi-token cache path** (`research/patches/moecache-p3.diff`, written, not applied): cache graph for 1–4 token batches (ids `cont` + flatten before the table `get_rows`; stays inside the Turing MMVQ `MUL_MAT_ID` window: IQ3_S 6, IQ2_S 7, default 8). Makes MTP verify hit the GPU-cached experts. Then measure: Gemma + `mtp-gemma-4` drafter n=1/2/3 with cache; Qwen + `-md mtp-Qwen3.6-35B-A3B-Q4_0.gguf` n=1/2/3 with cache. Cherry-pick mainline #28549 first (`research/patches/pr28549.diff`, 2 files: separate graph-result arenas for batches with/without outputs so MTP draft steps reuse graphs) and #28739 (`pr28739.diff`, 4-line OOB fix for small `GGML_OP_OFFLOAD_MIN_BATCH`).

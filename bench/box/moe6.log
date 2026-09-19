@@ -14,3 +14,37 @@ p4_q36_c28_mtp2 reason  200 tok | wall 33.74 t/s | decode 44.75 t/s | prefill   
     moe-cache: steps 512 | hit rate 51.7% | uploads 6875 (6671.0 MiB, 13.03 MiB/step) | evictions 5755
 ##### p4_q36_c28_mtp3 | -ot exps=CPU --moe-expert-cache 28 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 3
     preflight: governor=performance thp=[always] mem_avail=14494MiB swap_used=879MiB gpu=4MiB,52,P0
+p4_q36_c28_mtp3 code    200 tok | wall 33.31 t/s | decode 41.04 t/s | prefill   37.2 t/s | accept 137/183=0.75    | vram 3440 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+p4_q36_c28_mtp3 reason  200 tok | wall 32.37 t/s | decode 42.36 t/s | prefill   40.5 t/s | accept 138/182=0.76    | vram 3440 MiB | 'To find when the second train catches the first,'
+    telemetry[p4_q36_c28_mtp3]: GPU util avg  59% max  83% | power avg  57W max  80W /100W | PCIe->GPU avg  0.96 max  4.11 GB/s (~13 cap) | CPU busy  485% of 1200% | DRAM read avg   6.0 max   7.6 GB/s (~38 cap)
+    moe-cache: steps 256 | hit rate 48.3% | uploads 3412 (3308.8 MiB, 12.92 MiB/step) | evictions 2292
+    moe-cache: steps 512 | hit rate 50.9% | uploads 6409 (6217.5 MiB, 12.14 MiB/step) | evictions 5289
+##### p4_g4q3k_c11_mtp1 | -ot exps=CPU --moe-expert-cache 11 -ub 128 -b 256 -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 1
+    preflight: governor=performance thp=[always] mem_avail=14476MiB swap_used=881MiB gpu=4MiB,53,P0
+p4_g4q3k_c11_mtp1 code    200 tok | wall 27.67 t/s | decode 33.79 t/s | prefill   32.8 t/s | accept 87/111=0.78     | vram 3382 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p4_g4q3k_c11_mtp1 reason  200 tok | wall 27.51 t/s | decode 34.58 t/s | prefill   39.6 t/s | accept 87/111=0.78     | vram 3382 MiB | 'To find when the second train catches the first,'
+    telemetry[p4_g4q3k_c11_mtp1]: GPU util avg  66% max 100% | power avg  62W max  85W /100W | PCIe->GPU avg  2.46 max  7.38 GB/s (~13 cap) | CPU busy  576% of 1200% | DRAM read avg  13.3 max  17.3 GB/s (~38 cap)
+    llama_moe_cache_init: MoE expert cache enabled: 30 layers x 11 slots, 2 inserts/step, admit 3 misses / 16 tokens, 1054.3 MiB device memory
+    moe-cache: steps 256 | hit rate 45.2% | uploads 6227 (18238.7 MiB, 71.24 MiB/step) | evictions 5897
+##### p4_g4q3k_c11_mtp2 | -ot exps=CPU --moe-expert-cache 11 -ub 128 -b 256 -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14485MiB swap_used=881MiB gpu=4MiB,53,P0
+p4_g4q3k_c11_mtp2 code    200 tok | wall 30.13 t/s | decode 37.17 t/s | prefill   34.4 t/s | accept 115/167=0.69    | vram 3382 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p4_g4q3k_c11_mtp2 reason  200 tok | wall 28.85 t/s | decode 36.60 t/s | prefill   40.2 t/s | accept 119/160=0.74    | vram 3382 MiB | 'To find when the second train catches the first,'
+    telemetry[p4_g4q3k_c11_mtp2]: GPU util avg  68% max 100% | power avg  67W max  89W /100W | PCIe->GPU avg  2.39 max  8.88 GB/s (~13 cap) | CPU busy  517% of 1200% | DRAM read avg  13.5 max  16.8 GB/s (~38 cap)
+    llama_moe_cache_init: MoE expert cache enabled: 30 layers x 11 slots, 2 inserts/step, admit 3 misses / 16 tokens, 1054.3 MiB device memory
+    moe-cache: steps 256 | hit rate 46.3% | uploads 4714 (13806.5 MiB, 53.93 MiB/step) | evictions 4384
+##### p4_g4q2k_c15_mtp1 | -ot exps=CPU --moe-expert-cache 15 -ub 128 -b 256 -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 1
+    preflight: governor=performance thp=[always] mem_avail=14458MiB swap_used=882MiB gpu=4MiB,54,P0
+p4_g4q2k_c15_mtp1 code    200 tok | wall 37.25 t/s | decode 48.16 t/s | prefill   35.5 t/s | accept 89/110=0.81     | vram 3306 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p4_g4q2k_c15_mtp1 reason  200 tok | wall 33.21 t/s | decode 43.58 t/s | prefill   41.3 t/s | accept 84/114=0.74     | vram 3306 MiB | 'To solve this problem, we need to find the time '
+    telemetry[p4_g4q2k_c15_mtp1]: GPU util avg  73% max  94% | power avg  67W max  91W /100W | PCIe->GPU avg  2.59 max  5.61 GB/s (~13 cap) | CPU busy  487% of 1200% | DRAM read avg  10.9 max  14.7 GB/s (~38 cap)
+    llama_moe_cache_init: MoE expert cache enabled: 30 layers x 15 slots, 2 inserts/step, admit 3 misses / 16 tokens, 1106.0 MiB device memory
+    moe-cache: steps 256 | hit rate 56.1% | uploads 4729 (10896.6 MiB, 42.56 MiB/step) | evictions 4279
+##### p4_g4q2k_c15_mtp2 | -ot exps=CPU --moe-expert-cache 15 -ub 128 -b 256 -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14505MiB swap_used=882MiB gpu=4MiB,55,P0
+p4_g4q2k_c15_mtp2 code    200 tok | wall 37.54 t/s | decode 48.23 t/s | prefill   36.8 t/s | accept 115/166=0.69    | vram 3306 MiB | 'To achieve $O(1)$ time complexity for both `get`'
+p4_g4q2k_c15_mtp2 reason  200 tok | wall 34.91 t/s | decode 46.58 t/s | prefill   41.2 t/s | accept 117/163=0.72    | vram 3306 MiB | 'To solve this problem, we need to find the time '
+    telemetry[p4_g4q2k_c15_mtp2]: GPU util avg  67% max 100% | power avg  67W max  91W /100W | PCIe->GPU avg  3.24 max  6.85 GB/s (~13 cap) | CPU busy  489% of 1200% | DRAM read avg  10.7 max  14.8 GB/s (~38 cap)
+    llama_moe_cache_init: MoE expert cache enabled: 30 layers x 15 slots, 2 inserts/step, admit 3 misses / 16 tokens, 1106.0 MiB device memory
+    moe-cache: steps 256 | hit rate 56.9% | uploads 3926 (9046.3 MiB, 35.34 MiB/step) | evictions 3476
+MOE6_DONE
