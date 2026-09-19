@@ -2,7 +2,7 @@
 Run on the box from the llama.cpp worktree root: python3 /ai/bench/trace_tok.py"""
 import pathlib
 p = pathlib.Path("examples/eval-callback/moe-trace.cpp"); s = p.read_text()
-if ".tok" in s:
+if "tok_path" in s:   # unique marker of THIS patch (".tok" alone false-matches ".token" in the source)
     print("already patched"); raise SystemExit
 old = """        tokens.resize(max_trace_tokens);
     }
