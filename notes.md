@@ -38,7 +38,9 @@ Untested: the fork itself suggests `-DCMAKE_CUDA_ARCHITECTURES="61-virtual;80-vi
 - **Dense => no experts => an LRU/LFU expert cache has nothing to cache.** Every weight is read every token.
 - Reasoning model: emits `reasoning_content` first; small `max_tokens` returns empty content.
 
-Weights (all in `/ai/models`):
+**Housekeeping 2026-09-19 21:45:** deleted (user OK) the four superseded Bonsai files below (davetha PQ2_0, abliterated PTQ1_0, both stock prism-ml files; ~26 GB) and the stale `/opt/ai` copy (35 GB on the btrfs array). `/ai/models` now = Bonsai PQ2_0-MTP, Qwen3.6 IQ2_M + `mtp-Qwen3.6` Q4_0 head, Gemma4 IQ3_M / Q3_K_M / Q2_K_P + `mtp-gemma-4` drafter. 88 GB free on `/`.
+
+Weights (historical table; only the first row is still on disk):
 
 | file | size | role |
 |---|---|---|
@@ -271,7 +273,7 @@ P4 = the device cache chain is built/expanded BEFORE the host chain and starts w
 - **Best configs (2026-09-19 ~21:40):** Qwen3.6 `-ngl 999 -ot exps=CPU --moe-expert-cache 30 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2` = **46.3 tok/s** (28.0 this morning, +65%). Gemma4 Q3_K_M `--moe-expert-cache 11 ... -md /ai/models/mtp-gemma-4-26B-A4B-it.gguf --spec-type draft-mtp --spec-draft-n-max 2` = **37.2**; Gemma4 Q2_K_P with 15 slots = **48.2** (16.2 this morning). Binaries: `/ai/src/llama.cpp-moecache/build75/bin`. Which Gemma file is the default is a QUALITY decision (`qual3.sh` rows).
 - n=2 is the sweet spot everywhere; n=3 loses (acceptance decay + bigger verify batches). Trading ~1/3 of the cache slots for the drafter is worth it on all three files.
 
-**Mainline rebase (for Qwen3.8-Flash-Next, arch `qwen4exp`, absent from the PrismML fork):** `research/patches/mainline-moecache-e613ef2.diff` = the whole cache series squashed onto ggml-org master `e613ef2` (local clone `src/llama.cpp-mainline`, branch `moe-cache`, gitignored). Three trivial rejects + the fork-only Hadamard check removed; libllama compiles (CPU-only check on the Mac). Mainline already has #28549 and #28739. Flash-Next facts (config + HF listings): 48 layers, 512 experts x 4.9M params, 10 routed (2.4B routed active), MTP head; smallest GGUF 72.5 GB (unsloth UD-IQ1_S), uncensored IQ2_XXS 74.9 GB (orcarouter), REAP-256 62 GB => NVMe-streamed (Samsung 980, PCIe3 x4), expected 3-8 tok/s (INFERRED). Needs ~75 GB disk (70 free; the superseded GGUFs = ~27 GB) => waiting for the user's go before deleting/downloading.
+**Mainline rebase (for Qwen3.8-Flash-Next, arch `qwen4exp`, absent from the PrismML fork):** `research/patches/mainline-moecache-e613ef2.diff` = the whole cache series squashed onto ggml-org master `e613ef2` (local clone `src/llama.cpp-mainline`, branch `moe-cache`, gitignored). Three trivial rejects + the fork-only Hadamard check removed; libllama compiles (CPU-only check on the Mac). Mainline already has #28549 and #28739. Flash-Next facts (config + HF listings): 48 layers, 512 experts x 4.9M params, 10 routed (2.4B routed active), MTP head; smallest GGUF 72.5 GB (unsloth UD-IQ1_S), uncensored IQ2_XXS 74.9 GB (orcarouter), REAP-256 62 GB => NVMe-streamed (Samsung 980, PCIe3 x4), expected 3-8 tok/s (INFERRED). Needs ~75 GB disk (70 free; the superseded GGUFs = ~27 GB) => **PARKED by the user (2026-09-19): "stick with Gemma and qwen36 here for now".** The mainline rebase stays in the repo for when it is wanted (also the base for any upstreaming).
 
 ### Next levers on the MoE path (ordered; each gets ledger rows + a quality row where the model file changes)
 
