@@ -7,6 +7,39 @@ PROMPTS = [
     ("code",   "Write a Python class implementing an LRU cache with get and put in O(1), with type hints and a short docstring for each method."),
     ("reason", "A train leaves at 3pm going 60 mph. A second leaves the same station at 4pm going 80 mph on the same track. When does the second catch the first? Show the algebra step by step."),
 ]
+# EDIT=1 adds a copy-heavy prompt (the answer is mostly a verbatim copy of the input): the workload n-gram drafting targets.
+EDIT_SRC = '''def parse_rows(path, sep=",", skip_header=True, max_rows=None):
+    """Parse a delimited text file into a list of dicts keyed by the header row."""
+    rows = []
+    header = None
+    with open(path, "r", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle):
+            line = line.rstrip("\\n")
+            if not line:
+                continue
+            fields = [field.strip() for field in line.split(sep)]
+            if header is None:
+                header = fields if skip_header else [f"col{i}" for i in range(len(fields))]
+                if skip_header:
+                    continue
+            if len(fields) != len(header):
+                raise ValueError(f"line {line_number}: expected {len(header)} fields, got {len(fields)}")
+            rows.append(dict(zip(header, fields)))
+            if max_rows is not None and len(rows) >= max_rows:
+                break
+    return rows
+
+
+def summarize_rows(path, column, sep=","):
+    """Return count, minimum, maximum and mean of a numeric column parsed by parse_rows."""
+    values = [float(row[column]) for row in parse_rows(path, sep=sep) if row.get(column)]
+    if not values:
+        return {"count": 0, "min": None, "max": None, "mean": None}
+    return {"count": len(values), "min": min(values), "max": max(values), "mean": sum(values) / len(values)}
+'''
+if os.environ.get("EDIT") == "1":
+    PROMPTS.append(("edit", "Rename the function parse_rows to parse_records everywhere in the code below and change nothing else. "
+                            "Output only the complete updated code in one code block.\n\n```python\n" + EDIT_SRC + "```"))
 rows = []
 for kind, q in PROMPTS:
     body = json.dumps({"messages": [{"role": "user", "content": q}], "temperature": 0, "max_tokens": GEN,
