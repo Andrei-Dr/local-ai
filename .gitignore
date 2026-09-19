@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.DS_Store
+# router traces are 8-10 MB each and reproducible on the box (notes.md: "Trace run")
+bench/traces/*.bin
