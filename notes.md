@@ -301,6 +301,7 @@ Scores belong to (model file, thinking mode). Placement and speculation flags do
 |---|---|---|---|---|---|---|---|
 | Qwen3.6-35B-A3B IQ2_M, cache off | 2.69 | 28.0 (27.5 in-run) | 96.0 ±2.8 | 92.7 ±4.1 | 38.6 ±5.8 (*) | 42 / 0 | first pass, old caps |
 | Qwen3.6-35B-A3B IQ2_M, **cache 48** | 2.69 | 34.0 (33.1 in-run, 28 min sustained) | 98.0 ±2.0 | 92.7 ±4.1 | 40.0 ±5.9 (*) | 41 / 0 | cache-on == cache-off within noise => cache is numerically sound |
+| Qwen3.6-35B-A3B IQ2_M, **cache 48, cut-off rows re-run (new caps)** | 2.69 | 34.0 (34.3 in-run) | 100.0 | 95.1 ±3.4 | 62.9 ±5.8 | 19 / 0 | 19 answers still hit the 1024-token cap with thinking off (Qwen is wordier than Gemma: 8-11 cut-offs), so MMLU-Pro is still a floor for Qwen, not a score; Gemma 71.4 vs Qwen 62.9 is NOT a clean comparison until the cut-offs are gone (raise the cap to 2048 for Qwen or score finished answers only) |
 | Gemma4-26B-A4B IQ3_M, **cache 16** | 3.9 | 24.3 (22.6 in-run, 41 min sustained) | 100.0 | 87.8 ±5.1 | 44.3 ±5.9 (*) | 38 / 0 | |
 | Gemma4-26B-A4B IQ3_M, **cache 16, cut-off rows re-run (new caps)** | 3.9 | 24.3 (23.3 in-run) | 100.0 | 92.7 ±4.1 | 71.4 ±5.4 | 8 / 0 | all three Gemma quants now score exactly 50/70 on MMLU-Pro: check per-item overlap in `results/*.jsonl` before reading anything into it |
 | Gemma4-26B-A4B IQ3_M, cache off | 3.9 | 16.7 | 100.0 (50/50) | 87.8 (36/41) | partial (*) | | killed by systemd-oomd at item 145/161 (15:06), resumed 21:05 |
