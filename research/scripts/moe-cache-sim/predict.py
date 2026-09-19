@@ -29,6 +29,7 @@ def main():
     ap.add_argument("trace")
     ap.add_argument("--train", type=float, default=0.5)
     ap.add_argument("--budget", default="8,16,32")
+    ap.add_argument("--shift", type=int, default=0, help="predict token t from the tokens up to t-SHIFT: 0 = the token itself (a drafted token, known only when it is verified), 1 = lookahead (what a prefetch that must land a round early can use)")
     a = ap.parse_args()
 
     layers = sim.load(a.trace)
@@ -44,10 +45,11 @@ def main():
     rows = []
     for li, (layer, seq) in enumerate(layers.items()):
         uni, bi, glob = collections.defaultdict(collections.Counter), collections.defaultdict(collections.Counter), collections.Counter()
-        for t in range(1, cut):
+        S = a.shift
+        for t in range(S + 1, cut):
             ex = seq[t].tolist()
-            uni[int(toks[t])].update(ex)
-            bi[(int(toks[t - 1]), int(toks[t]))].update(ex)
+            uni[int(toks[t - S])].update(ex)
+            bi[(int(toks[t - S - 1]), int(toks[t - S]))].update(ex)
             glob.update(ex)
         rec = {(m, b): 0 for m in ("unigram", "bigram", "recent", "global") for b in budgets}
         recent = collections.OrderedDict()
@@ -56,7 +58,7 @@ def main():
                 recent.pop(e, None); recent[e] = 1
         for t in range(cut, n):
             actual = set(seq[t].tolist())
-            u, g2 = uni.get(int(toks[t])), bi.get((int(toks[t - 1]), int(toks[t])))
+            u, g2 = uni.get(int(toks[t - S])), bi.get((int(toks[t - S - 1]), int(toks[t - S])))
             rlist = list(recent.keys())[::-1]
             for b in budgets:
                 gb = topb(glob, b)
@@ -69,7 +71,7 @@ def main():
         rows.append((layer, {key: v / ((n - cut) * k) for key, v in rec.items()}))
 
     bands = [("first quarter", rows[: len(rows) // 4]), ("middle half", rows[len(rows) // 4: 3 * len(rows) // 4]), ("last quarter", rows[3 * len(rows) // 4:]), ("all layers", rows)]
-    print(f"\nrecall@B of a token's real experts (chance = B/n_expert)\n{'layers':>14} {'B':>3} | {'unigram':>8} {'bigram':>8} {'recent(LRU)':>12} {'global':>8}")
+    print(f"\nshift {a.shift}: recall@B of a token's real experts (chance = B/n_expert)\n{'layers':>14} {'B':>3} | {'unigram':>8} {'bigram':>8} {'recent(LRU)':>12} {'global':>8}")
     for name, rs in bands:
         if not rs:
             continue

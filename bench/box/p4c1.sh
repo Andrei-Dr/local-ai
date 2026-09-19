@@ -30,6 +30,12 @@ done
 # N2-lite: n-gram cap 3 with MTP at 2 => n_rs_seq 3 (+62.8 MiB => one slot less), vs the N1 winner (cap 2)
 run $Q n2_q36_c30_ngmod2 -ot exps=CPU --moe-expert-cache 30 -ub 128 -b 256 $QN --spec-ngram-mod-n-max 2
 run $Q n2_q36_c29_ngmod3 -ot exps=CPU --moe-expert-cache 29 -ub 128 -b 256 $QN --spec-ngram-mod-n-max 3
+# V1 VRAM diet (zero code): the standalone MTP head holds 727.7 MiB of VRAM = output.weight 272.8 + ITS OWN layer's 256 experts
+# 3 x 144 MiB (gguf scan 2026-09-20) + small. Only 8 of those experts run per draft token, Q4_0, one layer: keep them on the
+# CPU (-otd exps=CPU) and spend the 432 MiB on ~10 more cache slots (40.06 MiB each). Check the log line: the cache must
+# still report 40 layers (the draft model has host experts now; init must bind to the main model).
+run $Q v1_q36_c40_mtp2_otd -ot exps=CPU --moe-expert-cache 40 -ub 128 -b 256 $QH -otd "exps=CPU"
+run $Q v1_q36_c38_mtp2_otd -ot exps=CPU --moe-expert-cache 38 -ub 128 -b 256 $QH -otd "exps=CPU"
 echo "--- temp-0 text identity, warm 0 vs warm 32 (a divergence is a greedy tie-break from different cache contents, not an error)"
 for m in q36 g4q2k; do python3 /ai/bench/textdiff.py runs/p4c_${m}_warm0_a.client.json runs/p4c_${m}_warm32_a.client.json | sed "s/^/    $m /"; done
 echo P4C1_DONE
