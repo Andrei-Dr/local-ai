@@ -1,0 +1,14 @@
+[Unit]
+Description=local-ai bench job queue (manual start; resumes /ai/bench/queue.tsv)
+After=ai-perf-tweaks.service network-online.target
+Wants=ai-perf-tweaks.service
+
+[Service]
+Type=simple
+WorkingDirectory=/ai/bench
+EnvironmentFile=/ai/bench/queue.env
+ExecStart=/ai/bench/queue.sh run
+Restart=no
+OOMPolicy=continue
+KillMode=control-group
+TimeoutStopSec=30

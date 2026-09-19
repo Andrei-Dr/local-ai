@@ -1,0 +1,7 @@
+qual3	pending	0	-	-	-	grep -q QUAL3_DONE qual3.log 2>/dev/null || { bash /ai/bench/qual3.sh >> qual3.log 2>&1; grep -q QUAL3_DONE qual3.log; }
+q38	pending	0	-	-	-	bash /ai/bench/q38.sh > q38.log 2>&1; grep -q Q38_DONE q38.log
+distill	pending	0	-	-	-	bash /ai/bench/distill.sh > distill.log 2>&1; grep -q DISTILL_DONE distill.log
+build_mainline	pending	0	-	-	-	bash /ai/bench/build_mainline.sh >> build_mainline.log 2>&1; grep -q BUILD_MAINLINE_DONE build_mainline.log
+mainline_ab	pending	0	-	-	-	grep -q BUILD_MAINLINE_DONE build_mainline.log && bash /ai/bench/mainline_ab.sh > mainline_ab.log 2>&1; grep -q MAINLINE_AB_DONE mainline_ab.log
+trace2	pending	0	-	-	-	bash /ai/bench/trace2.sh > trace2.log 2>&1; grep -q TRACE2_DONE trace2.log
+ngram1	pending	0	-	-	-	bash /ai/bench/ngram1.sh > ngram1.log 2>&1; grep -q NGRAM1_DONE ngram1.log

@@ -13,7 +13,7 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 
 1. Every unit of work has an ID (`U2`, `N3`, `T1`...). Commits, ledger labels, notes entries and box scripts reference the ID.
 2. Nothing gets queued on the box or started on Dave's rig without three lines written first: **hypothesis, measurement, kill criterion**.
-3. WIP limits: one job stream on the i5 box (it is a serial machine: 16 GB RAM, one GPU), one code stream on the Mac, at most one scout in flight. New ideas go to section 12 (parking lot), not into the queue.
+3. Box work is queued ONLY through `/ai/bench/queue.sh add ID 'CMD'` (file-backed, survives poweroff, GPU-idle gated); no more tmux waiter chains. WIP limits: one job stream on the i5 box (it is a serial machine: 16 GB RAM, one GPU), one code stream on the Mac, at most one scout in flight. New ideas go to section 12 (parking lot), not into the queue.
 4. The status board (section 1) is updated at every checkpoint. A checkpoint = ledger synced, `notes.md` updated, board updated, commit pushed.
 5. Every third checkpoint: forensic re-read of this spec against what was actually built (intent vs implementation drift), findings recorded in section 11.
 6. Nothing is "done" until it is measured on the box with the full telemetry row AND the quality gate (section 8) passes AND an adversarial review of the diff/result found nothing above low severity.
@@ -25,7 +25,7 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 |---|---|---|---|
 | H1 | Harness: preflight, mon, ledger, quality, death-aware waiters | done [M] | keep |
 | H2 | Workload set W1-W4 + larger-n quality set | todo | before any model-default decision is called final |
-| Q-box | Box queue: qual3 -> q38 -> distill -> mainline build -> A/B -> trace2 -> ngram1 | running, unattended | ~8-10 h; monitor re-arm every 30 min |
+| Q-box | Box queue: qual3 -> q38 -> distill -> mainline build -> A/B -> trace2 -> ngram1 | running, unattended; **durable: `/ai/bench/queue.tsv` + `ai-queue.service`** | ~8-10 h of box time. Manual start only: after a poweroff run `systemctl start ai-queue`; status with `/ai/bench/queue.sh list` |
 | S1 | Gemma default file (Q3_K_M vs Q2_K_P) | data in [M], provisional: Q2_K_P | H2 larger-n pass to confirm |
 | S2 | Qwen3.8-35B-A3B-Distill vs Qwen3.6-35B-A3B | queued (`distill.sh`) | decide on quality + tok/s; if it wins, Dave abliterates, re-bench |
 | S3 | Bonsai PQ2_0 vs stock Qwen3.8-27B IQ3_M (dense reference) | queued | informational; dense is not the i5 path |
