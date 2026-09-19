@@ -25,7 +25,7 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 |---|---|---|---|
 | H1 | Harness: preflight, mon, ledger, quality, death-aware waiters | done [M] | keep |
 | H2 | Workload set W1-W4 + larger-n quality set | todo | before any model-default decision is called final |
-| Q-box | Box queue: qual3 -> q38 -> distill -> mainline build -> A/B -> trace2 -> ngram1 | running, unattended; **durable: `/ai/bench/queue.tsv` + `ai-queue.service`** | ~8-10 h of box time. Manual start only: after a poweroff run `systemctl start ai-queue`; status with `/ai/bench/queue.sh list` |
+| Q-box | Box queue: qual3 -> q38 -> distill -> mainline build -> A/B -> trace2 -> ngram1 | running, unattended; **durable: `/ai/bench/queue.tsv` + `ai-queue.service`** | ~8-10 h of box time. Enabled at boot (resumes by itself after a poweroff; `Restart=no`, so never after a crash); `systemctl start|stop|disable ai-queue`; status with `/ai/bench/queue.sh list` |
 | S1 | Gemma default file (Q3_K_M vs Q2_K_P) | data in [M], provisional: Q2_K_P | H2 larger-n pass to confirm |
 | S2 | Qwen3.8-35B-A3B-Distill vs Qwen3.6-35B-A3B | queued (`distill.sh`) | decide on quality + tok/s; if it wins, Dave abliterates, re-bench |
 | S3 | Bonsai PQ2_0 vs stock Qwen3.8-27B IQ3_M (dense reference) | queued | informational; dense is not the i5 path |

@@ -2,8 +2,8 @@
 # queue.sh -- durable, file-backed job queue for the i5 box. One job at a time (the box is a serial machine).
 # State lives in $QDIR/queue.tsv (tab-separated: id, status, tries, started, ended, rc, cmd) and survives reboots,
 # tmux deaths and systemd-oomd; the runner is ai-queue.service (system.slice, so oomd's user-slice pressure kills miss it).
-# The service is deliberately NOT enabled at boot and does not auto-restart: after a poweroff, resume with
-#   systemctl start ai-queue        (status: queue.sh list; journal: journalctl -u ai-queue; log: queue.log)
+# The service is enabled at boot (resumes the queue after a poweroff) but has Restart=no, so it never respawns after a crash.
+#   systemctl start|stop|disable ai-queue   (status: queue.sh list; journal: journalctl -u ai-queue; log: queue.log)
 # A job that was running when the box went down is requeued on the next start (up to MAX_TRIES starts).
 #   queue.sh add ID 'CMD'     append a pending job (CMD runs under bash -c in $QDIR; rc 0 = done, else failed)
 #   queue.sh list             show the queue
