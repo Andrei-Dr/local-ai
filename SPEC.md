@@ -36,7 +36,8 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 | U4 | Upstream candidates | todo | needs Andrei's explicit go (a fork of a public repo is public) |
 | N1 | Hybrid `ngram-mod,draft-mtp` bench | **done [M]** | G3 PASS (workload-shaped): keep MTP n=2, n-gram ON, cap Qwen<=2 / Gemma long; +3.8% Qwen edit, ~free Gemma, neutral code/reason |
 | N2 | Decouple `n_rs_seq` from the model drafter for n-gram drafts | **long form dead on 4 GB [M]; N2-lite (cap 3) optional** | each `n_rs_seq` unit = **62.81 MiB VRAM** on Qwen3.6 [M, box logs: 62.81 / 188.44 / 251.25 MiB at 0 / 2 / 3]; 16 units = +880 MiB = ~22 cache slots. Only `n_rs_seq` 3 (+63 MiB, ~1.6 slots) is affordable; expected ~+1% on edit. See 6.2 |
-| N3 | Persistent, offline-seeded n-gram continuation store ("rainbow table") | design in section 6 | after N1 |
+| N3 | Persistent, offline-seeded n-gram continuation store ("rainbow table") | **demoted [M]**, design in section 6 | ceiling is the draft time it replaces: 5.4 ms of a 58 ms Qwen round (9%), and only in rounds where the table drafts (70 of 321 on the edit workload). Build only after KQ1/P2, and only if copy-heavy traffic is where we live |
+| KQ1 | **K-quant experts for Qwen3.6** (requantize HauhauCS Q6_K_P: gate/up Q2_K, down Q3_K, own imatrix) | queued (`kq1.sh`) | section 4.1. Gate: quality within 1 sigma of IQ2_M, MemAvailable min >= 1.5 GB, swap quiet. Kill: miss cost improves < 1.3x |
 | P1 | Token-n-gram -> expert predictability (`predict.py` on trace2) | blocked on `trace2b` (first trace run wrote no `.tok` sidecars: `trace_tok.py` guard bug, fixed `1509285`) | G4 |
 | P2 | Draft-driven expert prefetch | blocked on P1 | G4 |
 | P3c | Cache graph beyond 4-token batches | todo | needed if N1 shows long drafts pay |
@@ -110,6 +111,21 @@ Per decode step [I, fitted to M]:
 - **Validity: k <= 4 only.** The cache graph serves 1-4 token batches; at k >= 5 the batch leaves the cache path, every routed expert becomes a CPU miss, and on GDN models a draft longer than `n_rs_seq` additionally pays checkpoint + replay. The model is piecewise, with a cliff at k = 5, until P3c and N2 land. N1's 16-token rows measure the far side of that cliff; nothing in the target ladder assumes drafts beyond 3 tokens.
 - `c_miss * m(k)` = CPU expert matvecs for the `m` distinct uncached (layer, expert) pairs the batch touches: at k=1 and no cache, Qwen ~20 ms, Gemma ~38 ms [M fit]. `m(k)` grows with k unless consecutive tokens route to the same experts.
 - Sanity check: Qwen best config = 46.3 tok/s; at tau ~2.5 that is T_step ~54 ms, i.e. a 3-token verify costs about 2x a single step. **Speculation on this box is throttled by expert fan-out, not by the GPU.** That is the core coupling this program exploits.
+
+### 4.1 Fit to the ledger, 2026-09-20 [M]
+Per-round time = 1000 * tau / decode_tps, draft time from the server's `statistics draft-mtp ... dur(g)` line.
+
+| Qwen3.6 IQ2_M | slots | hit % | tau | round ms | of which draft ms |
+|---|---|---|---|---|---|
+| k=1 (no spec) | 48 / 30 | 62 / 55 | 1.00 | 25.3 / 27.0 | 0 |
+| k=2 (MTP n=1) | 36 | 58 | 1.9 | 50 | ~2.7 |
+| k=3 (MTP n=2) | 30 | 53 | 2.70 | 58.4 | 5.4 |
+| k=4 (MTP n=3) | 28 | 51 | 3.2-3.4 | 75-77 | 7.9 |
+
+Gemma Q2_K_P: k=1 24.9 ms (c19), k=2 37.4, k=3 48.8 (draft 5.1), so ~+12 ms per extra verify token.
+- **The draft is cheap (9% of a Qwen round). The verify is what costs:** a 3-token verify is ~53 ms vs 27 ms for one token. With T_fixed ~21 ms at k=3, **~31 ms of a 58 ms round is CPU expert matvecs**, 3.3x the k=1 miss cost for 3x the tokens.
+- **Correction to the model above:** the miss term scales with uncached (token, expert) PAIRS, not with distinct experts. The i-quant vec_dot is compute-bound (`ggml_vec_dot_iq2_s_q8_K` = 49% of the profile, DRAM at 8-10 of 38 GB/s), and two tokens that share an uncached expert still pay two matvecs. So "sub-linear m(k)" (T2's second benefit, P3c's premise) buys nothing while misses are compute-bound; only hit rate (P2, T2, slots) and the per-pair cost (the expert quant) move the term.
+- **Consequences.** (1) Biggest lever left on Qwen is the per-pair cost: Gemma's IQ3_S -> Q2_K/Q4_0 experts cut the miss cost ~2.7x (60 -> 36 ms per token with no cache). HauhauCS ships no Qwen K-quant that fits 16 GB (Q2_K_P = 13.67 GB of experts), so **KQ1** builds one: gate/up Q2_K + down Q3_K = ~11.7 GB of experts (IQ2_M: 10.41). If the pair cost drops 1.7-2.5x, the round goes 58 -> 45-40 ms = **60-68 tok/s**, and n=3 may start to pay. (2) Hit rate: every 10 points of hit rate is ~6 ms of a Qwen round (~+11%); that is P2/T2/P4c. (3) N3 is capped at the 9% draft share and only on copy-heavy rounds: demoted. (4) T1 (better head so n=3 pays) only pays after the verify tokens get cheaper, i.e. after KQ1.
 
 Four levers, and which work attacks them:
 
