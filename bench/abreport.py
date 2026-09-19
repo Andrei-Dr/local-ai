@@ -1,7 +1,14 @@
-"""abreport.py LEDGER.jsonl BASE_REGEX TEST_REGEX [--md] -- A/B decode table from specbench ledger rows.
+"""abreport.py LEDGER.jsonl BASE_REGEX TEST_REGEX [--md] [--metric NAME] -- A/B table from specbench rows.
 Repeats are averaged across records per prompt kind (completed-only, latest-by-ts per label); a verdict
-only counts past the within-arm repeat spread (or 1%), so noise cannot be reported as a win."""
+only counts past the within-arm repeat spread (or 1%), so noise cannot be reported as a win.
+Importable core: compare(records, base_re, test_re, metric) -> dict; render(result, md) -> str."""
 import json, re, sys
+
+METRICS = ("decode_tps", "wall_tps", "prefill_tps", "acceptance")
+
+
+def mlabel(m):
+    return "decode t/s" if m == "decode_tps" else m
 
 
 def mean(xs):
@@ -18,11 +25,21 @@ def spread(xs):
     return 100.0 * (max(xs) - min(xs)) / m if m else 0.0
 
 
-def arm_stats(records):
+def latest_completed(records):
+    """One record per label: completed specbench rows with prompts, newest ts (>= keeps file order on ties)."""
+    latest = {}
+    for r in records:
+        if r.get("kind") == "specbench" and r.get("completed") and r.get("prompts"):
+            if r["label"] not in latest or (r.get("ts") or "") >= (latest[r["label"]].get("ts") or ""):
+                latest[r["label"]] = r
+    return latest
+
+
+def arm_stats(records, metric="decode_tps"):
     per, acc, hits, vrams, commits = {}, {}, [], [], set()
     for r in records:
         for p in r.get("prompts") or []:
-            per.setdefault(p.get("prompt"), []).append(p.get("decode_tps"))
+            per.setdefault(p.get("prompt"), []).append(p.get(metric))
             acc.setdefault(p.get("prompt"), []).append(p.get("acceptance"))
         mc = r.get("moe_cache") or {}
         if isinstance(mc.get("hit_rate_pct"), (int, float)):
@@ -40,37 +57,22 @@ def verdict(delta, nz):
     return "WIN" if delta > thr else "LOSS" if delta < -thr else "flat"
 
 
-def main():
-    md = "--md" in sys.argv[1:]
-    pos = [a for a in sys.argv[1:] if a != "--md"]
-    if len(pos) != 3:
-        print("usage: abreport.py LEDGER.jsonl BASE_REGEX TEST_REGEX [--md]", file=sys.stderr)
-        sys.exit(2)
-    led, rex = pos[0], (re.compile(pos[1]), re.compile(pos[2]))
-    latest = {}
-    for line in open(led, encoding="utf-8"):
-        line = line.strip()
-        if not line:
-            continue
-        r = json.loads(line)
-        if r.get("kind") == "specbench" and r.get("completed") and r.get("prompts"):
-            if r["label"] not in latest or (r.get("ts") or "") >= (latest[r["label"]].get("ts") or ""):
-                latest[r["label"]] = r
+def compare(records, base_re, test_re, metric="decode_tps"):
+    """-> {"empty_arm": None|"base"|"test", "pattern", "metric", "rows": [[6 cells]], "arms": {...}}"""
+    latest = latest_completed(records)
     arms = {}
-    for name, rx in zip(("base", "test"), rex):
+    for name, rx in (("base", base_re), ("test", test_re)):
         recs = [r for r in latest.values() if rx.search(r["label"])]
         if not recs:
-            print(f"no completed specbench records match arm '{name}' ({rx.pattern})", file=sys.stderr)
-            sys.exit(2)
-        arms[name] = arm_stats(recs)
+            return {"empty_arm": name, "pattern": rx.pattern, "metric": metric}
+        arms[name] = arm_stats(recs, metric)
 
     kinds = list(dict.fromkeys(k for st in arms.values() for k in st["per"]))
 
-    def cell(k):  # per kind, per arm: (mean, n) and spread
+    def cell(k):  # per kind, per arm: ((mean, n), spread)
         out = []
         for name in ("base", "test"):
-            v = arms[name]["per"].get(k) or []
-            v = [x for x in v if isinstance(x, (int, float))]
+            v = [x for x in arms[name]["per"].get(k) or [] if isinstance(x, (int, float))]
             out.append(((mean(v), len(v)), spread(v)))
         return out
 
@@ -78,7 +80,7 @@ def main():
     for k in kinds:
         ((bm, bn), sb), ((tm, tn), st_) = cell(k)
         if bm is None or tm is None:
-            continue  # prompt kind lacks decode numbers on an arm
+            continue  # prompt kind lacks numeric values on an arm
         nz = None if bn <= 1 and tn <= 1 else max(v for v in (sb, st_) if v is not None)
         d = 100.0 * (tm - bm) / bm if bm else None
         rows.append([k, f"{bm:.2f} (n={bn})", f"{tm:.2f} (n={tn})",
@@ -96,8 +98,12 @@ def main():
         d = 100.0 * (av["test"] - av["base"]) / av["base"]
         rows.append(["ALL", f"{av['base']:.2f}", f"{av['test']:.2f}", f"{d:+.2f}%",
                      "-" if nz is None else f"{nz:.2f}%", verdict(d, nz)])
+    return {"empty_arm": None, "pattern": None, "metric": metric, "rows": rows, "arms": arms}
 
-    head = ["prompt", "base decode t/s", "test decode t/s", "delta %", "noise %", "verdict"]
+
+def render(result, md=False):
+    head = ["prompt", f"base {mlabel(result['metric'])}", f"test {mlabel(result['metric'])}", "delta %", "noise %", "verdict"]
+    rows = result["rows"]
     if md:
         out = ["| " + " | ".join(head) + " |", "|---" * len(head) + "|"]
         out += ["| " + " | ".join(str(c) for c in r) + " |" for r in rows]
@@ -105,14 +111,44 @@ def main():
         w = [max(len(s) for s in c) for c in zip(head, *rows)] if rows else [max(len(s) for s in c) for c in [head]]
         ln = lambda ss: " | ".join(s.ljust(x) for s, x in zip(ss, w)).rstrip()
         out = [ln(head), "-|-".join("-" * x for x in w)] + [ln(r) for r in rows]
-    print("\n".join(out))
     for name in ("base", "test"):
-        st = arms[name]
+        st = result["arms"][name]
         acc = ", ".join((f"{k} {m:.3f}" if (m := mean(v)) is not None else f"{k} -") for k, v in st["acc"].items() if v) or "-"
         hit = f"{st['hit']:.1f}%" if st["hit"] is not None else "-"
         vram = f"{st['vram']:.0f} MiB" if st["vram"] is not None else "-"
-        print(f"{name}: {st['records']} records | acceptance {acc} | cache hit {hit} | vram {vram} | "
-              f"commits {' '.join(sorted(st['commits'])) or '-'}")
+        out.append(f"{name}: {st['records']} records | acceptance {acc} | cache hit {hit} | vram {vram} | "
+                   f"commits {' '.join(sorted(st['commits'])) or '-'}")
+    return "\n".join(out)
+
+
+def main():
+    argv = sys.argv[1:]
+    md = "--md" in argv
+    metric = "decode_tps"
+    pos = []
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "--metric":
+            i += 1
+            metric = argv[i] if i < len(argv) else ""
+        elif a.startswith("--metric="):
+            metric = a.split("=", 1)[1]
+        elif a != "--md":
+            pos.append(a)
+        i += 1
+    if metric not in METRICS:
+        print(f"bad --metric '{metric}' (allowed: {', '.join(METRICS)})", file=sys.stderr)
+        sys.exit(2)
+    if len(pos) != 3:
+        print("usage: abreport.py LEDGER.jsonl BASE_REGEX TEST_REGEX [--md] [--metric NAME]", file=sys.stderr)
+        sys.exit(2)
+    recs = [json.loads(l) for l in open(pos[0], encoding="utf-8") if l.strip()]
+    res = compare(recs, re.compile(pos[1]), re.compile(pos[2]), metric)
+    if res["empty_arm"]:
+        print(f"no completed specbench records match arm '{res['empty_arm']}' ({res['pattern']})", file=sys.stderr)
+        sys.exit(2)
+    print(render(res, md))
     sys.exit(0)
 
 

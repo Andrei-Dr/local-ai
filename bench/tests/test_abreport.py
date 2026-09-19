@@ -5,11 +5,11 @@ from pathlib import Path
 TOOL = Path(__file__).resolve().parent.parent / "abreport.py"
 
 
-def prec(label, ts, code, acc=0.5, completed=True, vram=3400, commit="deadbeef0", kind="code"):
+def prec(label, ts, code, acc=0.5, completed=True, vram=3400, commit="deadbeef0", kind="code", pre=300.0):
     return {"kind": "specbench", "label": label, "ts": ts, "completed": completed, "vram_mib": vram,
             "model": "m.gguf", "git": {"commit": commit}, "moe_cache": {"hit_rate_pct": 42.0},
             "prompts": [{"prompt": kind, "tokens": 200, "decode_tps": code, "wall_tps": code,
-                         "prefill_tps": 300.0, "acceptance": acc}]}
+                         "prefill_tps": pre, "acceptance": acc}]}
 
 
 def run(recs, args):
@@ -68,6 +68,20 @@ class AbreportCase(unittest.TestCase):
         lines = p.stdout.splitlines()
         self.assertTrue(lines[0].startswith("| prompt"), lines[0])
         self.assertTrue(lines[1].startswith("|---"), lines[1])
+
+    def test_metric_option_compares_and_names_field(self):
+        recs = [prec("b1", "2026-09-01T00:00:00+0300", 20.0, pre=300.0),
+                prec("t1", "2026-09-01T00:00:00+0300", 21.0, pre=350.0)]
+        p = run(recs, ["^b", "^t1", "--metric", "prefill_tps"])
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("base prefill_tps", p.stdout)      # header names the metric
+        self.assertIn("test prefill_tps", p.stdout)
+        self.assertIn("350.00 (n=1)", p.stdout)          # compares that field, not decode (would be 21.00)
+        self.assertIn("300.00 (n=1)", p.stdout)
+        self.assertIn("+16.67%", p.stdout)               # (350-300)/300, not (21-20)/20
+        q = run(recs, ["^b", "^t1", "--metric", "bogus"])
+        self.assertEqual(q.returncode, 2)
+        self.assertIn("bad --metric", q.stderr)
 
 
 if __name__ == "__main__":
