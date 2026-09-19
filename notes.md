@@ -305,7 +305,7 @@ Scores belong to (model file, thinking mode). Placement and speculation flags do
 | Gemma4-26B-A4B IQ3_M, **cache 16** | 3.9 | 24.3 (22.6 in-run, 41 min sustained) | 100.0 | 87.8 ±5.1 | 44.3 ±5.9 (*) | 38 / 0 | |
 | Gemma4-26B-A4B IQ3_M, **cache 16, cut-off rows re-run (new caps)** | 3.9 | 24.3 (23.3 in-run) | 100.0 | 92.7 ±4.1 | 71.4 ±5.4 | 8 / 0 | all three Gemma quants now score exactly 50/70 on MMLU-Pro: check per-item overlap in `results/*.jsonl` before reading anything into it |
 | Gemma4-26B-A4B IQ3_M, cache off | 3.9 | 16.7 | 100.0 (50/50) | 87.8 (36/41) | partial (*) | | killed by systemd-oomd at item 145/161 (15:06), resumed 21:05 |
-| Bonsai-27B PQ2_0-MTP | 2.13 | 5.15 | owed | | | | ~2.5 h run |
+| Bonsai-27B PQ2_0-MTP | 2.13 | 5.15 | dropped | | | | quality run killed 2026-09-19 23:33 at GSM8K item 7/50 (~5.6 tok/s => ~2.5-3 h, lowest-value row, blocking the decision jobs); Andrei: "fuck that bonsai model at this rate". Bonsai's real home is MLX on the Mac (parked). Speed 5.15 tok/s stands; no quality row. Reopen: only if we ever care about the dense PQ2_0 quality number |
 | **Gemma4-26B-A4B Q3_K_M, cache 15** | ~3.4 | 33.7 (37.2 with drafter n=2; 31.5 in-run, 40 min sustained) | 100.0 | 90.2 ±4.6 | **71.4 ±5.4 (new caps)** | 11 / 0 | holds IQ3_M quality on GSM8K/HumanEval => Gemma default candidate; MMLU-Pro comparable only to other NEW-cap rows |
 | **Gemma4 Q2_K_P, cache 19** | ~2.8 | 40.2 (48.2 with drafter n=2; 38.9 in-run, 33 min sustained) | 96.0 ±2.8 | 92.7 ±4.1 | 71.4 ±5.4 (new caps) | 11 / 0 | vs Q3_K_M: MMLU-Pro identical, HumanEval +2.5 (1 item, <1 sigma), GSM8K -4 (2 items, ~1.4 sigma at n=50) => no statistically resolvable quality loss at +24% in-run tok/s; Q2_K_P is the Gemma speed default unless a larger-n pass separates them |
 
@@ -322,6 +322,8 @@ Scores belong to (model file, thinking mode). Placement and speculation flags do
 - `research/ngram-llamacpp-scout.md` — Qwen3.8 Flash-Next on Dave's rig via pi (tmux `qwen-scout`), llama.cpp n-gram speculation code read; pending, verify before use.
 
 ## RESUME HERE (state at 2026-09-19 ~22:40 EEST, written before a context compaction)
+
+**UPDATE 23:35: Bonsai quality run dropped (see quality table); `qual3` queue entry skipped; queue now starts at `q38` (all remaining jobs are decision-relevant).**
 
 **HANDOFF 2026-09-19 23:35 EEST (model switch). Read in this order: `SPEC.md` (the plan: work IDs, gates, kill criteria, sequencing) -> this block -> the quality table above.**
 - **Box:** durable queue, 8 jobs: `qual3` (Bonsai is what is left of it, still running from tmux `ai:moe6`) -> `q38` -> `distill` -> `build_mainline` -> `mainline_ab` -> `trace2` -> `ngram1` -> `steady1`. Check with `ssh root@i5.local /ai/bench/queue.sh list`; add work ONLY with `queue.sh add ID 'CMD'`. Service `ai-queue` is enabled at boot, `Restart=no`. Andrei may power the box off tonight; the interrupted job requeues on boot.
