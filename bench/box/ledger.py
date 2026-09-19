@@ -80,7 +80,9 @@ rec = {
     "host": {"governor": open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").read().strip(),
              "thp": re.search(r"\[(\w+)\]", open("/sys/kernel/mm/transparent_hugepage/enabled").read()).group(1),
              "kernel": os.uname().release, "driver": sh("nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader")},
-    "vram_mib": int(re.sub(r"\D", "", client.get("vram", "") or "0") or 0), "gen_tokens": client.get("gen_tokens"), "prompts": client.get("rows"),
+    "vram_mib": int(re.sub(r"\D", "", client.get("vram", "") or "0") or 0), "gen_tokens": client.get("gen_tokens"),
+    # full completions stay in runs/LABEL.client.json (bench/textdiff.py reads them); the ledger keeps head + sha256
+    "prompts": [{k: v for k, v in r.items() if k != "text"} for r in client.get("rows") or []] or None,
     "telemetry": load(f"{B}/runs/{label}.mon.json"), "moe_cache": cache, "quality": quality, "completed": bool(client.get("rows")) or bool(quality),
 }
 if "--quality" in sys.argv:

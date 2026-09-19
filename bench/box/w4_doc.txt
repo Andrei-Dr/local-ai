@@ -1,0 +1,47 @@
+## 4. The performance model (what every workstream is attacking)
+
+Per decode step [I, fitted to M]:
+
+    T_step(k) = T_fixed(k) + c_miss * m(k) + T_draft
+    tok/s     = tau(k) / T_step(k)
+
+- `k` = tokens in the verify batch (1 + draft length). `tau(k)` = expected tokens committed per step = 1 + sum of per-position acceptance.
+- `T_fixed` = GPU-side attention/dense/router/cached-expert work: Qwen ~18.5 ms, Gemma ~21.7 ms at k=1 [M fit].
+- **Validity: k <= 4 only.** The cache graph serves 1-4 token batches; at k >= 5 the batch leaves the cache path, every routed expert becomes a CPU miss, and on GDN models a draft longer than `n_rs_seq` additionally pays checkpoint + replay. The model is piecewise, with a cliff at k = 5, until P3c and N2 land. N1's 16-token rows measure the far side of that cliff; nothing in the target ladder assumes drafts beyond 3 tokens.
+- `c_miss * m(k)` = CPU expert matvecs for the `m` distinct uncached (layer, expert) pairs the batch touches: at k=1 and no cache, Qwen ~20 ms, Gemma ~38 ms [M fit]. `m(k)` grows with k unless consecutive tokens route to the same experts.
+- Sanity check: Qwen best config = 46.3 tok/s; at tau ~2.5 that is T_step ~54 ms, i.e. a 3-token verify costs about 2x a single step. **Speculation on this box is throttled by expert fan-out, not by the GPU.** That is the core coupling this program exploits.
+
+Four levers, and which work attacks them:
+
+| Lever | Term | Work |
+|---|---|---|
+| More tokens per step | tau up | N1-N3 (free n-gram drafts), T1 (higher MTP acceptance so n=3 pays) |
+| Fewer misses | m down via hit rate h | P2 (prefetch with draft lookahead), T2 (locality-trained routers), P4c (warm-up), admission tuning |
+| Fewer distinct experts per batch | m(k) sub-linear in k | T2 (consecutive tokens reuse experts), P3c (cache path for k > 4) |
+| Cheaper miss | c_miss down | K-quant expert files (done), kernel work (parking lot) |
+
+**Measured 2026-09-20 (N1):** on Qwen (GDN) an n-gram draft longer than `n_rs_seq` (=MTP n_max=2) forces the recurrent checkpoint+replay path and costs -24% on the edit workload; the identical 16-token drafts are free on Gemma (no recurrent state). So raising tau via longer drafts on GDN models is blocked on N2, and raising it via MTP n=3 is blocked on T1 (n=3 acceptance 0.77-0.80 today, a net loss). tau is cheap to raise only on Gemma until those land.
+
+N and T1 raise tau but also raise k, which raises m(k). P2 and T2 are what keep that affordable. That interaction is the reason to build them as one system rather than four tricks, and it is the claim a write-up would stand on.
+
+Target ladder (targets, not predictions) for Qwen3.6 / Gemma Q2_K_P: 46 / 48 now -> 55 / 56 with the runtime work (N, P) -> 65+ with the two small fine-tunes (T1, T2). Each rung has to be earned in the ledger. Honest dependency: the 55 / 56 rung leans mostly on P (hit rate). If G4 fails, the runtime-only gain on chat/code workloads is whatever P4c warm-up gives plus ~nothing from n-gram drafting (published data says neutral there), and the ladder's second rung moves to Phase 3.
+Calibration note: the P4 overlap was projected at +10 / +15% and measured +17 / +18% [M]; our projections have run conservative once, which is one data point, not a license.
+
+## 5. Workstream U: get off the 431-commit backlog
+
+**Why.** The Prism fork is needed only for Bonsai's PQ2_0/PTQ1_0 types, and it lacks `qwen4exp`, so the most interesting model candidate (S4) and Flash-Next (F1) are mainline-only. Everything we serve daily (Qwen3.6, Gemma4, the distill) is mainline-supported. Mainline has 431 commits of fixes we are not getting, and our patches are only upstreamable from a mainline base.
+
+- **U1 build.** `moe-cache` on mainline `e613ef2` (commit `0af8ea3`, compiles on the Mac) built on the box as a third tree. Queued.
+- **U2 A/B.** Same model files, same flags, fork `build75` vs mainline build: Qwen cache 30 + MTP n=2, Gemma Q2_K_P cache 15 + drafter n=2, plus cache-off baselines. Queued.
+  - **Gate G2:** mainline within -2% tok/s of the fork on all four rows, identical temp-0 text on the fixed prompts, cache stats within noise => mainline becomes the default tree; the fork stays only as the Bonsai tree. If mainline is slower, bisect the delta (it is information about a regression or a missed flag) before deciding.
+- **U3 series.** Re-cut the cumulative diff into a reviewable series on mainline: (1) #27861-style cache core, (2) fused gate_up + scales + GELU experts, (3) gated admission, (4) multi-token cache graph, (5) scheduler barrier + overlap, (6) CLI. Each commit builds and passes the identity check.
+- **U4 upstream candidates** (each needs Andrei's go before anything public): scheduler barrier/overlap; `n_rs_seq` for n-gram drafters (N2); `ngram-mod` persistence (N3); AVX2 PQ2_0 kernel to the Prism fork + a +1 on its PR #205.
+- **U5 rebase cadence.** Once on mainline: rebase weekly, re-run the A/B pair as the regression test. **Rebase hazard [L, Qwen scout]: open PR #28391 makes `ngram-mod` a DEFAULT drafter on server/CLI — a rebase that pulls it in would silently activate two drafters; explicitly set `--spec-type` on every launch and check for it after each rebase.**
+- **N2 implementation lead [L, Qwen scout, verify]:** instead of editing `need_n_rs_seq()`, open PR **#26499** adds a `LLAMA_N_RS_SEQ` override; or simply `--spec-draft-n-max 3` raises `n_rs_seq` to 3 (but that also verifies n=3 MTP, which N1 showed is a net loss today — so the override is the cleaner path). Read #26499 before building N2.
+
+## 6. Workstreams N and P: the runtime co-design
+
+### 6.1 N1, hybrid n-gram + MTP drafting (zero code, queued)
+[V] `--spec-type` is a comma list; implementations run in a fixed order with n-gram types first; the first non-empty draft wins the round; MTP does not run that round. `ngram-mod` = one 16 MB lossy direct-index hash table (4M x int32; `add()` overwrites unconditionally, no tags, no probing, so collisions silently replace entries), key = hash of the last `n_match` (24) tokens, value = ONE next token; a draft is produced by walking the table iteratively. **`n_min` is a cliff, not a floor** [V `speculative.cpp` draft loop]: if the walk dies before `n_min` tokens the whole draft is discarded, so `n_min = n_max = 2` throws away valid 1-token hits. Defaults 48/64 are for long verbatim copies.
+- Bench `ngram1.sh`: MTP n=2 baseline; hybrid capped at 2 with `n_min` 2 and with `n_min` 1 (inside the cache window and inside `n_rs_seq`); cache-28 pair at n=3; hybrid at 16 (outside both, measures the replay path); n-gram alone; Gemma pair (no recurrent state). Workloads: code, reason, edit (copy-heavy).
+- **Gate G3:** hybrid >= +3% on the edit workload and no worse than -1% on code/reason => keep it on by default and proceed to N2/N3. A published data point says neutral on chat, ~4x on repetitive recall (#27210 [L]); expect the gain to be workload-shaped.
