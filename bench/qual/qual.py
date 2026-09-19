@@ -21,7 +21,9 @@ import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).parent
-MAX_TOKENS = {"gsm8k": 400, "humaneval": 512, "mmlu_pro": 350}
+# caps were 400/512/350 at first: half of MMLU-Pro hit the cap and was scored wrong. Rows that were cut off below
+# the current cap are re-run on the next pass (an answer that finished is the same under a larger cap at temp 0).
+MAX_TOKENS = {"gsm8k": 768, "humaneval": 1024, "mmlu_pro": 1024}
 LETTERS = "ABCDEFGHIJ"
 
 
@@ -100,6 +102,10 @@ def main():
     if out_path.exists():
         for line in out_path.open():
             r = json.loads(line)
+            cap = MAX_TOKENS.get(r["set"], 0) * (8 if a.think else 1)
+            if r["finish"] == "length" and r["tokens"] < cap:
+                done.pop(r["id"], None)  # cut off under an older, smaller cap
+                continue
             done[r["id"]] = r
     t0 = time.time()
     with out_path.open("a") as out:

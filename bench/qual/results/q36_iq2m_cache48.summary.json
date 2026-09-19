@@ -1,0 +1,1 @@
+{"label": "q36_iq2m_cache48", "thinking": false, "sets": {"gsm8k": {"n": 50, "correct": 49, "pct": 98.0, "se_pct": 2.0}, "humaneval": {"n": 41, "correct": 38, "pct": 92.7, "se_pct": 4.1}, "mmlu_pro": {"n": 70, "correct": 28, "pct": 40.0, "se_pct": 5.9}}, "mean_tokens": 234.2, "mean_decode_tps": 33.09, "truncated": 41, "empty": 0, "items": 161}

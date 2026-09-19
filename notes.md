@@ -246,13 +246,20 @@ Traces are sane: mean adjacent-token expert reuse Qwen 0.38–0.40 (chance 0.031
 
 ## Quality tracking (mandatory next to every tok/s claim about a MODEL FILE)
 
-Harness: `bench/qual/` (mirrored to `/ai/bench/qual/`), runner `bench/qualbench.sh LABEL [server args]` (env `MODEL`, `OFFLOAD`, `BUILD`, `QARGS`). `fetch.py` builds the fixed item sets from the HF datasets-server (deterministic, nested prefixes via `--limit`): **GSM8K first 50** (exact final number), **HumanEval every 4th task = 41** (pass@1, executed as uid nobody / no network / 20 s), **MMLU-Pro 70** (5 per category, 10-way multiple choice). Chat endpoint, temp 0, thinking off, max_tokens 400/512/350 (`--think` = x8). Resumable: `results/LABEL.jsonl` keeps every raw answer. Prints one `QUALITY[label]` row with +-1 SE; at n=41–70 one SE is 5–7 points, so only gaps >10 points mean anything — rerun with a larger `fetch.py` selection before ranking close calls.
+Harness: `bench/qual/` (mirrored to `/ai/bench/qual/`), runner `bench/qualbench.sh LABEL [server args]` (env `MODEL`, `OFFLOAD`, `BUILD`, `QARGS`). `fetch.py` builds the fixed item sets from the HF datasets-server (deterministic, nested prefixes via `--limit`): **GSM8K first 50** (exact final number), **HumanEval every 4th task = 41** (pass@1, executed as uid nobody / no network / 20 s), **MMLU-Pro 70** (5 per category, 10-way multiple choice). Chat endpoint, temp 0, thinking off, max_tokens 768/1024/1024 (first pass used 400/512/350: half of MMLU-Pro was cut off and scored wrong; cut-off rows are re-run automatically) (`--think` = x8). Resumable: `results/LABEL.jsonl` keeps every raw answer. Prints one `QUALITY[label]` row with +-1 SE; at n=41–70 one SE is 5–7 points, so only gaps >10 points mean anything — rerun with a larger `fetch.py` selection before ranking close calls.
 
 Scores belong to (model file, thinking mode). Placement and speculation flags do not change them beyond batch-variance noise, so each file is scored once on its fastest config; tok/s in a quality row is informational only. For quant variants of the SAME model also record wikitext-2 perplexity (not comparable across model families).
 
 | model file | bpw | best decode tok/s | GSM8K | HumanEval | MMLU-Pro | truncated / empty | notes |
 |---|---|---|---|---|---|---|---|
-| (filled by `/ai/bench/qual1.sh` -> `qual1.log`) | | | | | | | |
+| Qwen3.6-35B-A3B IQ2_M, cache off | 2.69 | 28.0 (27.5 in-run) | 96.0 ±2.8 | 92.7 ±4.1 | 38.6 ±5.8 (*) | 42 / 0 | first pass, old caps |
+| Qwen3.6-35B-A3B IQ2_M, **cache 48** | 2.69 | 34.0 (33.1 in-run, 28 min sustained) | 98.0 ±2.0 | 92.7 ±4.1 | 40.0 ±5.9 (*) | 41 / 0 | cache-on == cache-off within noise => cache is numerically sound |
+| Gemma4-26B-A4B IQ3_M, **cache 16** | 3.9 | 24.3 (22.6 in-run, 41 min sustained) | 100.0 | 87.8 ±5.1 | 44.3 ±5.9 (*) | 38 / 0 | |
+| Gemma4-26B-A4B IQ3_M, cache off | 3.9 | 16.7 | 100.0 (50/50) | 87.8 (36/41) | partial (*) | | killed by systemd-oomd at item 145/161 (15:06), resumed 21:05 |
+| Bonsai-27B PQ2_0-MTP | 2.13 | 5.15 | owed | | | | ~2.5 h run |
+| Gemma4 Q3_K_M / Q2_K_P | 3.4 / ~2.8 | to be measured | owed | | | | |
+
+(*) MMLU-Pro first pass is NOT usable as an absolute score: 34–39 of 70 answers hit the 350-token cap and every cut-off answer scored wrong (accuracy among finished answers: Qwen 27/31, Gemma 31/36). Caps raised to 768/1024/1024; `qual.py` re-runs cut-off rows automatically on the next pass (`/ai/bench/qual3.sh`, to be run with the new quants + Bonsai).
 
 ## Research (full reports in `research/`)
 
@@ -292,6 +299,7 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
 
 **Rules learned the hard way:**
 - **llama-server's host prompt cache (`--cache-ram`, default 8192 MiB) grows ~72 MiB per request** and `--n-cpu-moe` puts experts in PINNED host memory (shmem, unreclaimable): the Qwen quality server reached 14.3 GB RSS and was OOM-killed on 2026-09-19 12:46 when a download added page-cache pressure. Harness now always passes `--cache-ram 0`, quality reference runs use plain `-ot exps=CPU`, and every ledger record carries `mem_avail_mib_min` / `swap_used_mib_max`. No downloads while a server is resident either.
+- **systemd-oomd kills the whole tmux scope on memory PRESSURE, not only on OOM** (15:06: Gemma cache-off quality run, scope at 10.8 G, pressure avg10 61%). Gemma IQ3_M leaves only ~2.2 GB `mem_avail_mib_min`; ~10 GB of the server is pinned host memory (shmem). Added `/swapfile-ai` 8 GB (fstab, pri -3; remove: `swapoff /swapfile-ai`, delete the fstab line + file). Knob to test for headroom: `GGML_CUDA_NO_PINNED=1` (host buffers become ordinary swappable memory; costs upload speed). Q3_K_M Gemma will be ~0.9 GB tighter still.
 - **RAM is the hard limit (16 GB, 2 GB swap): never run a build, a second model, or anything RAM-hungry while a `--load-mode none` server is resident (Qwen/Gemma hold ~11–12 GB).** A `-j5` CUDA build next to the Qwen quality server wedged the box into swap on 2026-09-19 ~12:00 and needed a hard reset. `free -m` before every launch; quality runs and builds are strictly sequential.
 - One measurement at a time on the box. Never bench while a build, download, or another model is running. Never edit source while a build is running.
 - Long jobs go in tmux session `ai` with output to a log + a DONE marker; wait with an `until grep -q MARKER log; do sleep 20; done` loop. Do not `pkill -f` a pattern that matches your own ssh command line.
