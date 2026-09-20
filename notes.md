@@ -563,3 +563,18 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   until a ~1000-question paired run is worth it); Gemma stays IQ3_M (Q2_K_P -1.7 [-4.4, +0.9], not proven); q4 KV at depth cannot
   ship without lq1 (q8 where it fits); K2 undecided (-0.6 [-5.3, +4.1] at n=161; it has MORE bits than IQ2_M, 12.9 vs ~11 GB, so
   the prior is not "lossy shortcut"; kq1h adds n=480). Lossless levers lead. Brief 19 = durable paired.py (send after 18 lands).
+
+## PROPOSAL 2026-09-20 (Fable, Andrei's idea: "roll our own quant = our rainbow table") — workstream QX, not yet approved
+- [M] Routing concentration from trace2 (Qwen3.6, 40 layers x 256 experts, top-8, ~40k tokens each): top 10 / 25 / 50% of experts
+  carry 53.9 / 77.9 / 92.8% of routing mass on code, 44.9 / 72.4 / 91.5% on prose (per-layer top-25%: 49-85%). BUT the hot sets
+  are workload-specific: top-25% overlap code vs prose = 24% = chance (n=2 corpora; confirm with a third before building on it).
+  => a GLOBAL "hot experts get more bits" file is wrong; a WORKLOAD-SPECIALIZED file (e.g. code: code-hot experts Q4_K, rest Q2_K,
+  same size) is the quantization analog of a single-purpose model and needs no training. Fused expert tensors hold one type, so
+  per-expert types need a hot/cold tensor split in the loader (C++).
+- Our objective is not the one public quants optimize: (1) CPU kernel speed on the miss path (AVX2, no AVX-512), (2) bytes per
+  expert (VRAM slots + PCIe), (3) accuracy. Codebook/trellis formats (IQ2_*, AQLM, QuIP#, QTIP) win accuracy per bit but decode
+  slowly on CPU (the IQ2_M miss cost K2 removed) => codebooks only for GPU-resident tensors, linear k-quant blocks on the CPU path.
+- Order (each step gated: KL divergence vs Q6_K_P logits to screen, paired non-inferiority for finalists):
+  QX1 imatrix from the Q6_K_P source with expert-balanced calibration (kq1's imatrix came from the IQ2_M model; rare experts are
+  under-calibrated) — zero C++, Dave's box; QX2 per-layer x per-role type search with existing ggml types — zero C++; QX3 hot/cold
+  expert split for a code-specialized file — C++ loader; QX4 port ik_llama.cpp IQK types only if QX2 shows the FORMAT is the limit.
