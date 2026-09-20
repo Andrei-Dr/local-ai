@@ -1,0 +1,15 @@
+--- fattn.cu.orig	2026-09-21 00:15:15
++++ fattn.cu	2026-09-21 00:15:15
+@@ -609,6 +609,12 @@
+     // For small batch sizes the vector kernel may be preferable over the kernels optimized for large batch sizes:
+     // 192 satisfies % 64 == 0 but has no vec instance (DKQ != DV); force it onto the MMA path.
+     const bool can_use_vector_kernel = Q->ne[0] <= 256 && Q->ne[0] % 64 == 0 && Q->ne[0] != 192 && K->ne[1] % FATTN_KQ_STRIDE == 0;
++
++    // Grouped-query attention on a quantized KV cache with <= 4 query tokens: the vec kernel walks each K/V head once for all of
++    // its query heads, instead of per-head walks (1 token) or dequantizing the used KV cache to F16 every step (MMA, 2+ tokens).
++    if (can_use_vector_kernel && ggml_cuda_fattn_vec_gqa_applies(dst)) {
++        return BEST_FATTN_KERNEL_VEC;
++    }
+ 
+     // If Turing tensor cores are available, use them:
+     if (turing_mma_available(cc) && Q->ne[0] != 40 && Q->ne[0] != 72) {
