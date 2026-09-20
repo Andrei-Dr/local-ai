@@ -14,8 +14,11 @@
 # Same build as ctx1 (moe-cache 2582f5c, left checked out by r1b). A dead row never aborts the job.
 source /ai/bench/preflight.sh || exit 1
 cd /ai/bench
-grep -q 'presave' /ai/bench/slotclient.py && grep -q '"DROP"' /ai/bench/slotclient.py \
-  || { echo "CTX1B_REFUSED: /ai/bench/slotclient.py lacks presave/extend (deploy the brief-17 version first)"; exit 1; }
+grep -q 'presave' /ai/bench/slotclient.py && [ "$(grep -c '"parse_special": True' /ai/bench/slotclient.py)" -ge 2 ] \
+  || { echo "CTX1B_REFUSED: /ai/bench/slotclient.py lacks presave/extend with parse_special EXT (deploy the brief-18 version first)"; exit 1; }
+# Run 1 (2026-09-20): all four 16k combos restored + hit the cache (prompt_n 15, cache_n 12460/12461, 0.5 s vs 147 s) but replied
+# with 1 token = end-of-turn: EXT was raw text inside the assistant turn. EXT is now a chat-formatted user turn (needs brief 18).
+export EXT=$'<|im_end|>\n<|im_start|>user\nNow list the three most important open risks from the text above, one line each.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n'
 M=/ai/models; BUILD=/ai/src/llama.cpp-mainline/build75
 Q=$M/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf
 QH="-md $M/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2"
@@ -34,6 +37,7 @@ run() { # run MODE LABEL SLOTNAME CTX REPS PRE_GEN DROP [llama-server args, last
     kill -0 $pid 2>/dev/null || { echo "    $label: SERVER DIED: $(grep -iE 'error|failed|out of memory' server_$label.log | tail -1 | cut -c1-140)"; kill $pid 2>/dev/null; wait $pid 2>/dev/null; return 0; }; sleep 2; done
   MODE=$mode REPS=$reps SLOT=$slot PRE_GEN=$pregen DROP=$drop python3 /ai/bench/slotclient.py "$label"
   local rc=$?
+  [ "$mode" = extend ] && python3 -c "import json;print('    reply:', repr(json.load(open('/ai/bench/runs/$label.slot.json'))['rows'][0].get('reply')))" 2>/dev/null
   echo "    vram: $(nvidia-smi --query-gpu=memory.used --format=csv,noheader)"
   kill $pid; wait $pid 2>/dev/null
   grep -hE "forcing full prompt|KV buffer size|RS buffer size|compute buffer size|MoE expert cache enabled|out of memory|statistics +draft" server_$label.log | sort -u | tail -8 | cut -c1-200 | sed -E 's/^[0-9.]+ +[A-Z] +/    /'
