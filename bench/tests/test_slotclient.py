@@ -1,6 +1,8 @@
 """tests for bench/box/slotclient.py — fake llama-server (chat + /slots/0 save/restore) on localhost;
-asserts call ORDER per mode, request bodies, parsed rows/lines, HTTP-error exit."""
-import json, os, subprocess, sys, tempfile, threading, unittest, urllib.parse
+asserts call ORDER per mode, request bodies, parsed rows/lines, HTTP-error exit; probes the urlopen
+timeout kwarg by exec'ing the client in-process (subprocess tests cannot intercept it)."""
+import io, json, os, subprocess, sys, tempfile, threading, unittest, urllib.parse, urllib.request
+from contextlib import ExitStack, redirect_stdout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -112,6 +114,48 @@ class SlotCase(unittest.TestCase):
         p, d, _ = self.run_mode("save")
         self.assertEqual(p.returncode, 1)
         self.assertIn("HTTP 500 on /slots/0?action=save", p.stderr)
+
+    def test_SLOT_env_is_the_shared_slot_filename_across_labels(self):
+        p, _, calls = self.run_mode("save", SLOT="shared.slot")                     # save row: ctx1_c16384_save
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(calls[1][1], {"filename": "shared.slot"})
+        p, _, calls = self.run_mode("restore", label="lbl_r", SLOT="shared.slot")   # restore row: different LABEL, same file
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(calls[0][1], {"filename": "shared.slot"})                   # restore BEFORE the request
+        p, _, calls = self.run_mode("save")                                          # unset => LABEL.slot as today
+        self.assertEqual(calls[1][1], {"filename": "lbl.slot"})
+
+    def run_cold_probe(self, extra=None):
+        """Exec the client in-process against the fake server with urlopen wrapped; return observed timeouts."""
+        observed = []
+        real = urllib.request.urlopen
+        tmp = tempfile.mkdtemp()
+
+        def probe(req, *a, **kw):
+            observed.append(kw.get("timeout"))
+            return real(req, *a, **kw)
+
+        env = {"URL": f"http://127.0.0.1:{self.server.server_address[1]}", "OUT": tmp, "MODE": "cold",
+               "PROMPT_FILE": self.docfile.name, "REPS": "2"}
+        env.update(extra or {})
+        snap, snap_argv = dict(os.environ), sys.argv
+        try:
+            os.environ.update(env)
+            urllib.request.urlopen = probe
+            with ExitStack() as st:
+                st.callback(setattr, urllib.request, "urlopen", real)
+                st.enter_context(redirect_stdout(io.StringIO()))
+                sys.argv = ["slotclient.py", "lbl"]
+                exec(compile(Path(CLIENT).read_text(encoding="utf-8"), str(CLIENT), "exec"),
+                     {"__name__": "__main__", "__file__": str(CLIENT)})
+        finally:
+            os.environ.clear(); os.environ.update(snap); sys.argv = snap_argv
+            urllib.request.urlopen = real
+        return observed
+
+    def test_TIMEOUT_env_controls_the_urlopen_kwarg(self):
+        self.assertEqual(self.run_cold_probe(), [3600])                 # unset => 1 h default
+        self.assertEqual(self.run_cold_probe({"TIMEOUT": "21600"}), [21600])   # 6 h for deep prefill
 
 
 if __name__ == "__main__":

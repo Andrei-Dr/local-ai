@@ -1,7 +1,9 @@
 """slotclient.py LABEL -- KV-slot save/restore + TTFT probe against a llama-server started with
 --slot-save-path (C1). Env: URL base (default http://localhost:8099), OUT (default /ai/bench/runs),
 GEN (64), PROMPT_FILE (w4_doc.txt next to this script), REPS (1 = copies of the doc concatenated into
-the long prompt), MODE (cold|save|restore|warm, default cold).
+the long prompt), MODE (cold|save|restore|warm, default cold), SLOT (slot filename, default
+LABEL.slot — set ONE shared name so a save row and a restore row, which run under different LABELs,
+address the same file), TIMEOUT (per-request seconds, default 3600 — deep prefill needs more).
 Writes OUT/LABEL.slot.json {"mode","prompt_chars","rows"} and prints one line per chat request;
 slot ops annotate the chat row. Any HTTP error: status on stderr, exit 1."""
 import json, os, sys, time, urllib.error, urllib.request
@@ -12,18 +14,19 @@ OUT = os.environ.get("OUT", "/ai/bench/runs")
 GEN = int(os.environ.get("GEN", "64"))
 REPS = max(1, int(os.environ.get("REPS", "1")))
 MODE = os.environ.get("MODE", "cold").lower()
+TIMEOUT = int(os.environ.get("TIMEOUT", "3600"))
 PROMPT_FILE = os.environ.get("PROMPT_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "w4_doc.txt"))
 QUESTION = "\n\nBased on the text above, summarize its current status and the next steps in one short paragraph."
 
 doc = open(PROMPT_FILE, encoding="utf-8").read()
 content = "\n".join([doc] * REPS) + QUESTION
-SLOT = f"{label}.slot"
+SLOT = os.environ.get("SLOT", f"{label}.slot")
 
 
 def api(path, payload):
     req = urllib.request.Request(URL + path, json.dumps(payload).encode(), {"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=3600) as r:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
         print(f"HTTP {e.code} on {path}", file=sys.stderr)
