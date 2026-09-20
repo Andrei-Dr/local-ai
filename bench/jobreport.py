@@ -45,9 +45,62 @@ JOBS = {
             ("best config", r"^kq_q36iq2m_c30_mtp2$", r"^kq_q36k2_c26_mtp2$", ["decode_tps", "acceptance"]),
             ("does n=3 pay now", r"^kq_q36k2_c26_mtp2$", r"^kq_q36k2_c24_mtp3$", ["decode_tps", "acceptance"]),
         ],
+        "qual": ["q36_k2_cache26"],
+    },
+    "mtp1": {
+        "title": "In-model MTP head",
+        "hyp": "The standalone MTP head squats on ~727 MiB of VRAM (duplicate output.weight + its own 256 experts). "
+               "Grafting blk.40 into the target file hands that VRAM back; spent on cache slots it should buy 2-4% "
+               "near the hit-rate curve, and speculation stays lossless (textdiff gates every equal-slot pair). "
+               "Kill: in-model within noise at equal slots AND no gain when the freed VRAM is spent => stay on -md.",
+        "cmp": [("same 30 slots", r"^mtp1_q36_md_c30$", r"^mtp1_q36_inmodel_c30$", ["decode_tps", "acceptance"]),
+                ("freed VRAM spent: 42 slots", r"^mtp1_q36_md_c30$", r"^mtp1_q36_inmodel_c42$", ["decode_tps", "acceptance"]),
+                ("freed VRAM spent: 46 slots", r"^mtp1_q36_md_c30$", r"^mtp1_q36_inmodel_c46$", ["decode_tps", "acceptance"])],
+    },
+    "r1": {
+        "title": "Cache-aware routing",
+        "hyp": "Routing logits bent toward experts already resident in the GPU cache (+bias per mainline patches "
+               "0005/0006) converts CPU misses into hits during steady decode; the sweep finds the knee where extra "
+               "bias stops buying hit-rate and starts costing quality. Kill: <+1% at every bias, or quality moves "
+               "outside 1 sigma versus the base run.",
+        "cmp": ([(f"Qwen cache bias {suf}", r"^r1_q36_b0$", rf"^r1_q36_{suf}$", ["decode_tps", "acceptance"]) for suf in ("b025", "b05", "b10", "b20")] +
+                [(f"Gemma cache bias {suf}", r"^r1_g4q2k_b0$", rf"^r1_g4q2k_{suf}$", ["decode_tps", "acceptance"]) for suf in ("b05", "b10")]),
+        "qual": ["q36_iq2m_cache48_r1b025", "q36_iq2m_cache48_r1b05", "q36_iq2m_cache48_r1b10"],
+    },
+    "n2b": {
+        "title": "N2-lite repeat",
+        "hyp": "The n-gram cap 3 vs 2 delta measured +4.5% ALL at n=1 — inside the 3-5% identical-run jitter M1 just "
+               "quantified. REPEATS=3/WARMUP=1 with `_runs` samples decides whether N2-lite's win is real. "
+               "Kill: <+2% ALL at 3x3 samples => cap stays at 2 and N2 closes.",
+        "cmp": [("cap 2 vs cap 3 (3x3 samples)", r"^n2b_q36_c30_ngmod2_", r"^n2b_q36_c29_ngmod3_", ["decode_tps", "acceptance"])],
+    },
+    "kq1g": {
+        "title": "KQ1 + in-model head",
+        "hyp": "mtp1's VRAM return applied to the K2 expert-quant file: same 26 slots in-model must sit within noise "
+               "of the separate head, and the reclaimed ~700 MiB spent as 38 slots must beat -md on the hit-rate "
+               "curve for K2+in-model to be THE Qwen config. Kill: equal at 26 and <+1% at 38 => stay -md.",
+        "cmp": [("same 26 slots", r"^kq1g_.*_md_", r"^kq1g_.*_inmodel_c26$", ["decode_tps"]),
+                ("freed VRAM spent: 38 slots", r"^kq1g_.*_md_", r"^kq1g_.*_inmodel_c38$", ["decode_tps"])],
     },
 }
 TELEM = ("power_w_avg", "gpu_util_avg", "pcie_rx_gbs_max", "mem_avail_mib_min", "swap_used_mib_max")
+QUAL_SETS = ("gsm8k", "humaneval", "mmlu_pro")
+QUAL_REF = "q36_iq2m_cache48"      # quality baseline every job's qual table shows first
+
+
+def latest_quality_sets(recs):
+    """{(label, set): set dict} from the newest quality record CARRYING that set (reruns may cover subsets)."""
+    sup = {}
+    for r in recs:
+        if r.get("kind") != "quality" or not r.get("quality"):
+            continue
+        for name, sd in (r["quality"].get("sets") or {}).items():
+            if sd.get("pct") is None:
+                continue
+            k = (r["label"], name)
+            if k not in sup or (r.get("ts") or "") >= (sup[k].get("ts") or ""):
+                sup[k] = sd
+    return sup
 
 
 def dash(x):
@@ -71,6 +124,15 @@ def report(job_name, recs):
                     o.append(f"_pending: no completed rows for {res['pattern']}_")
                 break  # arms are metric-independent; no reason to re-detect per metric
             o += [f"**{m}**", "", abreport.render(res, md=True), ""]
+    if job.get("qual"):
+        sup = latest_quality_sets(recs)
+        o += ["", "## Quality (job labels vs the reference run)", "", "| label | gsm8k | humaneval | mmlu_pro |", "|---|---|---|---|"]
+        for lab in [QUAL_REF] + job["qual"]:
+            cells = []
+            for s in QUAL_SETS:
+                sd = sup.get((lab, s))
+                cells.append("-" if not sd else (f"{sd['pct']:.1f} ±{sd['se_pct']:.1f}" if sd.get("se_pct") is not None else f"{sd['pct']:.1f}"))
+            o.append(f"| `{lab}` | " + " | ".join(cells) + " |")
     o += ["", "## Runs seen", ""]
     latest = abreport.latest_completed(recs)
     rx = [re.compile(p) for p in pats]
