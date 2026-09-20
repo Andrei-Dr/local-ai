@@ -1,0 +1,1 @@
+{"mode": "extend", "prompt_chars": 41599, "rows": [{"prompt_n": 15, "cache_n": 12460, "prefill_tps": 27.665068240501657, "decode_tps": 0.0, "wall_s": 0.55, "slot_bytes": 321394384, "slot_ms": 163.284, "base_n": 12461, "ext_n": 14, "drop": 0, "reply": ""}]}

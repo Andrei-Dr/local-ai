@@ -1,1 +1,1 @@
-{"label": "g4_q3km_cache15", "thinking": false, "sets": {"mmlu_pro": {"n": 70, "correct": 53, "pct": 75.7, "se_pct": 5.1, "truncated": 4, "empty": 0}}, "mean_tokens": 360.1, "mean_decode_tps": 31.51, "truncated": 6, "empty": 0, "items": 161}
+{"label": "g4_q3km_cache15", "thinking": false, "sets": {"gsm8k": {"n": 200, "correct": 193, "pct": 96.5, "se_pct": 1.3, "truncated": 3, "empty": 0}, "mmlu_pro": {"n": 280, "correct": 210, "pct": 75.0, "se_pct": 2.6, "truncated": 12, "empty": 0}}, "mean_tokens": 355.4, "mean_decode_tps": 31.14, "truncated": 17, "empty": 0, "items": 521}

@@ -533,3 +533,22 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
 - ctxproxy consequence: a chat-level proxy only gets a cache hit on a hybrid if the re-rendered conversation is TOKEN-EXACT to the
   saved ids (template re-rendering of assistant turns breaks that). Carry into the brief-16 review.
 - kq1 (K2 experts): +15.6% decode ALL best-config, quality in band, n=1 — reserved call. Qwen queue 2 done; 16 partial, see HANDOFF-16.
+
+## UPDATE 2026-09-20 ~22:00 box clock (Fable) — queue drained: kq1 / ctx1 / mainqual / h2qual / orf1 / r1b / ctx1b run 1
+
+- **ctx1b run 1: slot restore + token-exact extension WORKS on the GDN hybrid.** All four 16k combos (PRE_GEN 64|1 x DROP 0|1):
+  prompt_n 14-15, cache_n 12460/12461 (or 12397), 0.5-1.0 s wall vs 147 s cold, no "forcing full prompt re-processing". Reply was
+  1 token (end-of-turn): EXT was raw text inside the assistant turn, tokenized with parse_special false (my brief-17 spec error).
+  Gate correctly refused (no coherent reply = state validity unproven) => deep rungs not run. Fix: brief 18 (parse_special true) +
+  chat-formatted EXT in ctx1b.sh (c96bdd7). Rerun = `queue.sh retry ctx1b` after deploying Qwen's 18.
+- **r1b**: speed rows all OOM (cache 48 + 727 MiB MTP head do not fit; design flaw, MTP rows belong at cache 30). Quality rows at
+  c48 no-MTP, n=50/41, GSM8K / HE / decode: b0 96.0 / 92.7 / 38.0; b0.25 98.0 / 90.2 / 39.1; b0.5 98.0 / 95.1 / 40.2;
+  b1.0 98.0 / 97.6 / 41.4 (+8.9%); b2.0 **86.0** / 95.1 / 42.1. b1.0 passes the gate at this footing, b2.0 fails (GSM8K -10, 1.8 sigma).
+  Missing: quality at the shipped footing (c30 + MTP, where r1 measured +20-27% decode) => `r1c` queued. Keep/kill = Andrei.
+- **kq1** (K2 experts): +15.6% decode ALL best-config (46.1 -> 53.3), +21% no-cache, quality in band, n=1. bench/reports/kq1.md.
+- **mainqual**: mainline q36 100.0 / 92.7 / 77.1; g4 Q3_K_M 98.0 / 95.1 / 81.4 — in band of the fork rows.
+- **h2qual** (n=200/280): GSM8K cannot separate the four (95.0-96.5, SE 1.4). MMLU-Pro: g4 IQ3_M 76.4, Q3_K_M 75.0, Q2_K_P 73.9,
+  q36 71.4 (SE 2.6). Speeds 25.1 / 31.1 / 38.5 / 38.0 t/s. The "slow IQ3_M" pick is no longer supported by quality: +2.5 MMLU-Pro
+  (< 1 sigma) for -35% speed vs Q2_K_P.
+- **orf1**: compliance q36 100%, g4 Q2_K_P 100%, stock distill 48% (metric validated by the contrast row).
+- Qwen: brief 17 delivered clean in one turn (small + fenced works; the big brief 16 wedged twice). 16 = partial, HANDOFF-16.
