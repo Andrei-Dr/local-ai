@@ -7,21 +7,24 @@
 # to 4 tokens to it. Same math per head => lossless. GGML_CUDA_FA_VEC_GQA = 0 old kernels | 1 decode only | 2 (default) + verify
 # batches; GGML_CUDA_FA_VEC_GQA_NCOLS1=1 = one token per block for the multi-token case. One binary => clean A/B.
 # Also in this build: GGML_CUDA_FA_VEC_GQA_F16=1 (opt-in: F16 K/V on the same GQA vec path instead of MMA_F16 / tile) and
-# GGML_CUDA_NO_TENSOR_CORES=1 (ntc-*.patch: a runtime switch that makes a flagged cc 7.5 card without tensor cores — GTX 16xx —
-# stop taking the tensor-core kernels/dispatch and always use MMQ; the same-binary form of what arch1 tests with a second build).
+# GGML_CUDA_NO_TENSOR_CORES=1 (ntc-*.patch: a runtime switch that takes a flagged cc 7.5 card without tensor cores — GTX 16xx —
+# off the tensor-core ATTENTION DISPATCH). Scope learned the hard way: it must NOT touch turing_mma_available() itself, because
+# MMQ picks its tile config from that on the HOST while the device code is selected by __CUDA_ARCH__ — desynchronizing the two
+# sized the scratch buffer for DP4A tiles while MMA kernels ran => illegal memory access at q4_0 m=16 n=8 k=256 (run 1).
+# So MMQ is untouched; forcing MMQ is what arch1's FORCE_MMQ build tests instead.
 # usage: fa1.sh build   (CPU only: worktree, patches, unit-test cases, compile; safe next to a GPU job, run it right away)
 #        fa1.sh verify  (GPU: unit test, old-vs-new text + decode t/s from the kept deep slots, llama-bench at depth, MTP check)
 # Separate worktree + build dir: the benchmark tree (/ai/src/llama.cpp-mainline @ 2582f5c, build75) is never touched.
 SRC=/ai/src/llama.cpp-mainline; W=/ai/src/llama.cpp-fa1; PB=/ai/bench
 case "${1:-verify}" in
 build)
-  for f in fa-gqa-vec fa-gqa-dispatch ntc-common ntc-ggml-cuda ntc-mmq; do [ -s $PB/$f.patch ] || { echo "FA1_REFUSED: $PB/$f.patch missing"; exit 1; }; done
+  for f in fa-gqa-vec fa-gqa-dispatch ntc-common ntc-ggml-cuda; do [ -s $PB/$f.patch ] || { echo "FA1_REFUSED: $PB/$f.patch missing"; exit 1; }; done
   [ -d $W ] || git -C $SRC worktree add -f $W 2582f5c > /dev/null 2>&1 || { echo FA1_WORKTREE_FAILED; exit 1; }
   cd $W || exit 1
   C=ggml/src/ggml-cuda
-  git checkout -q -- $C/fattn-vec.cuh $C/fattn.cu $C/common.cuh $C/ggml-cuda.cu $C/mmq.cu tests/test-backend-ops.cpp
+  git checkout -q -- $C/fattn-vec.cuh $C/fattn.cu $C/common.cuh $C/ggml-cuda.cu tests/test-backend-ops.cpp
   patch -s $C/fattn-vec.cuh < $PB/fa-gqa-vec.patch && patch -s $C/fattn.cu < $PB/fa-gqa-dispatch.patch && patch -s $C/common.cuh < $PB/ntc-common.patch \
-    && patch -s $C/ggml-cuda.cu < $PB/ntc-ggml-cuda.patch && patch -s $C/mmq.cu < $PB/ntc-mmq.patch || { echo FA1_PATCH_FAILED; exit 1; }
+    && patch -s $C/ggml-cuda.cu < $PB/ntc-ggml-cuda.patch || { echo FA1_PATCH_FAILED; exit 1; }
   python3 - <<'PY' || { echo FA1_TESTPATCH_FAILED; exit 1; }
 p = "tests/test-backend-ops.cpp"; s = open(p).read()
 a = "    for (int hsk : { 40, 64, 72, 80, 96, 128, 192, 256, 320, 512, 576 }) {\n"
