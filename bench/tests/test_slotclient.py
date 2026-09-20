@@ -1,6 +1,7 @@
-"""tests for bench/box/slotclient.py — fake llama-server (chat + /slots/0 save/restore) on localhost;
-asserts call ORDER per mode, request bodies, parsed rows/lines, HTTP-error exit; probes the urlopen
-timeout kwarg by exec'ing the client in-process (subprocess tests cannot intercept it)."""
+"""tests for bench/box/slotclient.py — fake llama-server (chat, /completion, /apply-template, /tokenize,
+/slots/0 save/restore) on localhost; asserts call ORDER per mode, request bodies, parsed rows/lines,
+HTTP-error exit; probes the urlopen timeout kwarg by exec'ing the client in-process (subprocess tests
+cannot intercept it)."""
 import io, json, os, subprocess, sys, tempfile, threading, unittest, urllib.parse, urllib.request
 from contextlib import ExitStack, redirect_stdout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,13 +11,27 @@ BASE = Path(__file__).resolve().parent.parent.parent
 CLIENT = BASE / "bench" / "box" / "slotclient.py"
 REG = []                                              # (kind, body) per request, cleared per run
 RESP = {"chat_prompt_n": 5120, "chat_cache_n": 0, "fail_slots": False}
+SID = [101, 102, 103, 104, 105]           # tokens for the rendered prompt (parse_special true path)
+ETOK = [900, 901]                          # tokens for the EXT text (parse_special false path)
+RTOK = [555, 556, 557]                     # tokens generated during presave
+RCOV = "X" * 200                           # /completion content, longer than the 160-char cap
+DEF_EXT = "\n\nNow list the three most important open risks, one line each."
 
 
 class H(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         p = urllib.parse.urlparse(self.path)
-        kind = "chat" if p.path == "/v1/chat/completions" else urllib.parse.parse_qs(p.query)["action"][0]
+        if p.path == "/v1/chat/completions":
+            kind = "chat"
+        elif p.path == "/completion":
+            kind = "comp"
+        elif p.path == "/apply-template":
+            kind = "template"
+        elif p.path == "/tokenize":
+            kind = "tok"
+        else:
+            kind = urllib.parse.parse_qs(p.query)["action"][0]
         REG.append((kind, body))
         if kind != "chat" and RESP["fail_slots"]:
             self.send_response(500)
@@ -26,6 +41,14 @@ class H(BaseHTTPRequestHandler):
             return
         if kind == "chat":
             out = {"choices": [{"message": {"content": "ok"}}], "usage": {"completion_tokens": 64},
+                   "timings": {"prompt_n": RESP["chat_prompt_n"], "cache_n": RESP["chat_cache_n"],
+                               "prompt_per_second": 900.0, "predicted_per_second": 31.5}}
+        elif kind == "template":
+            out = {"prompt": "TT %d" % len(body["messages"][0]["content"])}
+        elif kind == "tok":
+            out = {"tokens": SID if body.get("parse_special") else ETOK}
+        elif kind == "comp":
+            out = {"content": RCOV, "tokens": RTOK, "stopped": True,
                    "timings": {"prompt_n": RESP["chat_prompt_n"], "cache_n": RESP["chat_cache_n"],
                                "prompt_per_second": 900.0, "predicted_per_second": 31.5}}
         elif kind == "save":
@@ -60,14 +83,15 @@ class SlotCase(unittest.TestCase):
         cls.server.server_close()
         os.unlink(cls.docfile.name)
 
-    def run_mode(self, mode, label="lbl", **extra):
+    def run_mode(self, mode, label="lbl", out=None, **extra):
         tmp = tempfile.TemporaryDirectory()
-        env = dict(os.environ, URL=f"http://127.0.0.1:{self.server.server_address[1]}", OUT=tmp.name,
+        o = out or tmp.name
+        env = dict(os.environ, URL=f"http://127.0.0.1:{self.server.server_address[1]}", OUT=o,
                    MODE=mode, PROMPT_FILE=self.docfile.name, REPS="2")
         env.update(extra)
         start = len(REG)
         p = subprocess.run([sys.executable, str(CLIENT), label], env=env, capture_output=True, text=True, timeout=60)
-        d = json.loads((Path(tmp.name) / f"{label}.slot.json").read_text()) if p.returncode == 0 else None
+        d = json.loads((Path(o) / f"{label}.slot.json").read_text()) if p.returncode == 0 else None
         return p, d, REG[start:]
 
     def test_cold_one_chat_call(self):
@@ -152,6 +176,70 @@ class SlotCase(unittest.TestCase):
             os.environ.clear(); os.environ.update(snap); sys.argv = snap_argv
             urllib.request.urlopen = real
         return observed
+
+    # ------------------------- brief 17: token-exact presave / extend -------------------------
+    def test_presave_tokenizes_completes_saves_sidecar(self):
+        tmp = tempfile.TemporaryDirectory()
+        p, d, calls = self.run_mode("presave", out=tmp.name)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual([k for k, _ in calls], ["template", "tok", "comp", "save"])
+        self.assertEqual(calls[0][1], {"messages": [{"role": "user", "content": self.content}],
+                                       "chat_template_kwargs": {"enable_thinking": False}})
+        self.assertEqual(calls[1][1], {"content": "TT %d" % len(self.content), "add_special": False,
+                                       "parse_special": True})
+        self.assertEqual(calls[2][1], {"prompt": SID, "n_predict": 1, "temperature": 0,
+                                       "cache_prompt": True, "return_tokens": True})
+        self.assertEqual(calls[3][1], {"filename": "lbl.slot"})
+        r = d["rows"][0]
+        self.assertEqual((r["prompt_n"], r["prefill_tps"], r["decode_tps"]), (5120, 900.0, 31.5))
+        self.assertEqual(r["base_n"], len(SID + RTOK))
+        self.assertEqual((r["slot_bytes"], r["slot_ms"]), (1234567, 67.0))
+        sc = json.loads((Path(tmp.name) / "lbl.slot.ids.json").read_text())
+        self.assertEqual(sc["ids"], SID + RTOK)
+        self.assertIn("slot 1234567 bytes in 67.0 ms", p.stdout)
+
+    def test_presave_PRE_GEN_env_sets_n_predict(self):
+        p, _, calls = self.run_mode("presave", PRE_GEN="64")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual([k for k, _ in calls], ["template", "tok", "comp", "save"])
+        self.assertEqual(calls[2][1]["n_predict"], 64)
+
+    def test_extend_missing_sidecar_exits_before_any_http(self):
+        tmp = tempfile.TemporaryDirectory()
+        start = len(REG)
+        p, d, calls = self.run_mode("extend", out=tmp.name)
+        self.assertEqual(p.returncode, 1)
+        self.assertEqual(calls, [])
+        self.assertIn("sidecar", p.stderr)
+        self.assertIsNone(d)
+        self.assertEqual(REG[start:], [])
+
+    def test_extend_restores_extends_and_reports_row(self):
+        tmp = tempfile.TemporaryDirectory()
+        p, _, _ = self.run_mode("presave", out=tmp.name, SLOT="shared.slot")   # sidecar is keyed by SLOT
+        self.assertEqual(p.returncode, 0, p.stderr)
+        p, d, calls = self.run_mode("extend", label="lbl_x", out=tmp.name, SLOT="shared.slot")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual([k for k, _ in calls], ["restore", "tok", "comp"])
+        self.assertEqual(calls[0][1], {"filename": "shared.slot"})      # same shared-slot contract as brief 13
+        self.assertEqual(calls[1][1], {"content": DEF_EXT, "add_special": False, "parse_special": False})
+        self.assertEqual(calls[2][1], {"prompt": SID + RTOK + ETOK, "n_predict": 64, "temperature": 0,
+                                       "cache_prompt": True})
+        r = d["rows"][0]
+        self.assertEqual((r["base_n"], r["ext_n"], r["drop"]), (8, 2, 0))
+        self.assertEqual(r["reply"], "X" * 160)
+        self.assertEqual((r["slot_bytes"], r["slot_ms"]), (1234567, 12.5))
+
+    def test_extend_DROP_removes_last_sidecar_id_only(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.run_mode("presave", out=tmp.name, SLOT="shared.slot")
+        p, d, calls = self.run_mode("extend", label="lbl_x", out=tmp.name, SLOT="shared.slot",
+                                    DROP="1", EXT="TAIL")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(calls[1][1]["content"], "TAIL")
+        self.assertEqual(calls[2][1]["prompt"], (SID + RTOK)[:-1] + ETOK)
+        r = d["rows"][0]
+        self.assertEqual((r["drop"], r["base_n"], r["ext_n"]), (1, 8, 2))
 
     def test_TIMEOUT_env_controls_the_urlopen_kwarg(self):
         self.assertEqual(self.run_cold_probe(), [3600])                 # unset => 1 h default
