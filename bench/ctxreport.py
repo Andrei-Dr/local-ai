@@ -5,12 +5,20 @@ usage: ctxreport.py --runs DIR --log FILE [--out bench/reports/ctx1.md]
 DIR/ctx1_*.slot.json are the slotclient row files; FILE is the ctx1.sh job log. Parser is tolerant:
 unknown blocks ignored, missing fields None, never crash. Prints the report path; exit 0.
 Sections: ladder | 32k variants | ubatch fit | depth decay | two-phase verdict | gates + dead rows.
+
+usage: ctxreport.py --runs DIR [--job ctx1b] — with --job ctx1b the input is the ctx1b.sh log plus
+runs/ctx1b_*.slot.json sidecars: presave rows pair with extend rows by ctx tag (c16k_g64, c32k, c131k,
+c262k); the table shows both configs, restore/cache/ext counters, speedup, reply head and a per-pair
+verdict (RESTORED / RE-PREFILLED / EMPTY REPLY / died / skipped), then per-family two-phase verdicts
+(all *_dec_extend RESTORED => WORKS), the verbatim extend gate line and dead rows.
 """
 import argparse, json, math, os, re, sys
 from pathlib import Path
 
 BUF_RE = re.compile(r"([\w ]*?)(KV|RS) buffer size\s*=\s*([\d.]+) MiB")
 HDR_RE = re.compile(r"^##### (\S+) mode=(\w+) ctx=(\d+) reps=(\d+) \| (.*)$")
+HDR1B_RE = re.compile(r"^##### (\S+) mode=(presave|extend) ctx=(\d+) reps=(\d+) pre_gen=(-?\d+) "
+                      r"drop=(\d+) \| (.*)$")
 SKIP_RE = re.compile(r"^##### (\S+) SKIPPED: (.*)$")
 
 
@@ -81,6 +89,150 @@ def status_of(label, labels, runs):
     if len(runs.get(label) or []) >= 1:
         return "ok"
     return "skipped"
+
+
+def proj_seconds(n_tok, ub, F, m):
+    """seconds to prefill n_tok at ubatch ub: each ubatch costs a fixed F plus m per token.
+    t = (n / ub) * (F + m * ub) — NOT n * m, which ignores the per-ubatch floor entirely."""
+    return (n_tok / ub) * (F + m * ub)
+
+
+def pair_kind(label):
+    """ctx1b pairing: strip the trailing _presave / _<mode>_extend / _extend, then reduce to the ctx
+    tag (c16k_g64 / c32k / c131k / c262k). -> (tag, 'pre'|'ext'|None)."""
+    lab = re.sub(r"^ctx1b_", "", label)
+    if lab.endswith("_presave"):
+        kind = "pre"
+    elif lab.endswith("_extend"):
+        kind = "ext"
+    else:
+        return None, None
+    base = re.sub(r"_(presave|extend)$", "", lab)
+    t = re.search(r"c\d+k(?:_g\d+)?", base)             # tag BEFORE dropping mode suffixes:
+    return (t.group(0) if t else base.split("_")[0]), kind   # c16k_g64_d0 -> c16k_g64, c32k_dec -> c32k
+
+
+def parse_log1b(text):
+    """ctx1b flavor of parse_log: same tolerance, extra header fields."""
+    labels, gates, cur = {}, [], None
+    for ln in text.splitlines():
+        m = HDR1B_RE.match(ln)
+        if m:
+            cur = labels.setdefault(m.group(1), {})
+            cur.update(mode=m.group(2), ctx=int(m.group(3)), reps=int(m.group(4)), pre_gen=int(m.group(5)),
+                       drop=int(m.group(6)), args=m.group(7))
+            continue
+        if ln.startswith("##### "):
+            cur = None
+        if "extend gate:" in ln:
+            gates.append(ln.strip())
+            continue
+        if cur is None:
+            continue
+        m = re.match(r"^\s*\S+: SERVER DIED: (.*)", ln)
+        if m:
+            cur["died"], cur["reason"] = True, m.group(1)
+        m = re.match(r"^\s*\S+: slotclient exit (\d+)", ln)
+        if m:
+            cur["exit"] = int(m.group(1))
+        if "out of memory" in ln:
+            cur["died"] = True
+            cur.setdefault("reason", "out of memory")
+    return labels, gates
+
+
+def pair_verdict(elabel, labels, prow, erow):
+    """RESTORED iff the extend processed <10% of the presave prompt tokens AND answered with a
+    non-blank reply; EMPTY REPLY beats RE-PREFILLED when both signals are bad."""
+    info = labels.get(elabel, {})
+    if info.get("died"):
+        return "died"
+    if info.get("exit"):
+        return "died"
+    if erow is None:
+        return "skipped"
+    if not (erow.get("reply") or "").strip():
+        return "EMPTY REPLY"
+    pp, pe = prow.get("prompt_n"), erow.get("prompt_n")
+    if pp and pe is not None and pe < 0.1 * pp:
+        return "RESTORED"
+    return "RE-PREFILLED"
+
+
+def _cfg(args):
+    d = derive_args(args or "")
+    return f"ub{d['ub']} slots{d['cache_slots']}" + (" +MTP" if d["mtp"] else "")
+
+
+def build_report1b(log_text, runs):
+    labels, gates = parse_log1b(log_text)
+    md = ["# ctx1b — presave / extend pairs", ""]
+    pres, exts = {}, {}
+    for lab in sorted(set(labels) | set(runs)):
+        if not lab.startswith("ctx1b_"):
+            continue
+        tag, kind = pair_kind(lab)
+        if kind == "pre":
+            pres[tag] = lab
+        elif kind == "ext":
+            exts.setdefault(tag, []).append(lab)
+    md += ["| ctx | kv | pre cfg | pre prompt_n | prefill t/s | prefill wall | slot MiB | save ms |"
+           " ext cfg | restore ms | ext prompt_n | cache_n | ext_n | decode t/s | wall s | speedup |"
+           " reply | verdict |",
+           "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    verdicts = {}
+    any_rows = False
+    for tag in sorted(set(pres) | set(exts)):
+        plab = pres.get(tag)
+        prow = _one(runs.get(plab or "")) if plab else {}
+        pinfo = labels.get(plab or "", {})
+        for elab in exts.get(tag, []):
+            any_rows = True
+            einfo = labels.get(elab, {})
+            erow = _one(runs.get(elab))
+            v = pair_verdict(elab, labels, prow, erow if runs.get(elab) else None)
+            verdicts[(tag, elab)] = (v, einfo.get("ctx") or prow.get("ctx") or pinfo.get("ctx"))
+            pw, ew = prow.get("wall_s"), erow.get("wall_s")
+            rep = (erow.get("reply") or "").replace("\n", " ").replace("|", "/")[:60]
+            md.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | '{}' | {} |"
+                      .format(pinfo.get("ctx") or einfo.get("ctx") or "-", derive_args(einfo.get("args", ""))["kv"],
+                              _cfg(pinfo.get("args")), _fmt(prow.get("prompt_n"), "{:d}"),
+                              _fmt(prow.get("prefill_tps")), _wall(pw), _mb(prow.get("slot_bytes")),
+                              _fmt(prow.get("slot_ms"), "{:.0f}"), _cfg(einfo.get("args")),
+                              _fmt(erow.get("slot_ms"), "{:.0f}"), _fmt(erow.get("prompt_n"), "{:d}"),
+                              _fmt(erow.get("cache_n"), "{:d}"), _fmt(erow.get("ext_n"), "{:d}"),
+                              _fmt(erow.get("decode_tps"), "{:.2f}"), _fmt(ew, "{:.1f}"),
+                              _fmt(None if not (pw and ew) else pw / ew, "{:.1f}"), rep, v))
+    if not any_rows:
+        md.append("| (no presave/extend rows) |" + "||" * 17)
+
+    md += ["", "## Two-phase verdicts", ""]
+    fams = sorted({t for (t, _e), (_v, ctx) in verdicts.items() if ctx and ctx >= 32768})
+    for t in fams:
+        decs = [v for (tt, e), (v, _c) in verdicts.items() if tt == t and e.endswith("_dec_extend")]
+        vv = ("WORKS" if decs and all(x == "RESTORED" for x in decs)
+              else "FAILED" if decs else "not run")
+        md.append(f"- `{t}`: {vv}")
+    if not fams:
+        md.append("- (none)")
+
+    md += ["", "## Extend gate", ""]
+    md += [f"- `{g}`" for g in gates] or ["- (not reached)"]
+
+    md += ["", "## Dead rows", ""]
+    dead = []
+    for lab in sorted(set(labels) | set(runs)):
+        if not lab.startswith("ctx1b_") or pair_kind(lab)[1] is None:
+            continue
+        st = status_of(lab, labels, runs)
+        if st != "ok":
+            info = labels.get(lab, {})
+            reason = info.get("reason") or info.get("skipped") \
+                or (f"slotclient exit {info['exit']}" if info.get("exit") else "no rows")
+            dead.append(f"- `{lab}`: {st}: {reason}")
+    md += dead or ["- (none)"]
+    md.append("")
+    return "\n".join(md) + "\n"
 
 
 def fit(points):
@@ -213,7 +365,8 @@ def build_report(log_text, runs):
                "| ub | predicted t/s | expert-only 100k | 200k | 250k |", "|---|---|---|---|---|"]
         for ub in (512, 1024, 2048, 4096):
             T = F + m * ub
-            md.append(f"| {ub} | {ub / T:.1f} | {m * 100000:.0f} s | {m * 200000:.0f} s | {m * 250000:.0f} s |")
+            md.append(f"| {ub} | {ub / T:.1f} | {proj_seconds(100000, ub, F, m):.1f} s | "
+                  f"{proj_seconds(200000, ub, F, m):.1f} s | {proj_seconds(250000, ub, F, m):.1f} s |")
         md += ["", "attention cost grows with depth and is NOT in this fit; see the depth-decay table", ""]
     md += ["## Depth decay", "", "| prompt_n | prefill t/s (% of 16k) | decode t/s (% of 16k) |", "|---|---|---|"]
     ref = next((rows_by_tag[t] for t in rows_by_tag if t in ("c16k", "16k") ), None)
@@ -259,9 +412,9 @@ def build_report(log_text, runs):
     return "\n".join(md) + "\n"
 
 
-def load_runs(dirpath):
+def load_runs(dirpath, prefix="ctx1"):
     runs = {}
-    for f in sorted(Path(dirpath).glob("ctx1_*.slot.json")):
+    for f in sorted(Path(dirpath).glob(prefix + "_*.slot.json")):
         try:
             d = json.load(open(f))
             runs[f.name.removesuffix(".slot.json")] = d.get("rows") or []
@@ -275,9 +428,11 @@ def main(argv=None):
     ap.add_argument("--runs", required=True)
     ap.add_argument("--log", default=None)
     ap.add_argument("--out", default="bench/reports/ctx1.md")
+    ap.add_argument("--job", choices=("ctx1", "ctx1b"), default="ctx1")
     a = ap.parse_args(argv)
     log = open(a.log, encoding="utf-8", errors="replace").read() if a.log and os.path.exists(a.log) else ""
-    md = build_report(log, load_runs(a.runs))
+    md = (build_report(log, load_runs(a.runs)) if a.job == "ctx1"
+          else build_report1b(log, load_runs(a.runs, "ctx1b")))
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     open(a.out, "w").write(md)
     print(a.out)
