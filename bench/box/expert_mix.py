@@ -39,6 +39,44 @@ class ToolError(Exception):
     pass
 
 
+def expert_count_from_meta(fields):
+    """The LO file's metadata decides: exactly ONE key ending in .expert_count."""
+    found = {k: v for k, v in fields.items() if k.endswith(".expert_count")}
+    if len(found) != 1:
+        raise ToolError("want exactly one *.expert_count metadata key, found %s"
+                        % {k: (v.contents() if hasattr(v, "contents") else v) for k, v in found.items()}
+                        if found else "no *.expert_count metadata key")
+    key = next(iter(found))
+    v = found[key]
+    try:
+        return key, int(v.contents())
+    except Exception:
+        raise ToolError("expert_count key %s unreadable" % key)
+
+
+def expert_axis(shape, count):
+    """Unique axis whose size equals expert_count; never a positional assumption."""
+    ax = [i for i, sz in enumerate(shape) if sz == count]
+    if len(ax) != 1:
+        raise ToolError("__SHAPE__")
+    return ax[0]
+
+
+def elem_shape(t):
+    """Element-space numpy shape WITHOUT materializing data (block types: invert the byte-view)."""
+    if t.tensor_type in (gguf.GGMLQuantizationType.F32, gguf.GGMLQuantizationType.F64,
+                         gguf.GGMLQuantizationType.I32, gguf.GGMLQuantizationType.I64,
+                         gguf.GGMLQuantizationType.BF16, gguf.GGMLQuantizationType.F16):
+        return tuple(int(x) for x in t.data.shape)
+    fn = getattr(gguf.quants, "quant_shape_from_byte_shape", None)
+    if fn is None:
+        return tuple(int(x) for x in np.asarray(gguf.quants.dequantize(t.data, t.tensor_type)).shape)
+    try:
+        return tuple(int(x) for x in fn(tuple(t.data.shape), t.tensor_type))
+    except (ValueError, AttributeError):
+        return tuple(int(x) for x in np.asarray(gguf.quants.dequantize(t.data, t.tensor_type)).shape)
+
+
 def parse_layers(spec):
     if not spec:
         return None
@@ -164,6 +202,8 @@ def mix(args, err=sys.stderr):
         w.add_string("expert_mix.container", args.container)
     mixed_total = hot_total = expert_slots = 0
     bpw_hi = bpw_lo = 0.0
+    ec_key, ec_count = expert_count_from_meta(rl.fields)
+    axis_msg = None
     order = [t.name for t in rl.tensors]
     for name in order:
         tl = lo_t[name]
@@ -171,11 +211,20 @@ def mix(args, err=sys.stderr):
         layer = int(m.group(1)) if m else None
         in_range = m and (rng is None or (rng[0] <= layer <= rng[1]))
         ids = hotmap.get(layer, []) if in_range else []
-        n_expert = tl_n_experts(tl)
-        if ids and max(ids) >= n_expert:
-            raise ToolError("layer %d: expert id %d >= n_expert %d" % (layer, max(ids), n_expert))
-        if in_range and (ids or m):
-            print("blk.%d %s: hot %d/%d" % (layer, m.group(2) if m else "?", len(ids), n_expert))
+        if in_range:
+            shape = elem_shape(tl)
+            try:
+                ax = expert_axis(shape, ec_count)
+            except ToolError as e:
+                raise ToolError("%s: expert_count %d matches axes %s of shape %s"
+                                % (name, ec_count, [i for i, z in enumerate(shape) if z == ec_count],
+                                   shape))
+            if axis_msg is None:
+                axis_msg = "expert axis = %d of shape %s (expert_count = %d)" % (ax, shape, ec_count)
+                print(axis_msg)
+            if ids and max(ids) >= ec_count:
+                raise ToolError("layer %d: expert id %d >= expert_count %d" % (layer, max(ids), ec_count))
+            print("blk.%d %s: hot %d/%d" % (layer, m.group(2), len(ids), ec_count))
         if not in_range:                                  # identity copy from LO (even expert tensors)
             if w:
                 w.add_tensor(name, tl.data, raw_shape=list(tl.data.shape), raw_dtype=tl.tensor_type)
@@ -184,7 +233,7 @@ def mix(args, err=sys.stderr):
         if not ids:                                        # layer takes LO wholesale, container-free
             if w:
                 w.add_tensor(name, tl.data, raw_shape=list(tl.data.shape), raw_dtype=tl.tensor_type)
-            expert_slots += n_expert
+            expert_slots += ec_count
             mixed_total += 1
             continue
         if not bpw_hi:
@@ -192,12 +241,22 @@ def mix(args, err=sys.stderr):
         mh, ml = elem_arr(bh), elem_arr(tl)
         if mh.shape != ml.shape:
             raise ToolError("HI/LO element shape mismatch on %s: %s vs %s" % (name, mh.shape, ml.shape))
+        try:
+            ax = expert_axis(ml.shape, ec_count)
+        except ToolError:
+            raise ToolError("%s: expert_count %d matches axes %s of shape %s"
+                            % (name, ec_count, [i for i, z in enumerate(ml.shape) if z == ec_count],
+                               ml.shape))
+        if axis_msg is None:
+            axis_msg = "expert axis = %d of shape %s (expert_count = %d)" % (ax, ml.shape, ec_count)
+            print(axis_msg)
         mixed = ml.copy()
-        for e in ids:                                      # expert axis = LAST numpy axis (brief contract)
-            mixed[(Ellipsis, e)] = mh[(Ellipsis, e)]
+        sel = [slice(None)] * ml.ndim                      # mix ONLY the hot channels, along ax
+        sel[ax] = ids
+        mixed[tuple(sel)] = mh[tuple(sel)]
         del mh, ml
         gc.collect()
-        expert_slots += n_expert
+        expert_slots += ec_count
         hot_total += len(ids)
         mixed_total += 1
         if w:

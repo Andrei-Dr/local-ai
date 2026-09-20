@@ -13,7 +13,8 @@ if HAVE:
     import numpy as _np
     HAS_QUANTS = hasattr(importlib.import_module("gguf.quants"), "quantize")
 
-NE = 32    # experts; 32 keeps one Q8_0 block exactly one channel-row (channel purity is testable)
+EC = 4     # expert_count metadata; tensors shaped (EC, 8, 32): expert axis FIRST (gguf-py presents
+           # real fused tensors that way), hidden axis 32 > every id — the trap brief 25 describes
 
 
 @unittest.skipUnless(HAVE, "gguf-py / numpy not installed")
@@ -24,8 +25,8 @@ class MixCase(unittest.TestCase):
         import numpy as np
         cls.np, cls.gguf = np, gguf
         cls.ch = lambda base, mul, e: base[e % 8] * mul[e % 8]
-        cls.CONST_H = [10.0 + 10.0 * e for e in range(NE)]           # 10..320, exact in F16
-        cls.CONST_L = [2.0 * (1 + e % 16) for e in range(NE)]        # 2..32, exact in F16
+        cls.CONST_H = [10.0 + 10.0 * e for e in range(EC)]           # exact in F16
+        cls.CONST_L = [2.0 * (1 + e) for e in range(EC)]
         cls.d = tempfile.mkdtemp()
         cls.hi = os.path.join(cls.d, "hi.gguf")
         cls.lo = os.path.join(cls.d, "lo.gguf")
@@ -36,17 +37,19 @@ class MixCase(unittest.TestCase):
         cls._mk(cls.hi_badshape, True, cls.np.arange(6, dtype=cls.np.float32).reshape(2, 3))
 
     @classmethod
-    def _mk(cls, path, is_hi, emb):
+    def _mk(cls, path, is_hi, emb, ec=True):
         g = cls.gguf
         consts = cls.CONST_H if is_hi else cls.CONST_L
         w = g.GGUFWriter(path, "qwen35moe")
         w.add_uint32("general.file_type", 15)
         w.add_uint32("qwen35moe.block_count", 2)
+        if ec:
+            w.add_uint32("qwen35moe.expert_count", EC)
         w.add_tensor("token_embd.weight", emb)
         for blk in (0, 1):
-            arr = cls.np.zeros((8, NE), cls.np.float32)              # expert axis = LAST
-            for e in range(NE):
-                arr[:, e] = consts[e]
+            arr = cls.np.zeros((EC, 8, 32), cls.np.float32)          # expert axis = FIRST (real-world)
+            for e in range(EC):
+                arr[e] = consts[e]
             name = "blk.%d.ffn_gate_exps.weight" % blk
             w.add_tensor(name, arr.astype(cls.np.float16) if not is_hi else arr)
         w.write_header_to_file(); w.write_kv_data_to_file(); w.write_tensors_to_file(); w.close()
@@ -55,7 +58,7 @@ class MixCase(unittest.TestCase):
         rd = self.gguf.GGUFReader(path)
         t = [t for t in rd.tensors if t.name == "blk.%d.ffn_gate_exps.weight" % blk][0]
         a = self.np.asarray(self.gguf.quants.dequantize(t.data, t.tensor_type), dtype=self.np.float32)
-        return [float(a[(Ellipsis, e)].mean()) for e in range(NE)]
+        return [float(a[(e,) + (slice(None),) * (a.ndim - 1)].mean()) for e in range(EC)]
 
     def _hot(self, mapping):
         p = os.path.join(self.d, "hot.json")
@@ -71,8 +74,9 @@ class MixCase(unittest.TestCase):
         out = os.path.join(self.d, "mix1.gguf")
         self.assertEqual(self._run(self._hot({"0": [2]}), out), 0)
         m0 = self._channels(out)
-        want = [self.CONST_L[e] if e != 2 else self.CONST_H[e] for e in range(NE)]
+        want = [self.CONST_L[e] if e != 2 else self.CONST_H[e] for e in range(EC)]
         self.assertEqual([round(x, 3) for x in m0], [round(x, 3) for x in want])
+        # expert-axis notice was printed (captured via stdout by pytest anyway; contract is content):
         self.assertEqual([round(x) for x in self._channels(out, blk=1)],
                          [round(x) for x in self.CONST_L])           # layer absent from HOT.json
         rd = self.gguf.GGUFReader(out)
@@ -89,14 +93,14 @@ class MixCase(unittest.TestCase):
         out = os.path.join(self.d, "mix_q8.gguf")
         self.assertEqual(self._run(self._hot({"0": [0, 1]}), out, container="Q8_0"), 0)
         m = self._channels(out)
-        want = [self.CONST_H[e] if e in (0, 1) else self.CONST_L[e] for e in range(NE)]
+        want = [self.CONST_H[e] if e in (0, 1) else self.CONST_L[e] for e in range(EC)]
         for got, wnt in zip(m, want):
             self.assertLessEqual(abs(got - wnt), 1.3 + 0.01 * wnt)   # Q8_0 block-scale slack
 
     def test_errors_exit_2(self):
         import io
         buf = io.StringIO()
-        self.assertEqual(self._run(self._hot({"0": [NE]}), os.path.join(self.d, "e1.gguf"), err=buf), 2)
+        self.assertEqual(self._run(self._hot({"0": [EC]}), os.path.join(self.d, "e1.gguf"), err=buf), 2)
         self.assertIn("ERROR", buf.getvalue())
         buf = io.StringIO()
         self.assertEqual(self._run(self._hot({"0": [0]}), os.path.join(self.d, "e2.gguf"),
@@ -106,6 +110,35 @@ class MixCase(unittest.TestCase):
         self.assertEqual(self._run(self._hot({"0": [0]}), os.path.join(self.d, "e3.gguf"),
                                    hi=self.hi_badshape, err=buf), 2)
         self.assertIn("mismatch", buf.getvalue())
+
+    def test_missing_expert_count_metadata_exit_2(self):
+        import io
+        nog = os.path.join(self.d, "noec.gguf")
+        emb = self.np.zeros((3, 3), self.np.float32)
+        self._mk(nog, True, emb, ec=False)
+        buf = io.StringIO()
+        rc = expert_mix.main(["--hi", self.hi, "--lo", nog, "--hot", self._hot({"0": [1]}),
+                              "--out", os.path.join(self.d, "e4.gguf")], err=buf)
+        self.assertEqual(rc, 2)
+        self.assertIn("expert_count", buf.getvalue())
+
+    def test_ambiguous_axes_exit_2(self):
+        import io
+        amb = os.path.join(self.d, "amb.gguf")
+        ambhi = os.path.join(self.d, "ambhi.gguf")
+        for pth in (ambhi, amb):                                       # SAME ambiguous shapes both sides
+            w = self.gguf.GGUFWriter(pth, "qwen35moe")
+            w.add_uint32("general.file_type", 15)
+            w.add_uint32("qwen35moe.expert_count", EC)
+            w.add_tensor("token_embd.weight", self.np.zeros((3, 3), self.np.float32))
+            arr = self.np.zeros((EC, 8, EC), self.np.float32)           # TWO axes == expert_count
+            w.add_tensor("blk.0.ffn_gate_exps.weight", arr)
+            w.write_header_to_file(); w.write_kv_data_to_file(); w.write_tensors_to_file(); w.close()
+        buf = io.StringIO()
+        rc = expert_mix.main(["--hi", ambhi, "--lo", amb, "--hot", self._hot({"0": [0]}),
+                              "--out", os.path.join(self.d, "e5.gguf")], err=buf)
+        self.assertEqual(rc, 2)
+        self.assertIn("axes", buf.getvalue())
 
     def test_dry_run_writes_nothing(self):
         out = os.path.join(self.d, "never.gguf")
