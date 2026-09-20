@@ -519,3 +519,17 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
 - [ ] persist governor + THP
 - [ ] MoE candidate that fits (scout running) — that is where LRU/LFU expert caching applies
 - [ ] osx (mlx): https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-mlx-2bit — not started
+
+## UPDATE 2026-09-20 20:26 box clock (Fable) — ctx1 read: restore NOT dead, the restore row was the wrong test
+
+- ctx1 restore rows: prompt_n 12397 == save 12397. Server log: `forcing full prompt re-processing due to lack of cache data (hybrid/
+  recurrent)`. Cause = my row design: slot saved AFTER 64 generated tokens, restore re-sent the bare prompt => needs a recurrent
+  rollback. Slot I/O worked (307 MiB 0.16-0.6 s; 723 MiB at 131k 0.4 s). Untested: restore + token-exact EXTENSION. => brief 17
+  (slotclient presave/extend, token-id arrays on /completion) + box job `ctx1b` (16k PRE_GEN x DROP matrix, gate, two-phase 32k/131k/262k).
+- ctx1 numbers that stand (n=1): 32k prefill ub 512/1024/2048 = 75.7/107.6/135.4 t/s (fit predicted 138); decode 27.8 @12k, 28.1 @27k,
+  11.5 @120k (q4 KV, cache 24); 32k decode by KV: f16 28.1, q8 25.7 (-9%), q4 22.1 (-21%); -nkvo 9.0 (dead); 131k prefill 46.2 t/s = 43 min.
+  64k F16 OOM, 32k MTP cache 16 OOM, 262k died on a 926 MiB compute buffer (ub 512 + cache 12), not on KV => two-phase (cache 0 prefill,
+  ub 128 decode) is what makes 262k fit.
+- ctxproxy consequence: a chat-level proxy only gets a cache hit on a hybrid if the re-rendered conversation is TOKEN-EXACT to the
+  saved ids (template re-rendering of assistant turns breaks that). Carry into the brief-16 review.
+- kq1 (K2 experts): +15.6% decode ALL best-config, quality in band, n=1 — reserved call. Qwen queue 2 done; 16 partial, see HANDOFF-16.
