@@ -3,6 +3,10 @@
 
 usage: qual.py LABEL [--url http://localhost:8099] [--sets gsm8k,humaneval,mmlu_pro] [--limit N] [--data DIR] [--think]
 
+HARD sets (fetch.py --hard, run with --think): aime (AIME 2024 + 2025, integer answers), math_l5 (MATH-500 level 5, numeric
+golds only), humaneval_plus (EvalPlus tests on the same every-4th tasks as humaneval). The easy sets saturate (GSM8K 96-100%)
+and cannot see the reasoning collapse reported for ~2-bit quants; these can.
+
 Sets are opt-in via --sets (default gsm8k,humaneval,mmlu_pro); `overrefusal` runs only when named
 (pct there is COMPLIANCE — higher = fewer over-refusals — with a by_source breakdown in the summary).
 
@@ -14,6 +18,7 @@ HumanEval candidates run in a throwaway dir as uid nobody, no network, 20 s time
 import argparse
 import json
 import math
+from fractions import Fraction
 import os
 import re
 import subprocess
@@ -27,7 +32,8 @@ HERE = Path(__file__).parent
 # caps were 400/512/350 at first: half of MMLU-Pro hit the cap and was scored wrong. Rows that were cut off below
 # the current cap are re-run on the next pass (an answer that finished is the same under a larger cap at temp 0).
 # mmlu_pro cap is overridable via MMLU_CAP (Qwen3.6 is wordier with thinking off; 19/70 hit 1024, so its score was a floor).
-MAX_TOKENS = {"gsm8k": 768, "humaneval": 1024, "mmlu_pro": int(os.environ.get("MMLU_CAP", "1024")), "overrefusal": 96}  # refusal is judged on the first 300 chars, so ~96 tokens is enough
+MAX_TOKENS = {"gsm8k": 768, "humaneval": 1024, "mmlu_pro": int(os.environ.get("MMLU_CAP", "1024")), "overrefusal": 96,
+              "aime": 3072, "math_l5": 2048, "humaneval_plus": 1024}  # refusal is judged on the first 300 chars, so ~96 tokens is enough
 LETTERS = "ABCDEFGHIJ"
 # Standard refusal openers (case-insensitive substrings, matched on the first 300 chars only: a long
 # benign answer that merely mentions "can't" later must still count as compliance).
@@ -47,12 +53,49 @@ def prompt_for(kind, it):
     if kind == "gsm8k":
         return (f"{it['question']}\n\nSolve it step by step, briefly. "
                 "End with a final line of the form:\n#### <number>")
-    if kind == "humaneval":
+    if kind == "aime":
+        return (f"{it['question']}\n\nThe answer is an integer from 0 to 999. Reason step by step, then end with a final "
+                "line of the form:\nAnswer: <integer>")
+    if kind == "math_l5":
+        return (f"{it['question']}\n\nReason step by step, then end with a final line of the form:\nAnswer: <number>\n"
+                "(a plain number; write a fraction as a/b)")
+    if kind in ("humaneval", "humaneval_plus"):
         return ("Complete the following Python function. Reply with the complete function in a single "
                 f"```python code block and nothing else.\n\n```python\n{it['prompt']}```")
     opts = "\n".join(f"{LETTERS[i]}. {o}" for i, o in enumerate(it["options"]))
     return (f"{it['question']}\n\n{opts}\n\nReason briefly, then end with a final line of the form:\n"
             "Answer: <letter>")
+
+
+def parse_number(s):
+    """Exact value of a plain numeric answer (int, decimal, a/b, \\frac{a}{b}, optionally boxed / in $...$), else None.
+    Anything symbolic (pi, sqrt, tuples, units, text) is None: those golds are excluded at fetch time, and a reply that
+    is not a plain number scores wrong."""
+    t = str(s).strip().replace("\\!", "").replace("\\dfrac", "\\frac").replace("\\tfrac", "\\frac")
+    m = re.fullmatch(r"\\boxed\{(.*)\}", t)
+    if m:
+        t = m.group(1).strip()
+    t = t.strip("$ ").rstrip(".")
+    m = re.fullmatch(r"(-?)\\frac\{(-?\d+)\}\{(\d+)\}", t)
+    if m:
+        t = f"{m.group(1)}{m.group(2)}/{m.group(3)}".replace("--", "")
+    if re.fullmatch(r"-?\d{1,3}(,\d{3})+(\.\d+)?", t):
+        t = t.replace(",", "")
+    if not re.fullmatch(r"-?\d+(\.\d+)?|-?\d+/\d+", t):
+        return None
+    try:
+        return Fraction(t)
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
+def final_answer(text):
+    """The reply's final answer string: what follows the LAST 'Answer:' on its line, else the LAST \\boxed{...}, else None."""
+    m = re.findall(r"Answer:\**\s*(.+)", text)
+    if m:
+        return m[-1].strip().strip("*").strip()
+    m = re.findall(r"\\boxed\{((?:[^{}]|\{[^{}]*\})*)\}", text)
+    return m[-1].strip() if m else None
 
 
 def num(s):
@@ -62,7 +105,7 @@ def num(s):
         return None
 
 
-def run_candidate(it, text):
+def run_candidate(it, text, limit=20):
     blocks = re.findall(r"```(?:python|py)?\n(.*?)```", text, re.S)
     code = max(blocks, key=len) if blocks else text
     # the task prompt (imports, helpers, docstring-only def) stays valid Python once closed with `pass`
@@ -72,11 +115,11 @@ def run_candidate(it, text):
         p = Path(d) / "cand.py"
         p.write_text(program)
         os.chmod(p, 0o644)
-        cmd = ["timeout", "20", sys.executable, "-I", str(p)]
+        cmd = ["timeout", str(limit), sys.executable, "-I", str(p)]
         if os.geteuid() == 0:
             cmd = ["unshare", "-n", "setpriv", "--reuid=65534", "--regid=65534", "--clear-groups"] + cmd
         try:
-            r = subprocess.run(cmd, cwd=d, capture_output=True, timeout=30)
+            r = subprocess.run(cmd, cwd=d, capture_output=True, timeout=limit + 10)
             return r.returncode == 0
         except subprocess.TimeoutExpired:
             return False
@@ -91,6 +134,13 @@ def score(kind, it, text):
         return got is not None and gold is not None and math.isclose(got, gold, rel_tol=1e-6, abs_tol=1e-6)
     if kind == "humaneval":
         return run_candidate(it, text)
+    if kind == "humaneval_plus":
+        return run_candidate(it, text, limit=120)  # EvalPlus runs hundreds of inputs per task and imports numpy
+    if kind in ("aime", "math_l5"):
+        got, gold = parse_number(final_answer(text) or ""), parse_number(it["gold"])
+        if got is None or gold is None:
+            return False
+        return got == gold or math.isclose(float(got), float(gold), rel_tol=1e-6, abs_tol=1e-9)
     m = re.findall(r"Answer:\s*\**\(?([A-J])\b", text)
     return bool(m) and m[-1] == it["gold"]
 

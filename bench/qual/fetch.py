@@ -2,6 +2,7 @@
 """Build the fixed quality-eval item sets (deterministic selection, no extra deps).
 
 usage: fetch.py [--gsm8k N] [--mmlu-rows R] [--overrefusal N] [OUT_DIR]   -> OUT_DIR/{gsm8k,humaneval,mmlu_pro[,overrefusal]}.jsonl
+       fetch.py --hard [--math N] OUT_DIR                                   -> OUT_DIR/{aime,math_l5,humaneval_plus}.jsonl
 
 Source: Hugging Face datasets-server rows API. Selection is by fixed offsets so every model
 is scored on the identical items, and shorter runs (--limit) are nested prefixes of longer ones.
@@ -10,6 +11,9 @@ is scored on the identical items, and shorter runs (--limit) are nested prefixes
     mmlu_pro   TIGER-Lab/MMLU-Pro test, 14 pages x R rows (R default 5 => 70 items) across all categories
     overrefusal N per source (0 = skip): bench-llm/or-bench @ or-bench-hard-1k train (NEVER the toxic
                config) plus Paul/XSTest train SAFE rows only (contrast/unsafe rows are dropped by label)
+HARD sets (--hard; run qual.py with --think): aime = HuggingFaceH4/aime_2024 + yentinglin/aime_2025 (30 + 30, integer golds);
+    math_l5 = HuggingFaceH4/MATH-500 level 5 rows whose gold is a plain number (qual.parse_number), dataset order, first N
+    (default 40, prefix-safe); humaneval_plus = evalplus/humanevalplus, the SAME every-4th tasks as humaneval with EvalPlus tests.
 Nested-prefix rule (qual.py resumes by item id, so enlarged sets must keep the old items FIRST):
 gsm8k stays the first N of the test split; per MMLU-Pro page today's base rows (offsets 0,20,40,60,80
 of the 100-row page) come first in the file, the extra rows (uniform grid 100//R) of every page follow
@@ -116,6 +120,34 @@ def select_datasets(rows_fn, gsm_n=50, mmlu_rows=5, pause=None):
     return sel
 
 
+AIME_DS = (("HuggingFaceH4/aime_2024", "default", "train", "2024"), ("yentinglin/aime_2025", "default", "train", "2025"))
+
+
+def select_hard(rows_fn, math_n=40, pause=None):
+    """Hard reasoning/code sets, published items verbatim. rows_fn like rows()."""
+    from qual import parse_number  # same parser scores the replies, so every kept gold is scoreable
+    sel = {"aime": []}
+    for ds, cfg, split, year in AIME_DS:
+        for r in _get(rows_fn, ds, cfg, split, 0, 30, pause=pause)[0]:
+            sel["aime"].append({"id": f"aime/{year}-{r['id']}", "question": r["problem"], "gold": str(int(str(r["answer"]).strip()))})
+    _, tot = rows_fn("HuggingFaceH4/MATH-500", "default", "test", 0, 1)
+    m = [r for r in _get(rows_fn, "HuggingFaceH4/MATH-500", "default", "test", 0, tot, pause=pause)[0]
+         if str(r["level"]) == "5" and parse_number(r["answer"]) is not None]
+    sel["math_l5"] = [{"id": f"math_l5/{r['unique_id']}", "question": r["problem"], "gold": r["answer"]} for r in m[:math_n]]
+    _, tot = rows_fn("evalplus/humanevalplus", "default", "test", 0, 1)
+    h = []
+    while len(h) < tot:   # EvalPlus test cells are large (up to MBs): small pages
+        if pause:
+            pause()
+        chunk = rows_fn("evalplus/humanevalplus", "default", "test", len(h), 10)[0]
+        if not chunk:
+            break
+        h += chunk
+    sel["humaneval_plus"] = [{"id": r["task_id"].replace("HumanEval/", "HumanEvalPlus/"), "prompt": r["prompt"], "test": r["test"],
+                              "entry_point": r["entry_point"]} for r in h[::4]]
+    return sel
+
+
 def _vdc(i):
     """van der Corput radical inverse base 2: 0, .5, .25, .75, ... — evenly spread, prefix-stable."""
     rev, x = 0, i
@@ -171,7 +203,19 @@ def main():
     ap.add_argument("--gsm8k", type=int, default=50, help="gsm8k items, first N of the test split (prefix-safe)")
     ap.add_argument("--mmlu-rows", type=int, default=5, help="rows sampled per MMLU-Pro page; multiple of 5 (20 => 280 items)")
     ap.add_argument("--overrefusal", type=int, default=0, help="over-refusal items PER SOURCE (or-bench-hard-1k + XSTest safe); 0 skips")
+    ap.add_argument("--hard", action="store_true", help="build ONLY the hard sets (aime, math_l5, humaneval_plus) into OUT_DIR")
+    ap.add_argument("--math", type=int, default=40, help="math_l5 items (prefix-safe)")
     a = ap.parse_args()
+    if a.hard:
+        out = Path(a.out_dir) if a.out_dir else Path(__file__).parent / "data_hard"
+        out.mkdir(parents=True, exist_ok=True)
+        sel = select_hard(rows, math_n=a.math, pause=lambda: time.sleep(1))
+        for name in ("aime", "math_l5", "humaneval_plus"):
+            for it in sel[name]:
+                if any(isinstance(v, str) and v.endswith("...") and len(v) > 5000 for v in it.values()):
+                    sys.exit(f"{it['id']}: a cell looks truncated by the rows API")
+            dump(out / f"{name}.jsonl", sel[name])
+        return
     out = Path(a.out_dir) if a.out_dir else Path(__file__).parent / "data"
     out.mkdir(parents=True, exist_ok=True)
 
