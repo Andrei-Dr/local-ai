@@ -50,7 +50,7 @@ Done tonight, verdicts in the rows below: S2, S3, U1, N1, N2, P1/G4, P2, `p4c1` 
 | S3 | Bonsai PQ2_0 vs stock Qwen3.8-27B IQ3_M (dense reference) | **done [M]: dense is dead here** | stock 27B = 1.38 tok/s (`-ngl 16`); Bonsai 5.15 tok/s, quality run dropped by Andrei. No quality rows; fix the `-ot` FFN regex before any future dense bench |
 | S4 | **Whittle-Qwen-3.8-35B-A3B** (A3B body + 10B hashed n-gram memory, distilled from Qwen3.8-27B; `qwen4exp`, mainline only) | todo, unblocked once `mainqual` confirms G2 | see 3.3; download Q3_K_M 16.7 GB after the queue drains, disk check first |
 | U1 | Mainline build of `moe-cache` on the box | **done [M]** | linked clean at CUDA arch 75 (`/ai/src/llama.cpp-mainline`) |
-| U2 | Fork vs mainline A/B | **G2 PASS on speed [M]** (+5-7%, VRAM flat); Qwen text bit-identical, Gemma code prompt flips a greedy tie after ~10 tokens | `mainqual` quality rows within 1 sigma of the fork rows => mainline is the default tree |
+| U2 | Fork vs mainline A/B | **DECIDED 2026-09-20 (Andrei): mainline + our patches is the default tree** (mainqual in band of the fork rows). **G2 PASS on speed [M]** (+5-7%, VRAM flat); Qwen text bit-identical, Gemma code prompt flips a greedy tie after ~10 tokens | `mainqual` quality rows within 1 sigma of the fork rows => mainline is the default tree |
 | U3 | Split the cumulative mainline diff into a reviewable series | todo | after U2 |
 | U4 | Upstream candidates | todo | needs Andrei's explicit go (a fork of a public repo is public) |
 | N1 | Hybrid `ngram-mod,draft-mtp` bench | **done [M]** | G3 PASS (workload-shaped): keep MTP n=2, n-gram ON, cap Qwen<=2 / Gemma long; +3.8% Qwen edit, ~free Gemma, neutral code/reason |

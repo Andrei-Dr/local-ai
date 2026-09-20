@@ -552,3 +552,8 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   (< 1 sigma) for -35% speed vs Q2_K_P.
 - **orf1**: compliance q36 100%, g4 Q2_K_P 100%, stock distill 48% (metric validated by the contrast row).
 - Qwen: brief 17 delivered clean in one turn (small + fenced works; the big brief 16 wedged twice). 16 = partial, HANDOFF-16.
+
+## DECISION 2026-09-20 (Andrei): mainline + our patches = default tree. New box jobs build/run from /ai/src/llama.cpp-mainline.
+- K2 (Qwen experts) and Gemma Q2_K_P: NOT switched. Andrei does not follow the case from the scoreboard => defaults stay IQ2_M /
+  as-is until he says otherwise. `kq1h` queued: K2 at the h2qual sample size (GSM8K-200 + MMLU-Pro-280) for a row directly
+  comparable to IQ2_M's 96.0 +- 1.4 / 71.4 +- 2.7. R1 waits on r1c, long-context config on the ctx1b rerun.
