@@ -578,3 +578,13 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   QX1 imatrix from the Q6_K_P source with expert-balanced calibration (kq1's imatrix came from the IQ2_M model; rare experts are
   under-calibrated) — zero C++, Dave's box; QX2 per-layer x per-role type search with existing ggml types — zero C++; QX3 hot/cold
   expert split for a code-specialized file — C++ loader; QX4 port ik_llama.cpp IQK types only if QX2 shows the FORMAT is the limit.
+
+## UPDATE 2026-09-20 late (Fable) — r1c verdict, queue reordered after the scouts, kld1 built
+- **r1c (shipped footing: cache 30 + MTP n=2), GSM8K / HE / t/s:** b0 98.0 / 92.7 / 45.0; b0.5 100.0 / 92.7 / 52.6 (+17%);
+  b1.0 **92.0 / 90.2** / 57.4. The bias bites harder at the smaller cache, as predicted: b1.0 (clean at c48) loses GSM8K -6 at c30.
+  R1 = OFF (accuracy-first). b0.5 is unproven, not pursued. No more box time on R1.
+- Queue after the scout findings: ctx1b rerun (brief 18 deployed; lossless, the 262k goal) -> kld1 (NEW: KL divergence vs the Q6_K_P
+  reference for IQ2_M and K2; the sensitive quality instrument, also the QX screening rig) ; kq1h keeps running (MMLU-Pro-280 is
+  not saturated, gives the paired n=480 read for K2).
+- Next builds: Unsloth-recipe reader (GGUF header -> --tensor-type args), hard reasoning set (AIME 24/25 + MATH-500 L5 +
+  EvalPlus, thinking on), Bonsai quality redo, lq1 with 5 KV arms.
