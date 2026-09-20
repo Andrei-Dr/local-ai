@@ -30,8 +30,16 @@ queue)
     sleep 30
   done ;;
 job)
-  log=$2; done_re=$3; proc_re=$4; tmin=${5:-180}; end=$(( $(date +%s) + tmin*60 )); gone=0
+  log=$2; done_re=$3; proc_re=$4; tmin=${5:-180}; t0=$(date +%s); end=$(( t0 + tmin*60 )); gone=0
+  # A log left over from an EARLIER run still holds that run's markers (queue jobs truncate the log only when they start):
+  # markers count only once the log has been written after this watcher started.
+  fresh() { [ "$(stat -c %Y "$log" 2>/dev/null || echo 0)" -ge "$t0" ]; }
   while :; do
+    if ! fresh; then
+      if [ $(date +%s) -ge $end ]; then echo "EXIT job: TIMEOUT ${tmin}min ($log never written after the watcher started)"; diag; exit 4; fi
+      pgrep -af "$proc_re" | grep -vE "watch\.sh|pgrep|grep" | grep -q . || { echo "EXIT job: PROCESS GONE ($proc_re) and $log is stale"; tail -4 "$log" 2>/dev/null; diag; exit 5; }
+      sleep 30; continue
+    fi
     if grep -qE "$done_re" "$log" 2>/dev/null; then echo "EXIT job: DONE ($done_re in $log)"; tail -6 "$log"; exit 0; fi
     if grep -qE "$FAIL_RE" "$log" 2>/dev/null; then echo "EXIT job: FAILURE marker in $log"; grep -E "$FAIL_RE" "$log" | tail -3; diag; exit 3; fi
     if pgrep -af "$proc_re" | grep -vE "watch\.sh|pgrep|grep" | grep -q .; then gone=0; else gone=$((gone+1)); fi
