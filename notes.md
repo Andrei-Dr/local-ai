@@ -627,3 +627,25 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   ids + 1), with drop=1 it is 31; both work. The claim "the last sampled token IS in the restored KV" was an inference, not shown.
 - New bottleneck for long context = DECODE AT DEPTH (28.6 t/s @27k F16 -> 12.4 @120k q4_0; expect ~6-7 @240k). lq1 gives
   decode t/s per KV type per depth for free (each question decodes 48 tokens at depth).
+
+## DESIGN 2026-09-21 (Fable) — FA1: GQA-aware quantized decode attention (the decode-at-depth lever; lossless)
+- Symptom: decode 28.6 t/s @27k -> 12.4 @120k (q4_0 KV). Attention adds ~0.45 ms per 1k tokens of q4 KV (F16: ~0.30); the
+  bandwidth bound of the card is ~0.03 (q4) / 0.11 (F16) ms per 1k. At 240k: ~135 ms/token now vs ~35-45 ms achievable.
+- Cause, read in our tree (ggml/src/ggml-cuda/fattn.cu, ggml_cuda_get_best_fattn_kernel): cc 7.5 takes the
+  `turing_mma_available` branch (a GTX 16xx has NO tensor cores; the check cannot tell it from an RTX 20xx). There:
+  quantized KV + 1 query token => VEC kernel; quantized KV + >1 token (MTP verify) => MMA_F16 with need_f16_K/V = the used KV is
+  dequantized to F16 into a pool buffer EVERY step; F16 KV + GQA => MMA_F16. The VEC kernel launches one block per QUERY head
+  (blockIdx.z = head, K/V = head / gqa_ratio): with Qwen3.6's 16 q heads on 2 KV heads, the same K/V rows are walked and
+  dequantized 8x per step.
+- The VEC kernel (fattn-vec.cuh, warp-synchronous) already has a column dimension `ncols` (1 or 2 query TOKENS) that shares the
+  K walk and dequantizes each V row ONCE for all columns (VKQ[j] += tmp * KQ_k[j]). GQA heads of one group are mathematically
+  more columns: same K/V rows, same mask row per token, slope 1 when max_bias == 0.
+- Patch plan: template param ncols2 (GQA group width, 8 here); column j -> (head0 + j / ncols, token ic0 + j % ncols) for the Q
+  pointer, mask row (token only), sink (per head) and dst index; launch grid z over head GROUPS (launch_fattn already knows
+  ncols2 for the tile/mma kernels); KQ shared array = ncols*ncols2*D (8 x 256 floats = fine under the 48 KB shared limit);
+  instances limited to D=256, ncols2=8, K/V in {q4_0/q4_0, q8_0/q8_0, q8_0/q5_1, f16/f16} to bound compile time; dispatch:
+  use it when gqa_ratio % 8 == 0 && max_bias == 0 && Q->ne[1] == 1 (then ne[1] <= 3 for the MTP verify batch, ncols = 4 with
+  the existing out-of-bounds column handling) instead of VEC-per-head / MMA_F16-with-dequant.
+- Gate: test-backend-ops -o FLASH_ATTN_EXT green (CUDA vs CPU) incl. a gqa 8 / D 256 / q4_0 case; temp-0 text identical to the
+  old kernel on the 131k slot; prof3 (nsys at 131k, queued) sizes the prize first, the same job after the patch measures it.
+  Build + test go THROUGH the box queue (a CUDA compile next to a benchmark corrupts the benchmark).
