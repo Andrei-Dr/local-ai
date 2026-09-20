@@ -6,17 +6,22 @@
 # kernel a head-group column dimension (ncols2 = 8: one walk over a K/V head serves its 8 query heads) and routes batches of up
 # to 4 tokens to it. Same math per head => lossless. GGML_CUDA_FA_VEC_GQA = 0 old kernels | 1 decode only | 2 (default) + verify
 # batches; GGML_CUDA_FA_VEC_GQA_NCOLS1=1 = one token per block for the multi-token case. One binary => clean A/B.
+# Also in this build: GGML_CUDA_FA_VEC_GQA_F16=1 (opt-in: F16 K/V on the same GQA vec path instead of MMA_F16 / tile) and
+# GGML_CUDA_NO_TENSOR_CORES=1 (ntc-*.patch: a runtime switch that makes a flagged cc 7.5 card without tensor cores — GTX 16xx —
+# stop taking the tensor-core kernels/dispatch and always use MMQ; the same-binary form of what arch1 tests with a second build).
 # usage: fa1.sh build   (CPU only: worktree, patches, unit-test cases, compile; safe next to a GPU job, run it right away)
 #        fa1.sh verify  (GPU: unit test, old-vs-new text + decode t/s from the kept deep slots, llama-bench at depth, MTP check)
 # Separate worktree + build dir: the benchmark tree (/ai/src/llama.cpp-mainline @ 2582f5c, build75) is never touched.
 SRC=/ai/src/llama.cpp-mainline; W=/ai/src/llama.cpp-fa1; PB=/ai/bench
 case "${1:-verify}" in
 build)
-  [ -s $PB/fa-gqa-vec.patch ] && [ -s $PB/fa-gqa-dispatch.patch ] || { echo "FA1_REFUSED: patches missing in $PB"; exit 1; }
+  for f in fa-gqa-vec fa-gqa-dispatch ntc-common ntc-ggml-cuda ntc-mmq; do [ -s $PB/$f.patch ] || { echo "FA1_REFUSED: $PB/$f.patch missing"; exit 1; }; done
   [ -d $W ] || git -C $SRC worktree add -f $W 2582f5c > /dev/null 2>&1 || { echo FA1_WORKTREE_FAILED; exit 1; }
   cd $W || exit 1
-  git checkout -q -- ggml/src/ggml-cuda/fattn-vec.cuh ggml/src/ggml-cuda/fattn.cu tests/test-backend-ops.cpp
-  patch -s ggml/src/ggml-cuda/fattn-vec.cuh < $PB/fa-gqa-vec.patch && patch -s ggml/src/ggml-cuda/fattn.cu < $PB/fa-gqa-dispatch.patch || { echo FA1_PATCH_FAILED; exit 1; }
+  C=ggml/src/ggml-cuda
+  git checkout -q -- $C/fattn-vec.cuh $C/fattn.cu $C/common.cuh $C/ggml-cuda.cu $C/mmq.cu tests/test-backend-ops.cpp
+  patch -s $C/fattn-vec.cuh < $PB/fa-gqa-vec.patch && patch -s $C/fattn.cu < $PB/fa-gqa-dispatch.patch && patch -s $C/common.cuh < $PB/ntc-common.patch \
+    && patch -s $C/ggml-cuda.cu < $PB/ntc-ggml-cuda.patch && patch -s $C/mmq.cu < $PB/ntc-mmq.patch || { echo FA1_PATCH_FAILED; exit 1; }
   python3 - <<'PY' || { echo FA1_TESTPATCH_FAILED; exit 1; }
 p = "tests/test-backend-ops.cpp"; s = open(p).read()
 a = "    for (int hsk : { 40, 64, 72, 80, 96, 128, 192, 256, 320, 512, 576 }) {\n"
@@ -29,6 +34,7 @@ add = '''    // FA-GQA: grouped-query attention (ratio 8 and 16) on a quantized 
                 test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {8, 1}, kv, nb, true, sinks, 0.0f, 0.0f, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
                 test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {8, 1}, kv, nb, true, sinks, 0.0f, 0.0f, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
                 test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {8, 1}, kv, nb, true, sinks, 0.0f, 0.0f, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q5_1));
+                test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {8, 1}, kv, nb, true, sinks, 0.0f, 0.0f, GGML_PREC_F32, GGML_TYPE_F16,  GGML_TYPE_F16));
             }
             test_cases.emplace_back(new test_flash_attn_ext(256, 256, 1, {16, 1}, kv, nb, true, false, 0.0f, 0.0f, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
             test_cases.emplace_back(new test_flash_attn_ext(256, 256, 3, {8, 2}, kv, nb, true, false, 0.0f, 0.0f, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
@@ -49,13 +55,21 @@ verify)
   source /ai/bench/preflight.sh || exit 1
   B=$W/build75/bin
   [ -x $B/test-backend-ops ] && [ -x $B/llama-server ] && [ $B/llama-server -nt $PB/fa-gqa-vec.patch ] || { echo "FA1_REFUSED: run 'fa1.sh build' first (binaries missing or older than the patch)"; exit 1; }
-  echo "########## 1. test-backend-ops FLASH_ATTN_EXT (CUDA0 vs CPU), new GQA cases included ##########"
-  for g in 2 0; do   # 2 = new kernels (the gate); 0 = old kernels on the same cases (sanity of the added cases themselves)
-    GGML_CUDA_FA_VEC_GQA=$g $B/test-backend-ops test -o FLASH_ATTN_EXT -b CUDA0 > $PB/fa1_ops_g$g.log 2>&1; rc=$?
-    echo "    GQA=$g: exit $rc | OK $(grep -c 'OK' $PB/fa1_ops_g$g.log) | FAIL $(grep -cE 'FAIL|ERR' $PB/fa1_ops_g$g.log) | hs256 quantized cases run: $(grep -E 'hsk=256' $PB/fa1_ops_g$g.log | grep -cE 'q4_0|q8_0')"
-    grep -E "FAIL|ERR" $PB/fa1_ops_g$g.log | head -6 | cut -c1-220
-    [ $g = 2 ] && [ $rc -ne 0 ] && { tail -3 $PB/fa1_ops_g$g.log | cut -c1-200; echo FA1_TEST_FAILED; exit 1; }
-  done
+  echo "########## 1. test-backend-ops vs the CPU reference (added GQA cases included) ##########"
+  ops() { # ops GATE LABEL OP [ENV=VAL ...]
+    local gate=$1 label=$2 op=$3; shift 3
+    env "$@" $B/test-backend-ops test -o $op -b CUDA0 > $PB/fa1_ops_$label.log 2>&1; local rc=$?
+    echo "    $label ($op; $*): exit $rc | $(sed -E 's/\x1b\[[0-9;]*m//g' $PB/fa1_ops_$label.log | grep -E 'tests passed' | tail -1 | xargs)"
+    [ $rc -eq 0 ] || sed -E 's/\x1b\[[0-9;]*m//g' $PB/fa1_ops_$label.log | grep -B1 -E "FAIL|ERR" | grep -E "^ *[A-Z_]+\(" | head -5 | cut -c1-230
+    [ $gate = 1 ] && [ $rc -ne 0 ] && { echo FA1_TEST_FAILED; exit 1; }
+    return 0
+  }
+  ops 1 gqa2      FLASH_ATTN_EXT GGML_CUDA_FA_VEC_GQA=2
+  ops 0 gqa0      FLASH_ATTN_EXT GGML_CUDA_FA_VEC_GQA=0                                  # old kernels on the same cases (sanity of the cases)
+  ops 1 gqa2_f16  FLASH_ATTN_EXT GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_FA_VEC_GQA_F16=1
+  ops 1 ntc_fa    FLASH_ATTN_EXT GGML_CUDA_NO_TENSOR_CORES=1 GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_FA_VEC_GQA_F16=1
+  ops 1 ntc_mm    MUL_MAT        GGML_CUDA_NO_TENSOR_CORES=1
+  ops 1 ntc_mmid  MUL_MAT_ID     GGML_CUDA_NO_TENSOR_CORES=1
   cd /ai/bench; M=/ai/models; SLOTS=/ai/bench/slots; N=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive; Q=$M/$N-IQ2_M.gguf
   echo "########## 2. decode from the kept deep slots: old vs new kernel (same math per head => the text must be identical) ##########"
   export TIMEOUT=3600 GEN=128
@@ -85,12 +99,19 @@ PY
   }
   ab c131k 131072 24
   ab c262k 262144 8
-  echo "########## 3. llama-bench at depth 32768, q4_0 KV: pp3 = a 3-token verify batch, tg32 = decode ##########"
-  LB="$B/llama-bench -m $Q -ngl 999 -ot exps=CPU -fa 1 -ctk q4_0 -ctv q4_0 -t 6 -ub 2048 -b 2048 -d 32768 -r 1 --load-mode none"
-  row() { echo "--- $1"; shift; env GGML_OP_OFFLOAD_MIN_BATCH=32 "$@" 2>&1 | grep -E "pp3|tg32|error|failed" | cut -c1-200; }
-  row "old kernels (GQA=0)"                 GGML_CUDA_FA_VEC_GQA=0 $LB -p 3 -n 32
-  row "new kernels (GQA=2, 2 tokens/block)" GGML_CUDA_FA_VEC_GQA=2 $LB -p 3 -n 32
-  row "new kernels (GQA=2, 1 token/block)"  GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_FA_VEC_GQA_NCOLS1=1 $LB -p 3 -n 0
+  echo "########## 3. llama-bench: pp3 = a 3-token verify batch, tg32 = decode; one binary, env switches ##########"
+  LBB="$B/llama-bench -m $Q -ngl 999 -ot exps=CPU -fa 1 -t 6 --load-mode none"
+  row() { echo "--- $1"; shift; env GGML_OP_OFFLOAD_MIN_BATCH=32 "$@" 2>&1 | grep -E "pp[0-9]+ |tg[0-9]+ |pp[0-9]+@|tg[0-9]+@|error|failed" | cut -c1-200; }
+  D4="-ub 2048 -b 2048 -ctk q4_0 -ctv q4_0 -d 32768 -r 1"; DF="-ub 2048 -b 2048 -d 16384 -r 1"
+  row "q4_0 KV @32k: old kernels"                       GGML_CUDA_FA_VEC_GQA=0 $LBB $D4 -p 3 -n 32
+  row "q4_0 KV @32k: GQA vec (2 tokens/block)"          GGML_CUDA_FA_VEC_GQA=2 $LBB $D4 -p 3 -n 32
+  row "q4_0 KV @32k: GQA vec (1 token/block), pp3 only" GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_FA_VEC_GQA_NCOLS1=1 $LBB $D4 -p 3 -n 0
+  row "q4_0 KV @32k: GQA vec + no-tensor-cores"         GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_NO_TENSOR_CORES=1 $LBB $D4 -p 3 -n 32
+  row "F16 KV @16k: upstream (MMA_F16)"                 GGML_CUDA_FA_VEC_GQA=2 $LBB $DF -p 3 -n 32
+  row "F16 KV @16k: GQA vec"                            GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_FA_VEC_GQA_F16=1 $LBB $DF -p 3 -n 32
+  row "F16 KV @16k: no-tensor-cores (tile/vec)"         GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_NO_TENSOR_CORES=1 $LBB $DF -p 3 -n 32
+  row "short context: upstream"                         GGML_CUDA_FA_VEC_GQA=2 $LBB -ub 512 -b 512 -r 2 -p 512 -n 64
+  row "short context: no-tensor-cores"                  GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_NO_TENSOR_CORES=1 $LBB -ub 512 -b 512 -r 2 -p 512 -n 64
   echo "########## 4. real MTP verify path (in-model head, q4_0 KV, temp 0): old vs new ##########"
   QM=$M/$N-IQ2_M-MTP.gguf
   if [ -e "$QM" ]; then
