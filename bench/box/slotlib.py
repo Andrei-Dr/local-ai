@@ -178,11 +178,16 @@ class Store:
         return ent is not None
 
     def _enforce_best_effort(self):
+        out = []
         while self.total_ready_bytes() > self.budget:
             vic = self.victims()
             if not vic:
                 break
             self._drop(vic[0]["key"], unlink=True)
+            out.append(vic[0]["key"])
+        if out:                                        # same contract as evict_to_budget: deletions
+            for f in self.on_evict:                    # must reach the on_evict hooks (sidecars etc.)
+                f(out)
 
     def _persist(self):
         tmp = self.root / "index.json.tmp"
