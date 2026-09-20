@@ -193,6 +193,18 @@ class LQ(unittest.TestCase):
         self.assertIs(s["depths"]["256"]["prefix_reused"], False)
         self.assertIn("PREFIX NOT REUSED", p.stdout)
 
+    def test_reuse_guard_skips_the_rest_of_a_deep_depth(self):
+        RESP["cache_zero"] = True                      # the server never re-uses the document prefix
+        p, tmp = self.cli("rg", "--depths", "256,512", "--needles", 5, "--chains", 0, "--reuse-guard", 512)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        per = {}
+        for _, body in [r for r in REG if r[0] == "chat"]:
+            n = len(body["messages"][0]["content"])
+            per[n > 1500] = per.get(n > 1500, 0) + 1
+        self.assertEqual(per[False], 5)                # depth 256 is below the guard: all 5 questions asked
+        self.assertEqual(per[True], 2)                 # depth 512: first question + the one that exposes no re-use, then stop
+        self.assertIn("skipping the rest of depth 512", p.stdout)
+
     def test_TIMEOUT_env_reaches_urlopen(self):
         observed = []
         real = urllib.request.urlopen

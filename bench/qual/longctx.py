@@ -165,7 +165,7 @@ class _LazyJsonl:
             self.fh.flush()
 
 
-def run(label, depths, url, seed, needles, chains, hay, out_dir, slot_save, slot_restore, think, timeout):
+def run(label, depths, url, seed, needles, chains, hay, out_dir, slot_save, slot_restore, think, timeout, reuse_guard=16384):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     jp = out_dir / f"{label}.longctx.jsonl"
@@ -188,6 +188,7 @@ def run(label, depths, url, seed, needles, chains, hay, out_dir, slot_save, slot
             restored = False
             saved = False
             first_try = True
+            asked = 0
             try:
                 for q in qs:
                     if (depth, q["kind"], q["index"]) in done:
@@ -219,6 +220,7 @@ def run(label, depths, url, seed, needles, chains, hay, out_dir, slot_save, slot
                                 raise _Overflow(repr(e)) from e
                             raise
                     first_try = False
+                    asked += 1
                     score = (score_needle(txt, q["expect"]) if q["kind"] == "needle"
                              else score_vt(txt, q["expect"], q["foreign"]))
                     rec = {"depth": depth, "kind": q["kind"], "index": q["index"], "key": q["key"],
@@ -236,6 +238,12 @@ def run(label, depths, url, seed, needles, chains, hay, out_dir, slot_save, slot
                             print(f"  {depth}: slot save ignored ({e})", flush=True)
                     print(f"  {depth} {q['kind']}{q['index']} {'ok' if score >= 0.5 else 'MISS'} "
                           f"pn {tm['prompt_n']} cn {tm['cache_n']}", flush=True)
+                    # one prefill at 131k is ~40 min: if the 2nd request of a deep depth did not re-use the document
+                    # prefix (hybrid model without a usable context checkpoint), stop instead of re-prefilling per question
+                    cn, pn = tm["cache_n"] or 0, tm["prompt_n"] or 0
+                    if reuse_guard and depth >= reuse_guard and asked >= 2 and cn < 0.5 * (cn + pn):
+                        print(f"  PREFIX NOT REUSED (cached {cn} of {cn + pn}): skipping the rest of depth {depth}", flush=True)
+                        break
             except _Overflow as e:
                 print(f"  OVERFLOW depth {depth} — still failing ({e}) after {MAX_SHRINKS} shrinks; depth skipped",
                       flush=True)
@@ -299,10 +307,12 @@ def main():
     ap.add_argument("--slot-save", action="store_true")
     ap.add_argument("--slot-restore", action="store_true")
     ap.add_argument("--think", action="store_true")
+    ap.add_argument("--reuse-guard", type=int, default=16384,
+                    help="from this depth on, stop a depth when its 2nd request did not re-use the prefix (0 = off)")
     a = ap.parse_args()
     run(a.label, [int(x) for x in a.depths.split(",")], a.url.rstrip("/"), a.seed, a.needles, a.chains,
         open(a.haystack, encoding="utf-8").read() if a.haystack else None, a.out,
-        a.slot_save, a.slot_restore, a.think, int(os.environ.get("TIMEOUT", "21600")))
+        a.slot_save, a.slot_restore, a.think, int(os.environ.get("TIMEOUT", "21600")), a.reuse_guard)
 
 
 if __name__ == "__main__":
