@@ -662,3 +662,9 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   CMAKE_CUDA_ARCHITECTURES=61-virtual;80-virtual and GGML_CUDA_FORCE_MMQ". All our mainline numbers are arch-75 builds => arch1
   (build started, verify queued right after fa1): llama-bench A/B short context + depth 32768.
 - Priority rule (Andrei): new code is built + verified ahead of benchmarks; builds run CPU-side next to the GPU job as system units.
+
+## CONTAMINATION 2026-09-21 (Fable, my error) — ctx1b 262k presave shared the box
+- While `ctx1b_c262k_pf_presave` was prefilling I ran, outside the queue: the fa1 build (4 threads, 810 s), the FA unit test on the
+  GPU (2 x ~155 s), and ~6 min of the arch1 build (stopped). => that row's prefill t/s and wall time are NOT a measurement; rerun the
+  262k prefill number clean if it is ever quoted. The slot file it writes is valid (same computation), and every later row (262k
+  extend, fa1 A/B from the kept slots) runs with the box exclusive. Rule fixed in memory: code PREEMPTS benchmarks, never runs beside them.
