@@ -612,3 +612,18 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
 - Consequence for ctxproxy (brief 16, still partial): a chat proxy on this model must send the continuation as TOKEN IDS extending
   the saved prefix (the slotclient presave/extend path), NOT re-rendered chat text — re-rendering breaks token-exactness => full
   re-prefill. The current ctxproxy forwards chat messages, so it will miss on this model. Carry into the brief-16 rework.
+
+## RESULT 2026-09-20/21 (Fable, verified against ctx1b.log) — two-phase long context WORKS through 131k; 262k server is up
+- **Cross-config restore (the two-phase claim):** slot saved by the PREFILL server (cache 0, ub 2048: 32k in 200.7 s, 135.9 t/s)
+  restores under the DECODE server (cache 24, ub 128): prompt_n 32, cache_n 26887, 3.1 s, decode 28.6 t/s, coherent reply.
+- **131k:** prefill server (q4_0 KV, cache 0, ub 1024) 119,569 tokens in 2110 s (56.8 t/s; ctx1 had 46.2 at ub 512 + cache 24);
+  slot 723 MiB saved in 0.4 s; decode server restore + 32 new tokens + 64 generated = **6.6 s vs 35 min (~320x)**, decode at
+  120k depth 12.4 t/s, reply coherent and specific to the document.
+- **262k:** the prefill server LOADED (cache 0 freed what the 926 MiB compute buffer needed) and is prefilling; ctx1's 262k died at load.
+- **MTP after a restore is a net LOSS with the separate -md head:** 17.2 t/s vs 28.6 without, acceptance 26/72 = 36% (normal ~85%).
+  The standalone head is its own model with its own (empty) KV: it drafts blind to the restored context. Prediction: the IN-MODEL
+  head (V1c / kq1graft file) shares the target's state and should keep its acceptance after a restore => test row (ctx1c).
+- Correction to the previous entry: with drop=0 the server still re-evaluates the last saved token (prompt_n 32 = 31 extension
+  ids + 1), with drop=1 it is 31; both work. The claim "the last sampled token IS in the restored KV" was an inference, not shown.
+- New bottleneck for long context = DECODE AT DEPTH (28.6 t/s @27k F16 -> 12.4 @120k q4_0; expect ~6-7 @240k). lq1 gives
+  decode t/s per KV type per depth for free (each question decodes 48 tokens at depth).
