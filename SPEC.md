@@ -260,6 +260,16 @@ Only after S4 says the preview is competitive on this box. Inputs the author pub
 - **One variable per run.** A/B pairs run back to back in the same script, same thermal and memory state, preflight enforced.
 - **Record negative results.** A killed idea gets a ledger row and a line in section 3.2 with its reopen criterion.
 
+### 8.x Quality gate = paired non-inferiority (Andrei, 2026-09-20: "not faster at getting it wrong")
+A quality-affecting lever (requant, routing bias, KV quantization, smaller file) is adopted only if it PROVES it is not worse:
+same question ids in both arms, count discordant pairs (base right / test wrong vs the reverse), exact McNemar p + 95% CI on the
+paired difference, and the LOWER bound must clear the margin (proposed: -2 pts pooled). "Within 1 sigma at n=50" is retired: it
+passes by default. About 9% of answers flip between any two ~2-3 bit quants, so proof needs ~1000 paired questions per decision
+(published sets only: GSM8K test 1319, MMLU-Pro, HumanEval 164). Ties go to the higher-precision file. Lossless levers need no gate.
+First paired reads (existing rows, 2026-09-20): R1 b1.0 vs b0: loses 0 / wins 3 of 91, diff +3.3 [-0.4, +7.0]; R1 b2.0: loses 7 /
+wins 3, dead; K2 vs IQ2_M: 8 / 7 of 161, -0.6 [-5.3, +4.1] = undecided (kq1h adds n=480); Gemma Q2_K_P vs IQ3_M: 29 / 20 of 521,
+-1.7 [-4.4, +0.9] = not proven, IQ3_M stays; Gemma Q3_K_M vs IQ3_M: 20 / 16, -0.8 [-3.0, +1.5] = not proven.
+
 ## 9. Sequencing
 
 **Phase 0, in flight (box unattended, ~8-10 h):** Q-box. Mac side meanwhile, strictly one at a time in this order (WIP limit): W4 workload -> U3 series split -> N3a draft against mainline. `predict.py` is already written and smoke-tested.

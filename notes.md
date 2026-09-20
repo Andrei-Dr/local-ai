@@ -557,3 +557,9 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
 - K2 (Qwen experts) and Gemma Q2_K_P: NOT switched. Andrei does not follow the case from the scoreboard => defaults stay IQ2_M /
   as-is until he says otherwise. `kq1h` queued: K2 at the h2qual sample size (GSM8K-200 + MMLU-Pro-280) for a row directly
   comparable to IQ2_M's 96.0 +- 1.4 / 71.4 +- 2.7. R1 waits on r1c, long-context config on the ctx1b rerun.
+
+## DECISION 2026-09-20 (Andrei): correctness over speed — "not faster at getting it wrong". Gate = paired non-inferiority (SPEC 8.x).
+- Consequences: R1 stays OFF (b2.0 dead: loses 7 / wins 3; b1.0 loses 0 / wins 3 of 91 but unproven, r1c is the last box time it gets
+  until a ~1000-question paired run is worth it); Gemma stays IQ3_M (Q2_K_P -1.7 [-4.4, +0.9], not proven); q4 KV at depth cannot
+  ship without lq1 (q8 where it fits); K2 undecided (-0.6 [-5.3, +4.1] at n=161; it has MORE bits than IQ2_M, 12.9 vs ~11 GB, so
+  the prior is not "lossy shortcut"; kq1h adds n=480). Lossless levers lead. Brief 19 = durable paired.py (send after 18 lands).
