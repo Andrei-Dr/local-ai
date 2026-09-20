@@ -5,8 +5,8 @@ the long prompt), MODE (cold|save|restore|warm|presave|extend, default cold), SL
 LABEL.slot — set ONE shared name so a save row and a restore row, which run under different LABELs,
 address the same file), TIMEOUT (per-request seconds, default 3600 — deep prefill needs more),
 PRE_GEN (presave generation before the save, default 1), DROP (extend: drop the LAST N sidecar token
-ids before appending EXT, default 0), EXT (extend suffix text, default "\n\nNow list the three most
-important open risks, one line each."). presave writes a token sidecar at OUT/<SLOT>.ids.json that
+ids before appending EXT, default 0), EXT (extend suffix text, may contain chat-template special
+tokens, default "\n\nNow list the three most important open risks, one line each."). presave writes a token sidecar at OUT/<SLOT>.ids.json that
 extend consumes — token-id prompts on /completion are the only restore path a GDN-hybrid model can
 pass (recurrent state cannot roll back; text prompts re-render across the BPE junction).
 Writes OUT/LABEL.slot.json {"mode","prompt_chars","rows"} and prints one line per request;
@@ -119,7 +119,7 @@ elif MODE == "extend":
         print(f"extend: sidecar {IDS_PATH} missing/unreadable", file=sys.stderr)
         sys.exit(1)
     s = slot("restore")  # FIRST: the completion below must run on the restored state
-    e = api("/tokenize", {"content": EXT, "add_special": False, "parse_special": False})["tokens"]
+    e = api("/tokenize", {"content": EXT, "add_special": False, "parse_special": True})["tokens"]
     t0 = time.time()
     d = api("/completion", {"prompt": sid[:len(sid) - DROP] + e, "n_predict": GEN, "temperature": 0,
                             "cache_prompt": True})

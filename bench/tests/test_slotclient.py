@@ -46,7 +46,7 @@ class H(BaseHTTPRequestHandler):
         elif kind == "template":
             out = {"prompt": "TT %d" % len(body["messages"][0]["content"])}
         elif kind == "tok":
-            out = {"tokens": SID if body.get("parse_special") else ETOK}
+            out = {"tokens": SID if body["content"].startswith("TT ") else ETOK}
         elif kind == "comp":
             out = {"content": RCOV, "tokens": RTOK, "stopped": True,
                    "timings": {"prompt_n": RESP["chat_prompt_n"], "cache_n": RESP["chat_cache_n"],
@@ -222,7 +222,7 @@ class SlotCase(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertEqual([k for k, _ in calls], ["restore", "tok", "comp"])
         self.assertEqual(calls[0][1], {"filename": "shared.slot"})      # same shared-slot contract as brief 13
-        self.assertEqual(calls[1][1], {"content": DEF_EXT, "add_special": False, "parse_special": False})
+        self.assertEqual(calls[1][1], {"content": DEF_EXT, "add_special": False, "parse_special": True})
         self.assertEqual(calls[2][1], {"prompt": SID + RTOK + ETOK, "n_predict": 64, "temperature": 0,
                                        "cache_prompt": True})
         r = d["rows"][0]
