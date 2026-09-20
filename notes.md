@@ -599,3 +599,16 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
 - Queue: kq1h (running) -> ctx1b rerun -> kld1 -> hq1_iq2m -> lq1 -> bonsai1_easy -> bonsai1_hard. hq1 k2 arm waits on kld1.
 - Qwen root cause for its two stalls: typing the literal chat special-token strings ends its own generation (server stop token).
   Briefs must never require it to write them; told it so. Queue 5 = briefs 19 (paired.py) + 20 (gguf_types.py).
+
+## RESULT 2026-09-20 (Opus) — ctx1b GATE PASSED: slot restore + token-exact extension WORKS on the GDN hybrid
+- 16k, pre_gen=64 drop=0 (the production/ctxproxy path — state saved AFTER 64 generated tokens, extend with a chat-formatted
+  continuation): restore reprocessed prompt_n 32 of 12397 (cache_n 12460), wall 3.0 s vs 148.7 s cold = ~50x, decode 30.5 t/s,
+  reply COHERENT. All four PRE_GEN x DROP combos passed; gate picked pre_gen=64 drop=0. drop=0 (keep every saved id) works, so the
+  last sampled token IS in the restored KV.
+- Kills the earlier ctx1 "restore dead" verdict: that re-sent the bare prompt against a post-generation slot => forced rollback =>
+  full re-prefill. Extend-the-token-ids is the supported path. The two-phase architecture (prefill server -> slot -> decode server)
+  is VALID; deep rungs (32k/131k/262k two-phase) now running. Restore turns the 43-min 131k prefill / hours-long 262k prefill into
+  a ~3-5 s slot load => 262k is reachable on the 4 GB card.
+- Consequence for ctxproxy (brief 16, still partial): a chat proxy on this model must send the continuation as TOKEN IDS extending
+  the saved prefix (the slotclient presave/extend path), NOT re-rendered chat text — re-rendering breaks token-exactness => full
+  re-prefill. The current ctxproxy forwards chat messages, so it will miss on this model. Carry into the brief-16 rework.
