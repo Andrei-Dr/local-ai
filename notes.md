@@ -649,3 +649,16 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
 - Gate: test-backend-ops -o FLASH_ATTN_EXT green (CUDA vs CPU) incl. a gqa 8 / D 256 / q4_0 case; temp-0 text identical to the
   old kernel on the 131k slot; prof3 (nsys at 131k, queued) sizes the prize first, the same job after the patch measures it.
   Build + test go THROUGH the box queue (a CUDA compile next to a benchmark corrupts the benchmark).
+
+## RESULT 2026-09-21 (Fable) — FA1+FA2 patch BUILT (810 s, no errors) and unit-tested; arch finding
+- bench/box/patches/fa-gqa-{vec,dispatch}.patch: vec FA kernel gets head-group columns (ncols2 = 8) => one K/V walk per K/V head
+  for its 8 query heads; quantized KV + <= 4 query tokens routed to it (decode AND MTP verify batches, which used to dequantize
+  the used KV to F16 every step for MMA_F16). Env GGML_CUDA_FA_VEC_GQA 0|1|2, GGML_CUDA_FA_VEC_GQA_NCOLS1.
+- test-backend-ops FLASH_ATTN_EXT, run NEXT TO the 262k prefill (70 MB VRAM free): all 80 added cases (hs 256, gqa 8/16, q4_0 / q8_0 /
+  q8_0+q5_1, 1-5 query tokens, sinks on/off) PASS vs the CPU reference under the new kernels. 4054/4059 new vs 4056/4059 old: every
+  failure is an F16-KV nb=512 kv>=4096 case (unreachable by the patch, fails on the old kernels too, set varies run to run) =
+  memory pressure; the queued fa1 verify reruns with the GPU free, then text-identity + decode t/s from the 131k/262k slots.
+- llama.cpp's own banner: "suboptimal performance due to a lack of tensor cores: GTX 1650 SUPER. Consider compiling with
+  CMAKE_CUDA_ARCHITECTURES=61-virtual;80-virtual and GGML_CUDA_FORCE_MMQ". All our mainline numbers are arch-75 builds => arch1
+  (build started, verify queued right after fa1): llama-bench A/B short context + depth 32768.
+- Priority rule (Andrei): new code is built + verified ahead of benchmarks; builds run CPU-side next to the GPU job as system units.
