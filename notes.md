@@ -588,3 +588,14 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   not saturated, gives the paired n=480 read for K2).
 - Next builds: Unsloth-recipe reader (GGUF header -> --tensor-type args), hard reasoning set (AIME 24/25 + MATH-500 L5 +
   EvalPlus, thinking on), Bonsai quality redo, lq1 with 5 KV arms.
+
+## UPDATE 2026-09-20 night (Fable) — three builds done, queue = ~28 h of accuracy-first work
+- **Hard quality sets** (qual.py + fetch.py --hard, 9 tests): aime (AIME 2024+2025, 60, integer), math_l5 (MATH-500 L5 numeric
+  golds, 40), humaneval_plus (EvalPlus tests on the same 41 tasks). Thinking on, caps 24.5k / 16k / 8k tokens. EvalPlus executor
+  verified on the box (canonical passes, wrong fails, sandboxed uid nobody + numpy). Box job `hq1.sh iq2m|k2` (~8 h per arm).
+- **lq1** rebuilt on Qwen's longctx (cherry-picked 50662a0): 5 KV arms f16 | q8_0 | q8_0/q5_1 | q4_0 | q4_0 no attn-rot, cache 0,
+  131k for the quantized arms; longctx got a reuse guard (deep depth stops when the 2nd request re-prefills) + test.
+- **bonsai1** easy (resumes the killed run, paired vs q36 rows) and hard (AIME first 10, thinking, -c 16384).
+- Queue: kq1h (running) -> ctx1b rerun -> kld1 -> hq1_iq2m -> lq1 -> bonsai1_easy -> bonsai1_hard. hq1 k2 arm waits on kld1.
+- Qwen root cause for its two stalls: typing the literal chat special-token strings ends its own generation (server stop token).
+  Briefs must never require it to write them; told it so. Queue 5 = briefs 19 (paired.py) + 20 (gguf_types.py).
