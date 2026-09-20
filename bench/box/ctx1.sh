@@ -71,6 +71,14 @@ run save ctx1_c32k_q8_save   ctx1_tmp.slot 32768 13 -ctk q8_0 -ctv q8_0
 run save ctx1_c32k_q4_save   ctx1_tmp.slot 32768 13 $Q4
 run save ctx1_c32k_mtp_save  ctx1_tmp.slot 32768 13 --moe-expert-cache 16 $QH
 rm -f $SLOTS/ctx1_tmp.slot
+# TWO-PHASE config. lat1 fits T(ubatch) = 2.5 s fixed (stream ~10 GB of experts per ubatch) + 6 ms/token: ub 128/256/512 = 39/61/92
+# tok/s measured, => ~118 at ub 1024, ~138 at 2048, asymptote ~166. The expert cache serves 1-4 token batches only, so a PREFILL
+# server can drop it (and MTP) and spend that VRAM on a big ubatch, save the slot, and a DECODE-config server restores it.
+# The xrestore row is the proof that a slot saved under one -ub / cache config restores under another.
+run save    ctx1_c32k_pf1024_save     ctx1_pf.slot 32768 13 -ub 1024 -b 2048 --moe-expert-cache 0
+run save    ctx1_c32k_pf2048_save     ctx1_pf.slot 32768 13 -ub 2048 -b 2048 --moe-expert-cache 0
+run restore ctx1_c32k_pf2048_xrestore ctx1_pf.slot 32768 13
+rm -f $SLOTS/ctx1_pf.slot
 rung c64k  65536  27
 rung c131k 131072 58  $Q4
 rung c262k 262144 116 $Q4 --moe-expert-cache 12
