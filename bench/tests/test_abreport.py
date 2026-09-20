@@ -5,11 +5,14 @@ from pathlib import Path
 TOOL = Path(__file__).resolve().parent.parent / "abreport.py"
 
 
-def prec(label, ts, code, acc=0.5, completed=True, vram=3400, commit="deadbeef0", kind="code", pre=300.0):
+def prec(label, ts, code, acc=0.5, completed=True, vram=3400, commit="deadbeef0", kind="code", pre=300.0, druns=None):
+    prow = {"prompt": kind, "tokens": 200, "decode_tps": code, "wall_tps": code,
+            "prefill_tps": pre, "acceptance": acc}
+    if druns is not None:
+        prow["decode_tps_runs"] = druns          # multi-run client rows: samples, not the mean
     return {"kind": "specbench", "label": label, "ts": ts, "completed": completed, "vram_mib": vram,
             "model": "m.gguf", "git": {"commit": commit}, "moe_cache": {"hit_rate_pct": 42.0},
-            "prompts": [{"prompt": kind, "tokens": 200, "decode_tps": code, "wall_tps": code,
-                         "prefill_tps": pre, "acceptance": acc}]}
+            "prompts": [prow]}
 
 
 def run(recs, args):
@@ -68,6 +71,17 @@ class AbreportCase(unittest.TestCase):
         lines = p.stdout.splitlines()
         self.assertTrue(lines[0].startswith("| prompt"), lines[0])
         self.assertTrue(lines[1].startswith("|---"), lines[1])
+
+    def test_runs_samples_are_the_sample_not_the_mean(self):
+        # base arm: one multi-run record (samples 40,40) + one plain record (scalar 44) -> n=3, mean 41.33
+        recs = [prec("bb1", "2026-09-01T00:00:00+0300", 40.0, druns=[40.0, 40.0]),
+                prec("bb2", "2026-09-01T00:00:00+0300", 44.0),
+                prec("tt1", "2026-09-01T00:00:00+0300", 45.0)]
+        p = run(recs, ["^bb", "^tt"])
+        self.assertEqual(p.returncode, 0, p.stderr)
+        for s in ("41.33 (n=3)", "45.00 (n=1)", "+8.87%", "9.68%", "flat"):
+            self.assertIn(s, p.stdout)
+        self.assertNotIn("42.00 (n=1)", p.stdout)   # the embedded mean is not the sample
 
     def test_metric_option_compares_and_names_field(self):
         recs = [prec("b1", "2026-09-01T00:00:00+0300", 20.0, pre=300.0),

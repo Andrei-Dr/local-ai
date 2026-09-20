@@ -39,7 +39,11 @@ def arm_stats(records, metric="decode_tps"):
     per, acc, hits, vrams, commits = {}, {}, [], [], set()
     for r in records:
         for p in r.get("prompts") or []:
-            per.setdefault(p.get("prompt"), []).append(p.get(metric))
+            rv = p.get(metric + "_runs")  # M1: multi-run clients embed the raw samples; they are the sample (not the mean)
+            if rv is not None:
+                per.setdefault(p.get("prompt"), []).extend(rv)
+            else:
+                per.setdefault(p.get("prompt"), []).append(p.get(metric))
             acc.setdefault(p.get("prompt"), []).append(p.get("acceptance"))
         mc = r.get("moe_cache") or {}
         if isinstance(mc.get("hit_rate_pct"), (int, float)):

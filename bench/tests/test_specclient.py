@@ -62,6 +62,95 @@ class ClientCase(unittest.TestCase):
         self.assertTrue(long_msg.startswith("Read the document below."))
         self.assertLess(len(self.doc), 9000)
 
+class VarHandler(BaseHTTPRequestHandler):
+    """Timings cycle through SEQ by call index (warmup calls consume an index too); content alternates
+    when VAR['rotate'] is set, so text_stable can be proven both ways."""
+    SEQ = [10.0, 20.0, 30.0]
+    CONTENTS = ["A" * 210, "B" * 210]
+    VAR = {"rotate": False}
+
+    def do_POST(self):
+        c = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        POSTED.append(c)
+        i = len(POSTED) - 1
+        text = self.CONTENTS[i % 2] if self.VAR["rotate"] else self.CONTENTS[0]
+        body = json.dumps({"choices": [{"message": {"content": text}}],
+                           "usage": {"completion_tokens": 8},
+                           "timings": {"predicted_per_second": self.SEQ[i % 3], "prompt_per_second": self.SEQ[i % 3],
+                                       "prompt_n": 25, "draft_n": 4, "draft_n_accepted": 3}}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *a):
+        pass
+
+
+class RepeatCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), VarHandler)
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+
+    def run_client(self, **extra):
+        POSTED.clear()
+        tmp = tempfile.TemporaryDirectory()
+        env = dict(os.environ, URL=f"http://127.0.0.1:{self.server.server_address[1]}/v1/chat/completions",
+                   OUT=tmp.name, EDIT="1", LONG="1", **extra)
+        p = subprocess.run([sys.executable, str(SPECC), "unittest", "0"], env=env, capture_output=True, text=True,
+                           timeout=120)
+        self.addCleanup(tmp.cleanup)
+        d = json.loads((Path(tmp.name) / "unittest.client.json").read_text(encoding="utf-8")) if p.returncode == 0 else None
+        return p, d
+
+    def test_repeats_means_lists_warmup_text_stable(self):
+        VarHandler.VAR["rotate"] = True
+        self.addCleanup(VarHandler.VAR.update, {"rotate": False})
+        p, d = self.run_client(REPEATS="3", WARMUP="1")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        # 1 warmup + 4 kinds x 3 repeats
+        self.assertEqual(len(POSTED), 13)
+        self.assertEqual(POSTED[0]["max_tokens"], 32)                      # throwaway tiny cap...
+        self.assertIn("LRU cache", POSTED[0]["messages"][0]["content"])     # ...of the FIRST prompt
+        self.assertEqual(POSTED[1]["max_tokens"], 200)                      # recorded runs use GEN
+        rows = {r["prompt"]: r for r in d["rows"]}
+        for j, kind in enumerate(("code", "reason", "edit", "long")):
+            r = rows[kind]
+            # call indexes per kind fall on (1,2,3)%3 etc -> same [20,30,10] rotation for every kind
+            self.assertEqual(r["decode_tps_runs"], [20.0, 30.0, 10.0], kind)
+            self.assertEqual(r["decode_tps"], 20.0, kind)
+            self.assertEqual(r["prefill_tps_runs"], [20.0, 30.0, 10.0], kind)
+            self.assertEqual(r["tokens"], 24, kind)                         # summed, not averaged
+            self.assertEqual(r["draft_n"], 12, kind)
+            self.assertEqual(r["acceptance"], 0.75, kind)
+            self.assertFalse(r["text_stable"], kind)                        # consecutive runs alternate contents
+            # this kind's first recorded call sits at global index 1+3*j -> alternating letter per kind
+            self.assertEqual(r["text"], VarHandler.CONTENTS[(1 + 3 * j) % 2], kind)
+            self.assertEqual(r["text_sha256"], hashlib.sha256(VarHandler.CONTENTS[(1 + 3 * j) % 2].encode()).hexdigest())
+            self.assertEqual(len(r["wall_tps_runs"]), 3)
+        for ln in p.stdout.splitlines():
+            self.assertIn("| runs 3 spread 100.0%", ln)                     # (30-10)/20
+
+    def test_repeat1_static_is_compatible(self):
+        VarHandler.VAR["rotate"] = False
+        p, d = self.run_client(REPEATS="2")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(len(POSTED), 8)                                    # no warmup calls
+        r = d["rows"][0]
+        self.assertEqual(r["decode_tps_runs"], [10.0, 20.0])                  # no warmup: calls 0,1
+        self.assertEqual(r["decode_tps"], 15.0)
+        self.assertTrue(r["text_stable"])
+        self.assertIn("| runs 2 spread 66.7%", p.stdout.splitlines()[0])       # (20-10)/15
+        self.assertEqual(d["rows"][0]["tokens"], 16)
+
+
 class TextdiffCase(unittest.TestCase):
     def run_diff(self, ra, rb):
         with tempfile.TemporaryDirectory() as td:

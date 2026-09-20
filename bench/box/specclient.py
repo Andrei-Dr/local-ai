@@ -6,6 +6,8 @@ label, vram = sys.argv[1], sys.argv[2]
 URL = os.environ.get("URL", "http://localhost:8099/v1/chat/completions")
 OUT = os.environ.get("OUT", "/ai/bench/runs")
 GEN = int(os.environ.get("GEN", "200"))
+REPEATS = max(1, int(os.environ.get("REPEATS", "1")))  # whole prompt list runs N times per server start (M1 noise control)
+WARMUP = int(os.environ.get("WARMUP", "0"))            # throwaway first-prompt calls (32 tok) before recording starts
 PROMPTS = [
     ("code",   "Write a Python class implementing an LRU cache with get and put in O(1), with type hints and a short docstring for each method."),
     ("reason", "A train leaves at 3pm going 60 mph. A second leaves the same station at 4pm going 80 mph on the same track. When does the second catch the first? Show the algebra step by step."),
@@ -54,20 +56,53 @@ if os.environ.get("LONG") == "1":
                            "2. According to the sanity check, is speculation on this box throttled by the GPU or by something else?\n"
                            "3. What rebase hazard does the Workstream U note flag about open PR #28391?\n\n"
                            "Document:\n" + doc))
-rows = []
-for kind, q in PROMPTS:
-    body = json.dumps({"messages": [{"role": "user", "content": q}], "temperature": 0, "max_tokens": GEN,
+def post(content, max_tokens):
+    body = json.dumps({"messages": [{"role": "user", "content": content}], "temperature": 0, "max_tokens": max_tokens,
                        "chat_template_kwargs": {"enable_thinking": False}}).encode()
     req = urllib.request.Request(URL, body, {"Content-Type": "application/json"})
     t0 = time.time(); d = json.load(urllib.request.urlopen(req, timeout=900)); wall = time.time() - t0
-    n = d.get("usage", {}).get("completion_tokens", 0); t = d.get("timings", {})
-    dn, da = t.get("draft_n"), t.get("draft_n_accepted")
-    acc = f"{da}/{dn}={da/dn:.2f}" if dn else "-"
-    text = d["choices"][0]["message"].get("content") or ""
-    sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    rows.append({"prompt": kind, "tokens": n, "wall_tps": round(n / wall, 2), "decode_tps": round(t.get("predicted_per_second", 0), 2),
-                 "prefill_tps": round(t.get("prompt_per_second", 0), 1), "prompt_tokens": t.get("prompt_n"),
-                 "draft_n": dn, "draft_accepted": da, "acceptance": round(da / dn, 3) if dn else None, "text_head": text[:80], "text": text, "text_sha256": sha})
-    print(f"{label:14s} {kind:6s} {n:4d} tok | wall {n/wall:5.2f} t/s | decode {t.get('predicted_per_second', 0):5.2f} t/s | prefill {t.get('prompt_per_second', 0):6.1f} t/s | accept {acc:15s} | vram {vram} | {text[:48]!r}", flush=True)
+    return d, wall
+
+
+for _ in range(WARMUP):  # same prompt, tiny cap: heats cache/graphs, never recorded
+    post(PROMPTS[0][1], 32)
+
+mean = lambda xs: sum(xs) / len(xs)
+rows = []
+for kind, q in PROMPTS:
+    runs = []
+    for _ in range(REPEATS):
+        d, wall = post(q, GEN)
+        t = d.get("timings", {})
+        dn, da = t.get("draft_n"), t.get("draft_n_accepted")
+        text = d["choices"][0]["message"].get("content") or ""
+        runs.append({"n": d.get("usage", {}).get("completion_tokens", 0),
+                     "decode_tps": t.get("predicted_per_second", 0), "prefill_tps": t.get("prompt_per_second", 0),
+                     "prompt_tokens": t.get("prompt_n"), "draft_n": dn, "draft_accepted": da,
+                     "acc": (da / dn) if dn else None, "text": text,
+                     "sha": hashlib.sha256(text.encode("utf-8")).hexdigest(), "elapsed": wall})
+    r0 = runs[0]
+    dns = [rr["draft_n"] for rr in runs]
+    das = [rr["draft_accepted"] for rr in runs]
+    accs = [rr["acc"] for rr in runs if rr["acc"] is not None]
+    wtps = [rr["n"] / rr["elapsed"] for rr in runs]
+    dcs = [rr["decode_tps"] for rr in runs]
+    prs = [rr["prefill_tps"] for rr in runs]
+    row = {"prompt": kind, "tokens": sum(rr["n"] for rr in runs),
+           "wall_tps": round(mean(wtps), 2), "decode_tps": round(mean(dcs), 2), "prefill_tps": round(mean(prs), 1),
+           "prompt_tokens": r0["prompt_tokens"],
+           "draft_n": sum(x or 0 for x in dns) if any(dns) else None,
+           "draft_accepted": sum(x or 0 for x in das) if any(das) else None,
+           "acceptance": round(mean(accs), 3) if accs else None,
+           "text_head": r0["text"][:80], "text": r0["text"], "text_sha256": r0["sha"],
+           "text_stable": all(rr["sha"] == r0["sha"] for rr in runs),
+           "decode_tps_runs": [round(x, 2) for x in dcs], "prefill_tps_runs": [round(x, 1) for x in prs],
+           "wall_tps_runs": [round(x, 2) for x in wtps]}
+    rows.append(row)
+    dn_tot, da_tot = row["draft_n"], row["draft_accepted"]
+    acc = f"{da_tot}/{dn_tot}={da_tot/dn_tot:.2f}" if dn_tot else "-"
+    tok_str = f"{round(mean([rr['n'] for rr in runs])):4d} tok"
+    spread = f" | runs {REPEATS} spread {100 * (max(dcs) - min(dcs)) / mean(dcs):.1f}%" if REPEATS > 1 and mean(dcs) else ""
+    print(f"{label:14s} {kind:6s} {tok_str} | wall {row['wall_tps']:5.2f} t/s | decode {row['decode_tps']:5.2f} t/s | prefill {row['prefill_tps']:6.1f} t/s | accept {acc:15s} | vram {vram} | {r0['text'][:48]!r}{spread}", flush=True)
 os.makedirs(OUT, exist_ok=True)
 json.dump({"vram": vram, "gen_tokens": GEN, "rows": rows}, open(os.path.join(OUT, f"{label}.client.json"), "w"))
