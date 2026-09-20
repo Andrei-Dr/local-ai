@@ -122,8 +122,11 @@ class HardCase(unittest.TestCase):
             self.assertIn("AIME", md)
             self.assertIn("trunc", md.lower())
             # A: ids 0..19 step 2 ok (10); half were truncated; finished-only = 5 ok / 10 finished = 50.0
-            line = next(ln for ln in md.splitlines() if "finished-only" in ln and "50.0" in ln)
-            self.assertIsNotNone(line)
+            line = next(ln for ln in md.splitlines() if "AIME" in ln)
+            # fixture inverts reality on purpose: every CORRECT row hit the cap (finish=length),
+            # so accuracy is the cap's and finished-only exposes it:
+            self.assertIn("finished-only 0.0", line)
+            self.assertIn("trunc 4", line)
 
     def test_paired_section_uses_paired_module(self):
         with tempfile.TemporaryDirectory() as td:
@@ -132,6 +135,18 @@ class HardCase(unittest.TestCase):
             self.assertIn("B", md)
             # 5 discordant pairs on n=20: A-right/B-wrong only -> B NON-INFERIOR style verdict row
             self.assertRegex(md, r"wins\s+\d+\s+loses\s+\d+")
+
+    def test_per_set_rows_come_from_jsonl_not_summary(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = hard_pair(td)
+            rows = [json.loads(l) for l in (Path(d) / "A.jsonl").read_text().splitlines()]
+            summary = json.loads((Path(d) / "A.summary.json").read_text())
+            summary["sets"] = {"humaneval_plus": summary["sets"]["humaneval_plus"]}   # last run only
+            (Path(d) / "A.summary.json").write_text(json.dumps(summary))
+            md = qreport.report_hard(d, ["A"], base="A")
+            self.assertIn("AIME", md)                              # rows from the jsonl, all sets
+            self.assertIn("MATH_L5", md)
+            self.assertIn("HUMANEVAL_PLUS", md)
 
     def test_missing_base_message_not_crash(self):
         with tempfile.TemporaryDirectory() as td:

@@ -131,18 +131,31 @@ def report_hard(dir_, labels, base=None, md=False):
             continue
         data[lab] = (s, t)
         try:
-            rows = [json.loads(l) for l in t.splitlines() if l.strip()]
+            raw = [json.loads(l) for l in t.splitlines() if l.strip()]
         except ValueError:
-            rows = []
-        for sname in list(SETS_ORDER) + sorted(set(s.get("sets", {})) - set(SETS_ORDER)):
-            c = s.get("sets", {}).get(sname)
-            if not c:
-                continue
-            fin = [r for r in rows if r.get("set") == sname and r.get("finish") != "length"]
+            raw = []
+        by_id = {}                                          # the jsonl is ground truth; later wins
+        for r in raw:
+            if isinstance(r, dict) and "id" in r and "set" in r:
+                by_id[r["id"]] = r
+        rows = list(by_id.values())
+        if isinstance(s.get("thinking"), bool):
+            lines.append(f"{lab}: thinking {'on' if s['thinking'] else 'off'} (summary.json)")
+        set_names = [x for x in SETS_ORDER if any(r.get("set") == x for r in rows)]
+        set_names += sorted({r.get("set") for r in rows} - set(set_names) - {None})
+        for sname in set_names:
+            rs = [r for r in rows if r.get("set") == sname]
+            n = len(rs)
+            cor = sum(bool(r.get("ok")) for r in rs)
+            p_ = cor / n if n else 0.0
+            se_ = (p_ * (1 - p_) / n) ** 0.5 if n else 0.0
+            trunc = sum(1 for r in rs if r.get("finish") == "length")
+            mtok = round(sum(r.get("tokens") or 0 for r in rs) / n, 1) if n else "-"
+            fin = [r for r in rs if r.get("finish") != "length"]
             fo = _n(100 * sum(bool(r.get("ok")) for r in fin) / len(fin) if fin else None, "{:.1f}")
-            lines.append(f"{lab} {sname.upper():16} {c.get('pct', '-')!s:>6} ± {c.get('se_pct', '-')}  "
-                         f"n {c.get('n', '-')}  trunc {c.get('truncated', '-')}  "
-                         f"mean tok {s.get('mean_tokens', '-')}  finished-only {fo}")
+            lines.append(f"{lab} {str(sname).upper():16} {100 * p_:6.1f} ± {100 * se_:4.1f}  n {n}  "
+                         f"trunc {trunc}  mean tok {mtok}  finished-only {fo}")
+
     ps = lines[:]
     pa = _paired_mod()
     bs, bt = data.get(base, (None, None))
