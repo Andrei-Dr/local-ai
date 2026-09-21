@@ -45,6 +45,10 @@ retry) locked _set "$2" 2 pending; locked _set "$2" 3 0; log "RETRY $2" ;;
 skip)  locked _set "$2" 2 skipped; log "SKIP $2" ;;
 run)
     touch "$Q"; log "RUNNER START pid $$"
+    # systemctl stop TERMs the whole control group: the job dies with rc != 0 and used to be recorded as `failed` before the
+    # runner itself went down. bash runs this trap as soon as the killed job returns, before the row is touched, so it stays
+    # `running` and the next start requeues it as interrupted.
+    trap 'log "RUNNER STOP (signal), job left for requeue"; exit 0' TERM INT
     # a job left in 'running' means the runner died under it (reboot, kill): requeue it, bounded by MAX_TRIES
     for id in $(awk -F'\t' '$2=="running"{print $1}' "$Q"); do
         if [ "$(_get "$id" 3)" -lt "$MAX_TRIES" ]; then locked _set "$id" 2 pending; log "REQUEUE $id (interrupted)"
