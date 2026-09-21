@@ -770,3 +770,24 @@ logprob drift vs VSKIP=0 on the same restored slot (probcmp.py) read against the
 **fa1 worktree had a stale mmq.cu hunk** (from the dropped ntc-mmq patch: force MMQ under NTC mode; fa1.sh did not reset that file).
 Inert unless GGML_CUDA_NO_TENSOR_CORES=1, so FA1/FA2 numbers stand; the "NTC1 = wash" row included forced MMQ. fa1.sh now resets it
 (takes effect on the next full fa1 build; the fa3 job does not touch mmq.cu).
+
+**FA3 result (2026-09-21): V-skip is DEAD, and it located the real cost.** Unit gates 4079/4079 under both modes. Decode at 120k:
+14.89 / 14.63 (VSKIP=0 twice) vs **7.69** (VSKIP=1) vs 18.30 t/s (timing-only, no V work); at 239k: 8.89 / 9.00 vs **4.10** vs 11.24.
+The data-dependent branches halve the kernel's speed (loss of unrolling / register spill), and even a free V walk is only +23-26%.
+Logprob drift VSKIP=1 vs 0: mean |dlogprob| 0.10-0.13, max 0.9-1.15 with identical text — far more than a 1e-8 mass bound
+explains; unexplained, not pursued (slower AND unexplained = dropped; patch and job deleted, commit 212b038 has them).
+Two keepers: (1) **run-to-run floor is exactly 0.0** on this prompt at both depths (VSKIP=0 twice: identical tokens and logprobs), so
+probcmp drift is signal, not noise; (2) the timing-only arm puts the **K walk at ~2/3 of the attention kernel** (step 67 ms at 120k:
+~24 ms K walk, ~12.5 ms V walk) => FA4 = row-owning K walk (fa-krow.patch): each thread owns a K row, loads it once for the 8 columns,
+exact integer block sums, one float multiply-add per block, one max-reduction per column per tile instead of a 5-step reduction per
+(position, column). Estimated ~3x fewer K-walk instructions. fa4.sh also measures GQA=0 vs FA1 drift = the yardstick for what an
+already-accepted kernel change does to logprobs.
+
+**FA4 result (2026-09-21): row-owning K walk works.** Unit gates 4079/4079 (KROW 0 and 1). Decode, same kept slots, graphs on:
+120k: upstream 12.41, FA1 14.64, **KROW 17.05 / 17.17** (+17% on FA1, +38% on upstream); 239k: 8.32, 8.99, **10.95 / 11.00** (+22% / +32%).
+Logprob drift (top-10, 96 tokens): KROW twice = 0.0 exactly; upstream vs FA1 = mean 0.136 / 0.146, max 1.03 / 1.08; KROW vs FA1 = mean
+0.134 / 0.136, max 1.79 / 0.77; text diverges after token 83-94 in 3 of 4 comparisons. Reading: FA1 vs upstream is the same math in a
+different float order, and it moves logprobs as much as KROW does, so ~0.13 is what ANY reordering does to this 2.5-bit model at 120k+
+(this also explains FA3's "unexplained" 0.10-0.13: V-skip was not inaccurate, only slow). Side finding worth keeping: at depth the
+model's output is chaotic in the float order — long-context quality claims need task-level measures (lq1 / lq2), not text identity.
+KROW stays opt-in in code until the next build (no preemption for a default flip); launch configs set it.
