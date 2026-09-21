@@ -1,0 +1,30 @@
+# Handoff, 2026-09-21 evening: the box grinds for ~2 days, nothing large is left to code. For whoever watches the queue.
+
+State of record: `SPEC.md` section 1.0 (queue + verdicts), `notes.md` tail (every result with its reading). This file = decision
+rules, so results get RECORDED AND READ BY RULE, not re-interpreted. Standing rules in `SPEC.md` section 0 and CLAUDE.md apply
+(nothing runs beside a benchmark; stop the queue only with `systemctl stop ai-queue`; reorder with `/ai/bench/qorder.sh ID...`;
+one-shot waiters via `/ai/bench/watch.sh`; box deletions need Andrei; never force-push).
+
+Queue order now: whittle1 (running) -> cpu1bench2 -> hq1_iq2m (last ~11 AIME items) -> dl_stock -> dense1 -> hq1_stock -> qx3 ->
+lq1 -> lq2 -> hq1_k2 -> bonsai1_easy -> bonsai1_hard. After each job: pull logs + results + ledger, commit, push, one dated
+notes.md entry, update the SPEC row. Report to Andrei in a few lines.
+
+| job | read | rule |
+|---|---|---|
+| whittle1 | t/s at cache 0 / 16; GSM8K-200 + MMLU-Pro-280 vs Qwen3.6 IQ2_M 96.0 +-1.4 / 71.4 +-2.7 | kill if > 2 sigma under either or < 30 t/s. Pass => write an `hq1.sh whittle` arm (same file pattern as `stock`) and queue it after hq1_stock. A weak row may be the Q2_K quant, say so, do not call the MODEL bad |
+| cpu1bench2 | 6-thread speedup with FIXED expert ids vs re-drawn (3.5x) | jumps toward 5-6x => "CPU miss phase is DRAM bound" confirmed, leave notes as is. Stays ~3.5x => RETRACT the bandwidth reading and its consequences (notes 2026-09-21 cpu1bench entry, SPEC CPU1 row); CPU1 stays dead either way (task = ggml) |
+| hq1_iq2m | final MATH-L5 / EvalPlus / AIME-15 with truncated + looping counts | record only. No verdict on the quant until hq1_stock is in |
+| dense1 | pull `/ai/bench/imx/qwen38_27b_dense.imatrix`, run `bench/imx_heat.py` on the Mac | FLAT closes DM1's static split; CONCENTRATED = note it, a per-token probe would be new C++ (call Fable) |
+| hq1_stock | same sets on stock weights, `bench/qual/paired.py` stock vs served on the shared items | stock also cuts ~40% of MATH-L5 chains => it is the 2.5-bit quantization (RAM1 / QX3 become the priority). Stock finishes => it is the fine-tune; serving the uncensored file on hard reasoning is then Andrei's call |
+| qx3 | mean KLD: K2 0.2181 -> mix25 -> mix50 -> X4 | X4 not far below K2 => QX3 dead. mix25 >= 25% lower => GO for the runtime hot / cold split = new C++ (call Fable). Remember the measured speed price of bigger experts (cpu1bench entry) |
+| lq1 | needle pct + vt mean per depth per KV type | kill q4_0 if worse than f16 / q8 by > 1 in 10 at any depth; q4norot vs q4 says whether attn-rot matters |
+| lq2 | KROW 0 vs 1, same instrument | KROW within 1 in 10 at every depth => it becomes the code default at the next build |
+| hq1_k2, bonsai1_* | paired vs the iq2m rows | record; K2-as-default and any model switch are Andrei's calls |
+
+Do NOT: write or change CUDA / C++ kernels, flip defaults in code, re-derive dead verdicts (FA3, FA5, CPU1, P2, R1), or conclude
+from text identity at long context (any float reordering moves logprobs by ~0.13 there). A failed job: read its log tail, fix the
+SCRIPT if it is a script bug (check `set -u` vs preflight.sh, paths, PYTHONPATH for gguf-py), `queue.sh retry ID`, move on.
+
+Call Fable back for: the runtime hot / cold expert split (if qx3 says GO); HAND1 (the ~0.3 ms per layer CPU<->GPU handoff gap:
+analyze `/ai/bench/prof2_nsys.nsys-rep` memcpy / sync timeline first, then C++ in the expert-cache path); a per-token neuron probe
+(if dense1 says CONCENTRATED); anything where a measurement contradicts a recorded verdict.
