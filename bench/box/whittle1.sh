@@ -40,7 +40,6 @@ for C in 0 16; do
   MODEL=$F OFFLOAD=32 ./specbench.sh 999 $L "${OTARG[@]}" --moe-expert-cache $C -ub 128 -b 256 2>&1 | grep -vE "^\s*$" | cut -c1-230
   grep -hE "MoE expert cache enabled|moe-cache: steps|out of memory|error loading|unknown model architecture|failed" server_$L.log | sort -u | tail -4 | cut -c1-230 | sed 's/^/    /'
 done
-grep -qE "tok \|" whittle1.log 2>/dev/null || true
 export MMLU_CAP=2048 QARGS="--data data_h2 --sets gsm8k,mmlu_pro"
 MODEL=$F ./qualbench.sh whittle_q2k "${OTARG[@]}" --moe-expert-cache 16
 echo WHITTLE1_DONE
