@@ -1,0 +1,100 @@
+--- fattn.base.cu	2026-09-21 19:36:22
++++ fattn.cu	2026-09-21 19:36:22
+@@ -4,6 +4,13 @@
+ #include "fattn-tile.cuh"
+ #include "fattn-vec.cuh"
+ #include "fattn.cuh"
++
++#include <algorithm>
++#include <cstdio>
++#include <cstdlib>
++#include <map>
++#include <string>
++#include <vector>
+ 
+ #if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
+ __launch_bounds__(256, 1)
+@@ -727,10 +734,83 @@
+         ggml_cuda_flash_attn_ext_get_f16_extra_data(dst, need_f16_K, need_f16_V);
+ 
+     return f16_extra.end - (uintptr_t) dst->data;
++}
++
++// DIAGNOSTIC (fa5probe.sh only, never in a serving build): GGML_CUDA_FA_DUMP=<dir> writes the inputs of single-token attention
++// calls to disk so the sparsity of real long-context attention can be measured offline (fa_sparsity.py): Q and the mask at the
++// decode steps listed in GGML_CUDA_FA_DUMP_STEPS (default "8,32,64", counted per graph node name), K once at the last of them.
++// Raw device bytes of each tensor (ggml_nbytes, views included) + a JSON sidecar with type / ne / nb / scale. Needs
++// GGML_CUDA_DISABLE_GRAPHS=1: a replayed CUDA graph never enters this function.
++static void ggml_cuda_flash_attn_ext_dump(ggml_backend_cuda_context & ctx, const ggml_tensor * dst, const char * dir) {
++    const ggml_tensor * Q    = dst->src[0];
++    const ggml_tensor * K    = dst->src[1];
++    const ggml_tensor * mask = dst->src[3];
++    if (Q->ne[1] != 1 || Q->ne[3] != 1) {
++        return;
++    }
++    static const std::vector<int> steps = [] {
++        std::vector<int> v;
++        const char * e = getenv("GGML_CUDA_FA_DUMP_STEPS");
++        std::string str = e ? e : "8,32,64";
++        size_t pos = 0;
++        while (pos < str.size()) {
++            v.push_back(atoi(str.c_str() + pos));
++            const size_t comma = str.find(',', pos);
++            pos = comma == std::string::npos ? str.size() : comma + 1;
++        }
++        std::sort(v.begin(), v.end());
++        return v;
++    }();
++    static std::map<std::string, int> calls;
++    const int step = ++calls[dst->name];
++    if (std::find(steps.begin(), steps.end(), step) == steps.end()) {
++        return;
++    }
++    CUDA_CHECK(cudaStreamSynchronize(ctx.stream()));
++
++    std::string node = dst->name;
++    std::replace(node.begin(), node.end(), '/', '_');
++    const std::string base = std::string(dir) + "/" + node + ".s" + std::to_string(step);
++
++    auto dump = [&](const ggml_tensor * t, const char * what) {
++        std::vector<char> buf(ggml_nbytes(t));
++        CUDA_CHECK(cudaMemcpy(buf.data(), t->data, buf.size(), cudaMemcpyDeviceToHost));
++        FILE * f = fopen((base + "." + what + ".bin").c_str(), "wb");
++        GGML_ASSERT(f != nullptr);
++        GGML_ASSERT(fwrite(buf.data(), 1, buf.size(), f) == buf.size());
++        fclose(f);
++    };
++    auto meta = [](FILE * f, const char * what, const ggml_tensor * t, const char * tail) {
++        fprintf(f, "\"%s\": {\"type\": \"%s\", \"ne\": [%lld, %lld, %lld, %lld], \"nb\": [%zu, %zu, %zu, %zu]}%s", what, ggml_type_name(t->type),
++            (long long) t->ne[0], (long long) t->ne[1], (long long) t->ne[2], (long long) t->ne[3], t->nb[0], t->nb[1], t->nb[2], t->nb[3], tail);
++    };
++    const bool with_K = step == steps.back();
++    dump(Q, "q");
++    if (mask) {
++        dump(mask, "mask");
++    }
++    if (with_K) {
++        dump(K, "k");
++    }
++    float scale;
++    memcpy(&scale, dst->op_params, sizeof(float));
++    FILE * f = fopen((base + ".json").c_str(), "w");
++    GGML_ASSERT(f != nullptr);
++    fprintf(f, "{\"node\": \"%s\", \"step\": %d, \"scale\": %.9g, \"has_k\": %s, ", dst->name, step, scale, with_K ? "true" : "false");
++    meta(f, "q", Q, ", ");
++    if (mask) {
++        meta(f, "mask", mask, ", ");
++    }
++    meta(f, "k", K, "}\n");
++    fclose(f);
+ }
+ 
+ void ggml_cuda_flash_attn_ext(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+     ggml_cuda_set_device(ctx.device);
++    static const char * dump_dir = getenv("GGML_CUDA_FA_DUMP");
++    if (dump_dir) {
++        ggml_cuda_flash_attn_ext_dump(ctx, dst, dump_dir);
++    }
+     switch (ggml_cuda_get_best_fattn_kernel(ggml_cuda_get_device(), dst)) {
+         case BEST_FATTN_KERNEL_NONE:
+             GGML_ABORT("fatal error");
