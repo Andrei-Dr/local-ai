@@ -826,3 +826,23 @@ step; FA3 territory), never the K walk that dominates. The measurement wins: not
 "250x sparsity tolerated", arXiv:2605.24168 [L, unverified]) are lossy top-k regimes (lambda 1e-3..1e-2), consistent with our mass
 concentration (top 1% of tiles = 63% of the mass) and parked under the same rule as FA5. Kept fact [scout-verified from config.json]:
 Qwen3.6 partial_rotary_factor = 0.25 (64 of 256 head dims rotated).
+
+**cpu1bench (2026-09-21): CPU1 is DEAD — the CPU expert phase sits on the DRAM wall, not on barriers.** Microbenchmark, real
+shapes / types (gate, up Q2_K 2048->512; down Q3_K 512->2048; 256 experts, distinct random experts per call), microseconds per
+layer call:
+| pairs | ggml t1 | ggml t6 | task-parallel t6 (a thread owns whole pairs, one barrier per layer) |
+|---|---|---|---|
+| 4  | 582  | 174.8 (3.33x) | 193.7 (3.01x) |
+| 12 | 1721 | 489.1 (3.52x) | 484.0 (3.56x) |
+| 24 | 3423 | 952.1 (3.60x) | 938.7 (3.65x) |
+The task-parallel layout buys nothing: ggml's row split is already fine. Both stall at ~3.5x on 6 cores because 12 pairs x ~1.1 MB
+of expert bytes in 0.49 ms = **~27 GB/s = the DDR4-2667 dual-channel ceiling** (1 thread = 22 G MAC/s = 8 GB/s, compute bound; 6
+threads = bandwidth bound). The telemetry's "DRAM 5 of 38 GB/s" was a whole-round AVERAGE that hid the burst; SPEC 4.1's "misses are
+compute-bound" was true for the IQ2_S dot and is no longer true with K-quant experts.
+Consequences: (1) no CPU kernel work — the only lever on the miss term is BYTES per token: hit rate (VRAM) or bits per expert;
+(2) higher-precision experts cost speed in proportion to their bytes on the miss path (Q4_K pair = 1.75 MB vs 1.1 => miss phase
++55%) and cost cache slots on the hit path (1.6x VRAM per expert) — the QX3 / RAM1 accuracy levers have a quantified speed price,
+and a hot / cold split is the way to pay less of it; RAM1 adds capacity, not bandwidth (B460-class boards cap at 2666);
+(3) the server spends ~0.78 ms per layer on 12 pairs where the bare ops need 0.49: ~0.3 ms per layer (~12 ms of a 58 ms round) is
+CPU<->GPU handoff (copies, syncs, graph splits) = the last software slack in the short-context round; needs a timeline
+measurement (the prof2 nsys file has the memcpy / sync trace) before any code.
