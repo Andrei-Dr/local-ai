@@ -817,3 +817,12 @@ layer in ~0.78 ms = ~9 G MAC/s per core, about a third of what AVX2 int8 can do)
 the q2_K / q3_K dots, the rest is per-op barriers on 65-microsecond matvecs. Plan: a task-parallel fused expert FFN on the CPU
 backend (a thread owns whole experts: gate_up -> act -> down with no barrier in between, one barrier per layer). Ceiling ~+26% on
 the round, realistic +10-15%; needs a perf profile of the CPU phase alone first.
+
+**Scout vs measurement (bounded sparse attention, 2026-09-21).** `research/scout-2026-09-21-bounded-sparse-attention.md` recommends
+BLASST-style inline thresholding (skip a tile when tile max - running max < ln(lambda)) and expects 50-70% of tiles pruned per GQA
+group. fa5probe measured the thing the scout flags as unverified: for a group of 8 heads at 120k, 0.0% of tiles are under 1e-8 or
+1e-6 and 10.9% under 1e-4 — and BLASST needs the tile's K.Q dots BEFORE it can skip, so it only ever saves the V walk (~1/5 of the
+step; FA3 territory), never the K walk that dominates. The measurement wins: not pursued. The paper numbers (70-90% per head,
+"250x sparsity tolerated", arXiv:2605.24168 [L, unverified]) are lossy top-k regimes (lambda 1e-3..1e-2), consistent with our mass
+concentration (top 1% of tiles = 63% of the mass) and parked under the same rule as FA5. Kept fact [scout-verified from config.json]:
+Qwen3.6 partial_rotary_factor = 0.25 (64 of 256 head dims rotated).
