@@ -846,3 +846,12 @@ and a hot / cold split is the way to pay less of it; RAM1 adds capacity, not ban
 (3) the server spends ~0.78 ms per layer on 12 pairs where the bare ops need 0.49: ~0.3 ms per layer (~12 ms of a 58 ms round) is
 CPU<->GPU handoff (copies, syncs, graph splits) = the last software slack in the short-context round; needs a timeline
 measurement (the prof2 nsys file has the memcpy / sync trace) before any code.
+
+### 2026-09-21 — foreign CPU beside whittle1, and a detector for it
+
+Andrei's GitHub Actions runner (`ci-runner@1/2`, vite builds) ran on the box during whittle1; load average hit 9.7. He stopped it.
+- The two speed rows are clean: box-wide CPU busy was 335% (c0) and 319% (c16) while they ran, which is the server alone.
+- The contaminated window is the quality section. Accuracy does not depend on CPU contention; the per-item t/s there is not used.
+- `mon.py` now samples per-process CPU at 1 Hz and sums everything that is not `llama-*`/`nvidia-smi`/`perf`. A window averaging over
+  50% of one core prints `FOREIGN CPU [label]` above the telemetry line and sets `foreign_cpu_flag` in the run's mon.json.
+  Idle baseline on the box is about 6% of a core. Same pid + same start time = same process (kernel workers rename themselves).
