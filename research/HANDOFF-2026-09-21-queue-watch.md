@@ -28,3 +28,18 @@ SCRIPT if it is a script bug (check `set -u` vs preflight.sh, paths, PYTHONPATH 
 Call Fable back for: the runtime hot / cold expert split (if qx3 says GO); HAND1 (the ~0.3 ms per layer CPU<->GPU handoff gap:
 analyze `/ai/bench/prof2_nsys.nsys-rep` memcpy / sync timeline first, then C++ in the expert-cache path); a per-token neuron probe
 (if dense1 says CONCENTRATED); anything where a measurement contradicts a recorded verdict.
+
+## Addendum, 2026-09-21 21:10 (state at the model switch)
+
+- **whittle1 is mid-run**: both speed rows are in (decode 29.5 t/s cache 0, 34.8 t/s cache 16, no MTP), about 340 quality items done
+  (gsm8k finished, mmlu_pro in progress). A background waiter in the Claude session is armed on it. When it ends, apply the whittle1
+  rule above, record it, push. The speed rows are CLEAN: see the notes entry "foreign CPU beside whittle1".
+- **Foreign CPU.** Andrei's GitHub Actions runner (`ci-runner@1/2`) ran vite builds beside whittle1's quality section. He keeps the
+  runners off himself during the queue; do NOT touch those services. `mon.py` now prints `FOREIGN CPU [label]` above a telemetry line
+  when non-benchmark processes average over half a core in that window, and sets `foreign_cpu_flag` in `runs/<label>.mon.json`.
+  **Rule:** a speed row with that flag is void. Rerun that job (`queue.sh retry`) after confirming the box is quiet; never record
+  its t/s. Accuracy-only rows (qual, KLD, retrieval) stay valid.
+- **Queue order after whittle1:** cpu1bench2, hq1_iq2m (resumes, ~11 AIME items left), dl_stock, dense1, hq1_stock, qx3, lq1, lq2,
+  hq1_k2, bonsai1_easy, bonsai1_hard. The `rc=interrupted` on hq1_iq2m is from the deliberate queue stop, not a failure.
+- **Unverified until the next reboot:** queue autostart (the systemd ordering-cycle fix). After any reboot check
+  `systemctl is-active ai-queue` and the governor before trusting a number.
