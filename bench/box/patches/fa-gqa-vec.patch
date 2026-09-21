@@ -1,5 +1,5 @@
 --- fattn-vec.cuh.orig	2026-09-21 00:07:15
-+++ fattn-vec.cuh	2026-09-21 00:43:56
++++ fattn-vec.cuh	2026-09-21 03:06:19
 @@ -16,7 +16,11 @@
  #pragma clang diagnostic push
  #pragma clang diagnostic ignored "-Wpass-failed"
@@ -150,7 +150,7 @@
      }
  #else
      GGML_UNUSED_VARS(Q_ptr, K_ptr, V_ptr, mask_ptr, sinks_ptr, KV_max_ptr, dst_ptr, dst_meta_ptr, scale,
-@@ -528,17 +539,47 @@
+@@ -528,17 +539,50 @@
  #pragma clang diagnostic pop
  #endif // __clang__
  
@@ -160,7 +160,10 @@
 +// QUERY head (1 token), or dequantizes the whole used KV cache to F16 on every step for the MMA kernel (2+ tokens).
 +// GGML_CUDA_FA_VEC_GQA: 0 = off (old kernels), 1 = single-token decode only, 2 (default) = also batches of up to 4 query tokens.
 +static inline bool ggml_cuda_fattn_vec_gqa_applies(const ggml_tensor * dst) {
-+    static const int mode = [] { const char * e = getenv("GGML_CUDA_FA_VEC_GQA"); return e ? atoi(e) : 2; }();
++    // Default 1 = single-token decode only. Mode 2 (verify batches of 2-4 tokens) MEASURED SLOWER on this card:
++    // pp3 at depth 32768 q4_0 KV = 23.14 t/s vs 25.30 on the MMA_F16 path, and the real MTP round 32.44 vs 33.01 t/s
++    // (2026-09-21, fa1). Giving up the tensor-core matmul costs more than the per-step F16 dequant of the KV cache it avoids.
++    static const int mode = [] { const char * e = getenv("GGML_CUDA_FA_VEC_GQA"); return e ? atoi(e) : 1; }();
 +    if (mode <= 0) {
 +        return false;
 +    }
@@ -201,7 +204,7 @@
  }
  
  template <int D, ggml_type type_K, ggml_type type_V>
-@@ -549,6 +590,22 @@
+@@ -549,6 +593,22 @@
      float logit_softcap;
      memcpy(&logit_softcap, (const float *) KQV->op_params + 2, sizeof(float));
  

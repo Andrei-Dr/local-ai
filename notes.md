@@ -668,3 +668,24 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   GPU (2 x ~155 s), and ~6 min of the arch1 build (stopped). => that row's prefill t/s and wall time are NOT a measurement; rerun the
   262k prefill number clean if it is ever quoted. The slot file it writes is valid (same computation), and every later row (262k
   extend, fa1 A/B from the kept slots) runs with the box exclusive. Rule fixed in memory: code PREEMPTS benchmarks, never runs beside them.
+
+## RESULT 2026-09-21 (Opus) — fa1 run 2: FA1 decode kernel WINS (+10%), FA2 verify path LOSES, NTC1 is a wash
+- **Gates all green**: test-backend-ops FLASH_ATTN_EXT 4079/4079 under GQA=2, GQA=0, GQA=2+F16, and NTC=1+GQA=2+F16.
+- **FA1 (1 query token, quantized KV) = the win.** Real workload, restore from the kept 131k slot: decode 12.68 -> **13.99 t/s
+  (+10.3%) with a BYTE-IDENTICAL reply** (prompt_n 27, cache_n 119632 both runs). llama-bench tg32 @ d32768 q4_0: 16.11 -> 17.61
+  (+9.3%). => default ON (mode 1).
+- **FA2 (2-4 query tokens / MTP verify) = a regression, default OFF.** pp3 @ d32768: 25.30 -> 23.14 (-8.5%); 1-token-per-block
+  variant worse (22.19); real MTP round 33.01 -> 32.44 t/s, acceptance flat (108/181 vs 106/183). Reading: giving up the
+  tensor-core matmul of MMA_F16 costs MORE than the whole-KV F16 dequant it performs each step. Patch default changed 2 -> 1;
+  GGML_CUDA_FA_VEC_GQA=2 keeps it available for a later retry (e.g. after the cache/quant work changes the balance).
+- **NTC1 (no-tensor-cores attention dispatch) = within noise**: tg32 @ d32768 16.37 vs 16.11; short context pp512 112.0 vs 111.2,
+  tg64 24.41 vs 24.93. Scoped to dispatch after run 1's crash, it now changes little. arch1 (FORCE_MMQ + Pascal arch BUILD) is the
+  remaining form of that question.
+- **Run-1 crash, root cause (my bug, fixed):** forcing MMQ via turing_mma_available() desynced host tile-config selection
+  (mmq.cuh ~190) from device kernel selection (__CUDA_ARCH__, mmq.cuh ~279) => scratch buffer sized for DP4A tiles while MMA
+  kernels ran => illegal memory access at q4_0 m=16 n=8 k=256. Lesson: a runtime switch may only touch predicates used for
+  RUNTIME DISPATCH, never ones that pick a kernel variant whose device code is compile-time selected.
+- **My harness bugs, not code bugs:** the 262k A/B rows died (`-c 262144` + cache 8 + restore does not fit; needs cache 0-4 or
+  the two-phase split) and the F16 llama-bench rows passed -ctk/-ctv flags that config rejects. Both fixed in the next run.
+- MTP text differs after 287 chars between GQA=0 and GQA=2 — expected: MMA-on-F16 vs vec-on-q4 are different arithmetic, so a
+  late greedy tie can flip. The FA1 decode path (the one shipping) was byte-identical on the 131k slot.
