@@ -730,3 +730,43 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   MTP vs 23.75 without, same slot. ctx1b's -md head: 36%. So MTP acceptance is LOW AT 27k DEPTH on this prompt regardless of
   head or restore (it is ~85% in the short benchmarks) => long-context decode runs WITHOUT speculation until someone shows
   otherwise; worth one row on a second prompt type before calling it general.
+
+## 2026-09-21 (boot 3) — queue autostart root cause, hq1 was off-spec, prof4, FA3 in flight
+
+**ai-queue never started at boot: systemd ordering cycle.** ai-queue `After=ai-perf-tweaks`, ai-perf-tweaks `After=multi-user.target`,
+multi-user.target wants ai-queue => systemd deleted the ai-queue start job ("Job ai-queue.service/start deleted to break ordering
+cycle"). Fixed: ai-perf-tweaks is now `After=power-profiles-daemon.service`. `systemd-analyze verify` clean; unproven until the next boot.
+**Governor kept falling back to powersave:** power-profiles-daemon re-applied `balanced` after our sysfs write. The tweak unit now runs
+`powerprofilesctl set performance` first (governor + EPP = performance, checked). Every run logged `governor=performance` in its
+preflight line, so past numbers stand.
+**queue.sh:** `systemctl stop` could record the killed job as `failed` (no requeue). The runner now traps TERM and leaves the row `running`.
+
+**hq1 runs 1+2 are void — the harness was off the model card.** 3 of 3 items ran the whole cap INSIDE the reasoning block (2 AIME at
+24.5k, 1 MATH-L5 prealgebra at 16k). The new per-row trace says repetition 0.00 = a live chain that never concludes, not a loop. We
+decoded greedily; the Qwen3.6-35B-A3B card (read 2026-09-21) specifies thinking = temp 1.0 / top-p 0.95 / top-k 20 / min-p 0 /
+presence 1.5 (coding: temp 0.6, presence 0), budget 32,768 normal and up to 81,920 for competition math. qual.py now samples per the
+card with a seed hashed from the item id (reproducible, both paired arms share seeds), caps 32k math_l5 / 41k aime (81k of F16 KV
+does not fit beside cache 24), rows from another sampler are rerun. Whether the 2.5-bit files overthink is still OPEN — that is what
+the rerun measures. Arms are now ~12-20 h each.
+
+**kq1graft (K2 + in-model MTP head).** Equal slots (26): in-model 50.6/48.4/56.8/43.0 vs separate head 54.0/54.6/58.2/45.6 t/s
+(code/reason/edit/long) = 2-11% slower; it frees 528 MiB, and at 38 slots (same VRAM, 3446 MiB) it is 56.6/56.2/60.1/46.7 = +3-5%
+over the separate head. Promotion stays Andrei's call.
+**Temperature-0 output is not run-to-run stable:** the same config (K2, separate head) answered the `reason` prompt with two different
+openings in prof2_perf vs prof2_nsys. Likely the expert cache: a cached expert runs the CUDA kernel, an uncached one the CPU kernel,
+and which is cached depends on history. This is the noise floor of every paired text comparison; fa3 measures it (two VSKIP=0 runs).
+**prof2 (CPU side, perf):** 48% of samples in libgomp (threads spinning at barriers while the GPU works), 19% q2_K dot, 13% q3_K dot.
+
+**prof3 was blind, prof4 is the real decode-at-depth profile.** nsys 2022.4 does not trace kernels launched from CUDA graphs, so prof3
+held one decode step. prof4 (graphs off, FA1 build, kept 120k slot, q4_0 KV): `flash_attn_ext_vec` 4.36 ms/layer (GQA off) vs 3.66
+(FA1) = 57% / 53% of GPU kernel time per token; 12.89 vs 13.78 t/s with graphs off. Everything else is small (largest: mmvq 72 us x
+2520). CORRECTION to my earlier "9x headroom to the bandwidth floor": the kernel is COMPUTE bound — ~1 G multiply-adds per layer per
+token (16 heads x 120k x 256 x {K dot, V axpy}) on a ~4 TFLOPS card; the 0.4 ms bandwidth floor is not the binding one. A plausible
+optimum is ~1.5-2 ms. The lever is less WORK, not a cleverer walk.
+**FA3 (fa-vskip.patch, opt-in `GGML_CUDA_FA_VEC_VSKIP=1`):** skip the V dequant + axpy of (position, head) pairs below 1e-8 of the
+running max (KQ_sum still exact; skipped mass <= n_kv x 1e-8). Lossy in principle => ships only on proof: unit gates, per-token top-10
+logprob drift vs VSKIP=0 on the same restored slot (probcmp.py) read against the VSKIP=0-twice floor, at 120k and 239k. Mode 2
+(diagnostic build only) times the K walk alone = the ceiling for any V-side work.
+**fa1 worktree had a stale mmq.cu hunk** (from the dropped ntc-mmq patch: force MMQ under NTC mode; fa1.sh did not reset that file).
+Inert unless GGML_CUDA_NO_TENSOR_CORES=1, so FA1/FA2 numbers stand; the "NTC1 = wash" row included forced MMQ. fa1.sh now resets it
+(takes effect on the next full fa1 build; the fa3 job does not touch mmq.cu).
