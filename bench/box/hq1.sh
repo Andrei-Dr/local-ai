@@ -12,6 +12,8 @@
 # are 32k (math_l5) / 41k (aime; the card allows 81k, F16 KV at -c 49152 does not), and each row keeps the reasoning tail + a
 # repetition score, so a cut chain reads as "still working" or "degenerate loop".
 # Set order: math_l5 and humaneval_plus first (short chains, a usable paired read within hours), aime last (up to ~25 min/item).
+# aime:15 = the first 15 of 60: the iq2m arm cut 16 of 40 MATH-L5 chains at 32k and 3 of its first 4 AIME chains at 41k (23 min
+# each); 45 more mostly-cut items per arm buy nothing the first 15 do not show. Box time goes to the k2 arm + a stock control.
 # Config: mainline, F16 KV (the KV precision is NOT under test here), -c 49152 (KV 960 MiB, ~3.1 of 3.6 GiB used), cache 24,
 # -ub 128, no MTP (F16 KV + head = OOM).
 source /ai/bench/preflight.sh || exit 1
@@ -24,6 +26,6 @@ case "$1" in
 esac
 [ -f "$F" ] || { echo "HQ1_REFUSED: $F missing"; exit 1; }
 [ -s /ai/bench/qual/data_hard/aime.jsonl ] && grep -q '"aime"' /ai/bench/qual/qual.py || { echo "HQ1_REFUSED: deploy qual.py + data_hard first"; exit 1; }
-export BUILD=/ai/src/llama.cpp-mainline/build75 QARGS="--data data_hard --sets math_l5,humaneval_plus,aime --think"
+export BUILD=/ai/src/llama.cpp-mainline/build75 QARGS="--data data_hard --sets math_l5,humaneval_plus,aime:15 --think"
 MODEL=$F ./qualbench.sh $L -ngl 999 -ot "exps=CPU" --moe-expert-cache 24 -ub 128 -b 256 -c 49152
 echo "HQ1_DONE $1"

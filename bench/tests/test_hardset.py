@@ -130,5 +130,11 @@ class ThinkingSampler(unittest.TestCase):
         self.assertFalse(qual.row_is_current(cut, think=True))  # cut off under an older, smaller cap
 
 
+class SetSpec(unittest.TestCase):
+    def test_per_set_cap_overrides_the_global_limit(self):
+        self.assertEqual(qual.parse_sets("math_l5,humaneval_plus,aime:15"), [("math_l5", 0), ("humaneval_plus", 0), ("aime", 15)])
+        self.assertEqual(qual.parse_sets("gsm8k,aime:15", 50), [("gsm8k", 50), ("aime", 15)])
+
+
 if __name__ == "__main__":
     unittest.main()

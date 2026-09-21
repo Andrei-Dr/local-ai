@@ -190,6 +190,15 @@ def row_is_current(r, think):
     return not (r["finish"] == "length" and r["tokens"] < MAX_TOKENS.get(r["set"], 0) * (8 if think else 1))
 
 
+def parse_sets(spec, limit=0):
+    """'gsm8k,aime:15' -> [('gsm8k', limit), ('aime', 15)]: a per-set item cap (first N, nested prefixes) overrides --limit."""
+    out = []
+    for part in spec.split(","):
+        kind, _, n = part.partition(":")
+        out.append((kind, int(n) if n else limit))
+    return out
+
+
 def ask(url, prompt, max_tokens, think, item_id="", kind=""):
     body = json.dumps(request_body(prompt, max_tokens, think, item_id, kind)).encode()
     req = urllib.request.Request(f"{url}/v1/chat/completions", body, {"Content-Type": "application/json"})
@@ -209,6 +218,7 @@ def main():
     ap.add_argument("--data", default="data", help="item dir; relative to this script unless absolute")
     ap.add_argument("--think", action="store_true", help="enable thinking (multiply max_tokens by 8)")
     a = ap.parse_args()
+    sets = parse_sets(a.sets, a.limit)
 
     (HERE / "results").mkdir(exist_ok=True)
     out_path = HERE / "results" / f"{a.label}.jsonl"
@@ -225,9 +235,9 @@ def main():
     if not data_dir.is_absolute():
         data_dir = HERE / data_dir
     with out_path.open("a") as out:
-        for kind in a.sets.split(","):
+        for kind, lim in sets:
             items = [json.loads(l) for l in (data_dir / f"{kind}.jsonl").open()]
-            for it in items[: a.limit or None]:
+            for it in items[: lim or None]:
                 if it["id"] in done:
                     continue
                 text, n, tps, fin, why = ask(a.url, prompt_for(kind, it), MAX_TOKENS[kind] * (8 if a.think else 1), a.think, it["id"], kind)
@@ -243,7 +253,7 @@ def main():
                       + (f" repeat {r['repeat']:.2f}" if fin == "length" and "repeat" in r else ""), flush=True)
 
     cells = []
-    for kind in a.sets.split(","):
+    for kind, _ in sets:
         rs = [r for r in done.values() if r["set"] == kind]
         if not rs:
             continue
@@ -254,7 +264,7 @@ def main():
     summary = {"label": a.label, "thinking": a.think, "sets": {}, "mean_tokens": round(sum(r["tokens"] for r in rs) / len(rs), 1),
                "mean_decode_tps": round(sum(r["tps"] for r in rs) / len(rs), 2), "truncated": sum(r["finish"] == "length" for r in rs),
                "empty": sum(r["empty"] for r in rs), "items": len(rs)}
-    for kind in a.sets.split(","):
+    for kind, _ in sets:
         ks = [r for r in rs if r["set"] == kind]
         if ks:
             p = sum(r["ok"] for r in ks) / len(ks)
