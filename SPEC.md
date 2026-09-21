@@ -40,7 +40,7 @@ runs beside a job). Per-job decision rules: `research/HANDOFF-2026-09-21-queue-w
 | 4 | `lq2` | FA4 | retrieval at depth, K-walk kernel `GGML_CUDA_FA_VEC_KROW` 0 vs 1, to 131k | pass => KROW becomes the code default (B5) |
 | 5 | `hq1_k2` (~14 h) | HQ1 | K2 quant on the hard sets, paired vs IQ2_M | K2 as default (C1) |
 | 6-7 | `bonsai1_easy`, `bonsai1_hard` | BON1 | ternary Bonsai accuracy | record |
-| to queue | `race1` = hq1 on the CUT items with seed salts 1 and 2 (16 MATH-L5 + 10 AIME chains x 2, <= ~10 h) | RACE1 | is a cut chain a property of the problem or of the seed | needs B3 merged; slot it right after `qx3` |
+| 2b | `race1` (<= ~10 h, queued after `qx3`) | RACE1 | the 16 MATH-L5 chains that hit 32k, rerun with seed salts 1 and 2: is a cut chain a property of the problem or of the seed (`bench/qual/race.py`, verdict rule in `race1.sh`) | `seed` => B4 (serving form, then AIME's 10 cut chains); `problem` => dead, budget / quant is the lever |
 
 Done 2026-09-21/22 (numbers in `notes.md`): `whittle1` KILLED (GSM8K 81.5 / MMLU-Pro 43.6 vs 96.0 / 71.4, 34.8 t/s; judges that
 checkpoint, not the approach); `cpu1bench` + `cpu1bench2` (CPU miss phase memory bound at 6 threads, CONFIRMED by the control; CPU1
@@ -53,7 +53,7 @@ chains cut at the budget, 0 looping); `dl_stock`; `dense1` = FLAT (DM1 static sp
 |---|---|---|---|---|
 | B1 | **HAND1**: where do the ~0.3 ms per layer go between the bare expert ops (0.49 ms) and the server (0.78 ms) = up to ~12 ms of a 58 ms round. Timeline analysis (memcpy / sync / graph splits), then C++ in the expert-cache path if the slack is real | Fable | blocked on `hand1` (A1) | pull the sqlite files, analyze on the Mac; a patch = build + unit gate + A/B as front-of-queue jobs |
 | B2 | **Runtime hot / cold expert precision split** (hot experts Q4_K resident, cold stay K2): C++ in the loader + cache | Fable | blocked on `qx3` | only on GO. Speed price is bytes-proportional on the miss path (cpu1bench2); measure it in the same A/B |
-| B3 | **RACE1 tooling**: `qual.py --seed-salt / --ids-from` + offline `bench/qual/race.py` | Qwen | brief `research/qwen-queue/27-race-reseed.md` + `QUEUE11.md` handed to Qwen 2026-09-22 02:40 (tmux `qwen-localai`, worktree `~/dev/local-ai-qwen`) | wait for QUEUE11_DONE in its STATUS, review the diff, cherry-pick; then write `bench/box/race1.sh` (a salted `hq1.sh` arm) and queue it |
+| B3 | ~~RACE1 tooling~~ **done 2026-09-22**: Qwen brief 27 reviewed (salt 0 request bodies proven byte-identical to the old code, 199 tests, analyzer smoke-run on the real rows), cherry-picked, deployed; `bench/box/race1.sh` written and queued | - | closed | - |
 | B4 | RACE1 follow-through: if `RACE_VERDICT seed`, decide the serving form (sequential retry-on-cut vs parallel slots; parallel costs KV VRAM x N and splits the expert cache, so retry first) | Fable | after `race1` | `problem` verdict => dead, the budget / quant is the lever |
 | B5 | Flip `GGML_CUDA_FA_VEC_KROW` to default-on in code | Opus-level | after `lq2` passes | one-line patch + rebuild + unit gate, front of queue |
 | B6 | Housekeeping: rebuild the `fa1` tree once (stale `mmq.cu` hunk); fix the F16 `llama-bench` "failed to create context" rows in the fa1 harness; verify `ai-queue` autostart + governor at the next reboot | Opus-level | open | between jobs only |

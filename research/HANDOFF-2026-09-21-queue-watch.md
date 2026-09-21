@@ -58,3 +58,14 @@ analyze `/ai/bench/prof2_nsys.nsys-rep` memcpy / sync timeline first, then C++ i
 - Disk: MOVE + symlink large models and build data to `/mnt/md0`, never ask. Moving is not deleting: nothing gets `rm`'d outright
   without Andrei. Do the copies between jobs (`systemctl stop ai-queue` at a job boundary, copy, start) — last night they ran
   beside `hq1_iq2m`, which only survived because it is an accuracy job.
+
+## Addendum, 2026-09-22 03:00 (before the switch back to the watcher)
+
+- **The board is SPEC.md section 1.0** (A = box queue, B = owed off the box with owners, C = Andrei's decisions in his order:
+  RAM1 last, Dave's-box distillation second to last). Keep it current after every job; nothing pending lives anywhere else.
+- Queue: hq1_stock (running) -> hand1 -> qx3 -> race1 -> lq1 -> lq2 -> hq1_k2 -> bonsai1_easy -> bonsai1_hard.
+- `hand1` (1 min): when it ends, pull `/ai/bench/prof2_nsys.sqlite` and `prof4_gqa1.sqlite` to `bench/box/traces/` (gitignored).
+  The ANALYSIS is top-model work (B1): do not attempt it.
+- `race1`: record the RACE rows and the RACE_VERDICT line verbatim. `seed` / `mixed` => call the top model (B4). `problem` => mark
+  RACE1 dead in SPEC, done.
+- `qx3` GO and any result that tempts a new theory => call the top model. Literal rules only.
