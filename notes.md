@@ -827,7 +827,7 @@ step; FA3 territory), never the K walk that dominates. The measurement wins: not
 concentration (top 1% of tiles = 63% of the mass) and parked under the same rule as FA5. Kept fact [scout-verified from config.json]:
 Qwen3.6 partial_rotary_factor = 0.25 (64 of 256 head dims rotated).
 
-**cpu1bench (2026-09-21): CPU1 is DEAD — the task-parallel layout buys nothing. (The "DRAM wall" reading below was RETRACTED the same day by the `cpu1bench2` control; see the entry at the end.)** Microbenchmark, real
+**cpu1bench (2026-09-21): CPU1 is DEAD — the CPU expert phase sits on the DRAM wall, not on barriers.** (Control: `cpu1bench2` entry below, which CONFIRMS the memory-bound reading.) Microbenchmark, real
 shapes / types (gate, up Q2_K 2048->512; down Q3_K 512->2048; 256 experts, distinct random experts per call), microseconds per
 layer call:
 | pairs | ggml t1 | ggml t6 | task-parallel t6 (a thread owns whole pairs, one barrier per layer) |
@@ -835,9 +835,11 @@ layer call:
 | 4  | 582  | 174.8 (3.33x) | 193.7 (3.01x) |
 | 12 | 1721 | 489.1 (3.52x) | 484.0 (3.56x) |
 | 24 | 3423 | 952.1 (3.60x) | 938.7 (3.65x) |
-The task-parallel layout buys nothing: ggml's row split is already fine. Both stall at ~3.5x on 6 cores. ~~12 pairs x ~1.1 MB of
-expert bytes in 0.49 ms = ~27 GB/s = the DDR4-2667 dual-channel ceiling.~~ **RETRACTED — that inference had no control; the
-`cpu1bench2` entry below has the measurement.** The telemetry's "DRAM 5 of 38 GB/s" is a whole-round AVERAGE that hides the burst.
+The task-parallel layout buys nothing: ggml's row split is already fine. Both stall at ~3.5x on 6 cores because 12 pairs x ~1.1 MB
+of expert bytes in 0.49 ms = **~27 GB/s of DRAM traffic** (1 thread = 22 G MAC/s = 8 GB/s, compute bound; 6 threads = memory bound;
+confirmed by the `cpu1bench2` control below. "= the DDR4-2667 ceiling" was a shade too strong: the measured peak on this box is
+~38 GB/s, 27 is what six concurrent ~1 MB streams get). The telemetry's "DRAM 5 of 38 GB/s" was a whole-round AVERAGE that hid the
+burst; SPEC 4.1's "misses are compute-bound" was true for the IQ2_S dot and is no longer true with K-quant experts.
 Consequences: (1) no CPU kernel work — the only lever on the miss term is BYTES per token: hit rate (VRAM) or bits per expert;
 (2) higher-precision experts cost speed in proportion to their bytes on the miss path (Q4_K pair = 1.75 MB vs 1.1 => miss phase
 +55%) and cost cache slots on the hit path (1.6x VRAM per expert) — the QX3 / RAM1 accuracy levers have a quantified speed price,
@@ -875,24 +877,64 @@ First contact with the dense-27B-distilled-to-A3B model. It loads and runs on ou
 - Consequences: no `hq1 whittle` arm; T5 (continuing the recipe on Dave's box) stays parked; DM1's only live item is now `dense1`.
 - The 13 GB file stays on the box until Andrei OKs deleting it (`/ai/models/Whittle-Qwen-3.8-35B-A3B.i1-Q2_K.gguf`).
 
-### 2026-09-21 — cpu1bench2: the control. The "27 GB/s DRAM ceiling" reading is retracted
+### 2026-09-21 — cpu1bench2: the control CONFIRMS the memory-bound reading (an earlier version of this entry had it backwards)
 
-`cpu1bench` re-drawn vs FIXED expert ids (same 12 pairs re-used every call, so the 278 MiB working set stays cache/page resident).
-If 3.5x on 6 threads were a hard DRAM-bandwidth ceiling, making the bytes free could not move it.
+`cpu1bench` re-drawn vs FIXED expert ids. Fixed = the same 12 pairs every call, so the bytes are served from the CPU cache
+(12 pairs = 13.7 MB against a 12 MiB L3) and never cross the DRAM bus. The decision rule was written BEFORE the run (handoff):
+"jumps toward 5-6x => DRAM bound confirmed; stays ~3.5x => retract".
 
-| pairs | re-drawn t1 -> t6 | fixed t1 -> t6 |
+| pairs (bytes) | re-drawn t1 -> t6 | fixed t1 -> t6 |
 |---|---|---|
-| 12 | 1730 us -> 473.9 (3.65x), 21.8 G MAC/s at t1 | 1626 us -> 326.5 (**4.98x**), 23.2 G MAC/s at t1 |
-| 24 | 3496 -> 955.0 (3.66x) | 3464 -> 838.3 (4.13x) |
-| 8  | 1170 -> 350.3 (3.34x) | 1015 -> 228.2 (4.45x) |
+| 4 (4.6 MB, fits L3)   | 590 us -> 175.1 (3.37x) | 511 -> 111.9 (4.57x) |
+| 8 (9.1 MB, fits L3)   | 1170 -> 350.3 (3.34x) | 1015 -> 228.2 (4.45x) |
+| 12 (13.7 MB, ~L3)     | 1730 -> 473.9 (3.65x) | 1626 -> 326.5 (**4.98x**) |
+| 24 (27 MB, 2x L3)     | 3496 -> 955.0 (3.66x) | 3464 -> 838.3 (4.13x) |
 
-- 6-thread scaling moves 3.65x -> 4.98x and t6 absolute time drops 31% purely from re-using the same experts. **So the miss path is
-  NOT pinned at a 27 GB/s DRAM ceiling** — a hard bandwidth wall cannot be lifted by 31% by changing which addresses you touch.
-  What the re-drawn case actually pays is the cost of a COLD working set: page/TLB misses and no prefetch reuse across calls.
-- Retracted: "the CPU expert phase is bandwidth bound at 6 threads" and "~27 GB/s = the DDR4-2667 ceiling" (notes entry above, SPEC
-  CPU1 row). The honest statement: the miss phase is memory-LATENCY / cold-working-set bound, and single-thread is compute bound.
-- What does NOT change: **CPU1 stays dead** (task-parallel t6 = ggml t6 on the re-drawn, realistic case; the layout was the question
-  and the answer is no), and the lever on the miss term is still BYTES per token (hit rate, bits per expert).
-- What DOES change: the QX3 / RAM1 "speed price" of fatter experts was derived from a bandwidth model that is now void — the price is
-  real (more bytes, more cache slots) but its size must be measured, not extrapolated from 27 GB/s. HAND1 (~0.3 ms/layer of
-  CPU<->GPU handoff) is untouched by this. A THP / hugepage or expert-locality experiment is now a live, cheap idea for the miss path.
+- Take the DRAM traffic away and 6-thread scaling goes 3.65x -> 4.98x, t6 drops 31%. The gain shrinks exactly where the fixed set
+  stops fitting the L3 (24 pairs: 4.13x). **=> at 6 threads the miss phase is memory bound; about a third of its time is waiting
+  on DRAM.** Single thread barely moves (21.8 -> 23.2 G MAC/s): compute bound, as stated.
+- The first version of this entry (written by the cheaper model) RETRACTED the reading with "a bandwidth wall cannot be lifted by
+  changing which addresses you touch". That is a fallacy: touching the SAME addresses means the bytes come from cache, which is the
+  whole point of the control. It also inverted the pre-registered rule. Its two follow-ons are withdrawn too:
+  (a) "hugepages / locality is a cheap lever" — THP is `[always]` here and the bench weights are one anonymous 278 MiB buffer
+  (139 huge pages, fits the TLB), so TLB misses are not the cost; an expert is a ~1.1 MB sequential stream, far above any
+  prefetch / page granularity, so placement does not help. (b) "the QX3 / RAM1 speed price is void" — it stands: on a memory-bound
+  path the miss phase scales with bytes per expert (Q4_K pair 1.75 MB vs 1.1 => about +55% on that phase). qx3 measuring it
+  directly is still welcome, but the estimate is not void.
+- What the control does NOT separate: bandwidth from latency. 27 GB/s is under the ~38 GB/s measured peak, so "memory bound" is the
+  proven statement, "at the hard DDR4 ceiling" is not. The lever is unchanged either way: BYTES per token (hit rate, bits per
+  expert). CPU1 stays dead. HAND1 (~0.3 ms per layer of CPU<->GPU handoff) is untouched.
+
+### 2026-09-22 — dense1: Qwen3.8-27B FFN energy is FLAT. DM1's static split is closed. (And a parser bug that almost said otherwise)
+
+llama-imatrix on the dense 27B (24 chunks, 507 s, PPL 2.34), then `bench/imx_heat.py` on the `ffn_down` input statistics
+(= mean squared activation per FFN neuron, 64 layers x 17,408 neurons).
+
+| | top 1% | top 5% | top 20% | top 50% | Gini |
+|---|---|---|---|---|---|
+| median over layers | | 0.32 | **0.52** | | 0.43 |
+| L0 (most concentrated region, layers 0-3: top-20% up to 0.93) | 0.47 | 0.66 | 0.80 | 0.91 | 0.76 |
+| L16 | 0.11 | 0.23 | 0.45 | 0.73 | 0.36 |
+| L32 (flattest) | 0.07 | 0.18 | 0.42 | 0.70 | 0.31 |
+
+- Verdict by the pre-registered rule (median top-20% < 0.60): **FLAT**. A static hot set of 20% of the neurons carries about half of
+  the FFN energy; our A3B MoE gets 11x sparsity because it was TRAINED for it. With `whittle1` killed the same night, DM1 has no live item.
+  Report: `bench/reports/imx_heat_qwen38_27b.json`.
+- **Tool bug, caught on the first real file.** `imx_heat.py` (built from brief 26) read GGUF tensor data at absolute offsets; GGUF
+  offsets are relative to the ALIGNED END OF THE HEADER. Its test-side GGUF writer made the same mistake, so the tests agreed with
+  the bug. On the real file it printed MODERATE (median 0.77) from misaligned garbage; the tells were a negative energy share on L0
+  (impossible for a sum of squares) and "zeros 21" on every layer. Fixed: data-section start, a guard that refuses negative energy,
+  the test writer now uses relative offsets, and a round-trip test against the real `gguf` library. All 496 entries now match the
+  library bit for bit. Lesson for briefs: a parser test must include one file written by the reference implementation.
+
+### 2026-09-22 — hq1_iq2m final (served IQ2_M file, thinking on, card sampler)
+
+| set | correct | cut at the budget | finished chains correct | looping |
+|---|---|---|---|---|
+| MATH-L5 (40) | 23 = 57.5% +-7.8 | 16 at 32k | 23 of 24 | 0 |
+| EvalPlus (41) | 35 = 85.4% +-5.5 | 1 at 8k | 35 of 40 | 5 |
+| AIME (15) | 3 = 20.0% +-10.3 | 10 at 41k | 3 of 5 | 0 |
+
+When a chain finishes it is almost always right; the losses are chains that never finish inside the card's own budget. Whether that
+is the 2.5-bit quantization or the fine-tune is what `hq1_stock` (running since 01:24) answers. No verdict before it lands. The t/s
+in this job is not usable: model files were being copied to the array beside it.

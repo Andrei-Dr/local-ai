@@ -8,7 +8,8 @@ follows tools/imatrix/imatrix.cpp save functions exactly.
 usage: imx_heat.py FILE [--match ffn_down] [--json OUT.json]
 
 Formats (detected by magic):
-  GGUF   — metadata kv skipped by type; per matmul a tensor '<name>.in_sum2' (F32, ne0 = columns,
+  GGUF   — metadata kv skipped by type; tensor data offsets are relative to the ALIGNED end of the
+           header (general.alignment, default 32), NOT to byte 0; per matmul a tensor '<name>.in_sum2' (F32, ne0 = columns,
            ne1 = n_mat) and '<name>.counts' (F32, n_mat values); energy(column, mat) = in_sum2/counts;
            a dense entry has n_mat == 1; entries with several mats average the per-mat energies over
            mats with counts > 0 (chosen deterministically; ffn_down of a dense model is n_mat 1).
@@ -120,11 +121,12 @@ def parse_gguf(data):
         tid = r.u32()
         off = r.u64()
         infos.append((name, dims, tid, off))
-    return data, infos, alignment
+    pad = (-r.p) % alignment                                 # tensor offsets are relative to the
+    return data, infos, alignment, r.p + pad                 # ALIGNED end of the header, not to 0
 
 
 def gguf_entries(data):
-    payload, infos, _align = parse_gguf(data)
+    payload, infos, _align, data_start = parse_gguf(data)
     by_name = {i[0]: i for i in infos}
     entries = {}
     for name, dims, tid, off in infos:
@@ -137,8 +139,8 @@ def gguf_entries(data):
         ne0 = dims[0] if len(dims) > 0 else 0
         nmat = dims[1] if len(dims) > 1 else 1
         cvals = struct.unpack_from("<%df" % (cinfo[1][0] * (cinfo[1][1] if len(cinfo[1]) > 1 else 1)),
-                                   payload, cinfo[3])
-        sums = struct.unpack_from("<%df" % (ne0 * nmat), payload, off)
+                                   payload, data_start + cinfo[3])
+        sums = struct.unpack_from("<%df" % (ne0 * nmat), payload, data_start + off)
         if cvals and max(cvals) <= 0:
             raise ToolError("counts <= 0 for %s" % base)
         if nmat == 1:
@@ -172,7 +174,12 @@ def select(entries, match):
 
 def stats_for(vec):
     n = len(vec)
+    neg = [v for v in vec if v < 0]
+    if neg:                                                  # in_sum2 is a sum of squares: < 0 is impossible
+        raise ToolError("negative energy (%d values, min %.6g) — the file was misparsed, not a model property" % (len(neg), min(neg)))
     tot = sum(vec)
+    if tot <= 0:
+        raise ToolError("non-positive total energy (%.6g) — the file was misparsed" % tot)
     srt = sorted(vec, reverse=True)
     shares = []
     cum = 0.0

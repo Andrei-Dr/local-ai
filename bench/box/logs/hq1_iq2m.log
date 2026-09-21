@@ -1,4 +1,16 @@
-    preflight: governor=performance thp=[always] mem_avail=14444MiB swap_used=551MiB gpu=17MiB,46,P8
-    preflight: governor=performance thp=[always] mem_avail=14432MiB swap_used=551MiB gpu=17MiB,46,P8
-  aime/2024-60                 BAD 24576 tok  31.35 t/s length
-  aime/2024-61                 BAD 24576 tok  33.68 t/s length
+    preflight: governor=performance thp=[always] mem_avail=14376MiB swap_used=502MiB gpu=17MiB,40,P8
+    preflight: governor=performance thp=[always] mem_avail=14369MiB swap_used=502MiB gpu=17MiB,40,P8
+  aime/2024-65                 BAD 40960 tok  26.66 t/s length repeat 0.00
+  aime/2024-66                 BAD 40960 tok  28.27 t/s length repeat 0.00
+  aime/2024-67                 ok  19738 tok  29.39 t/s stop
+  aime/2024-68                 ok  36575 tok  27.84 t/s stop
+  aime/2024-69                 ok  5127 tok  29.65 t/s stop
+  aime/2024-70                 BAD 40960 tok  28.91 t/s length repeat 0.00
+  aime/2024-71                 BAD 32855 tok  29.83 t/s stop
+  aime/2024-72                 BAD 40960 tok  28.05 t/s length repeat 0.00
+  aime/2024-73                 BAD 40960 tok  29.18 t/s length repeat 0.00
+  aime/2024-74                 BAD 40960 tok  27.82 t/s length repeat 0.00
+QUALITY[q36_iq2m_hard] think=on | math_l5  57.5% +- 7.8 (n=40) | humaneval_plus  85.4% +- 5.5 (n=41) | aime  20.0% +-10.3 (n=15) | mean 15845 tok, 31.7 t/s | truncated 27 | empty 27 | 12032s
+    telemetry[qual_q36_iq2m_hard]: GPU util avg  73% max 100% | power avg  67W max  76W /100W | PCIe->GPU avg  0.79 max  5.17 GB/s (~13 cap) | CPU busy  627% of 1200% | DRAM read avg   6.0 max   8.5 GB/s (~38 cap)
+    vram: 3282 MiB
+HQ1_DONE iq2m

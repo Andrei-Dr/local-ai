@@ -53,7 +53,7 @@ def gguf_bytes(entries, counts_val=100.0):
         infob += struct.pack("<Q", len(name)) + name.encode() + struct.pack("<I", len(dims)) + \
             b"".join(struct.pack("<Q", d) for d in dims) + struct.pack("<I", 0) + struct.pack("<Q", 0)
     data_start = (len(kv_head) + len(infob) + 31) // 32 * 32
-    offs, cur = [], data_start
+    offs, cur = [], 0                                        # GGUF: offsets are relative to data_start
     for _n, _d, blob in infos:
         offs.append(cur)
         cur = (cur + len(blob) + 31) // 32 * 32
@@ -64,7 +64,7 @@ def gguf_bytes(entries, counts_val=100.0):
     data_region = b""
     for i, (_n, _d, blob) in enumerate(infos):
         pos = data_start + len(data_region)
-        assert pos == offs[i], (pos, offs[i])
+        assert pos - data_start == offs[i], (pos, offs[i])
         data_region += blob
         nxt = (pos + len(blob) + 31) // 32 * 32              # keep tensors alignment-padded
         data_region += b"\0" * (nxt - (pos + len(blob)))
@@ -121,6 +121,26 @@ class HeatCase(unittest.TestCase):
         self.assertEqual((rc1, rc2), (0, 0))
         self.assertEqual(o1, o2)                                  # identical stdout
         self.assertEqual(json.load(open(lj)), json.load(open(gj)))  # identical json
+
+    def test_reads_a_file_written_by_the_real_gguf_library(self):
+        try:
+            import gguf, numpy as np
+        except ImportError:
+            self.skipTest("gguf / numpy not installed")
+        p = str(Path(self.d) / "real.gguf")
+        w = gguf.GGUFWriter(p, "imatrix")
+        vecs = {"blk.0.ffn_down.weight": [9.0, 1.0, 0.5, 0.25], "blk.1.ffn_down.weight": [1.0, 2.0, 3.0, 4.0]}
+        for name, vec in vecs.items():                          # first tensor sits at relative offset 0
+            w.add_tensor(name + ".in_sum2", np.array([[x * 50.0 for x in vec]], dtype=np.float32))
+            w.add_tensor(name + ".counts", np.array([[50.0]], dtype=np.float32))
+        w.write_header_to_file(); w.write_kv_data_to_file(); w.write_tensors_to_file(); w.close()
+        got = imx_heat.gguf_entries(Path(p).read_bytes())
+        for name, vec in vecs.items():
+            self.assertEqual([round(x, 5) for x in got[name]], vec)
+
+    def test_negative_energy_is_a_parse_error_not_a_verdict(self):
+        p = self.wp("neg.dat", legacy_bytes([("blk.0.ffn_down.weight", [1.0, -5.0, 2.0])]))
+        self.assertEqual(run_capture(p)[0], 2)
 
     def test_verdict_words(self):
         cases = {"CONCENTRATED": [10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],

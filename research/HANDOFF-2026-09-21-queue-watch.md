@@ -3,7 +3,7 @@
 State of record: `SPEC.md` section 1.0 (queue + verdicts), `notes.md` tail (every result with its reading). This file = decision
 rules, so results get RECORDED AND READ BY RULE, not re-interpreted. Standing rules in `SPEC.md` section 0 and CLAUDE.md apply
 (nothing runs beside a benchmark; stop the queue only with `systemctl stop ai-queue`; reorder with `/ai/bench/qorder.sh ID...`;
-one-shot waiters via `/ai/bench/watch.sh`; never force-push). **Disk housekeeping is yours, not Andrei's**: when `/` gets tight, `mv /ai/models/<f> /mnt/md0/models-cold/<f> && ln -s /mnt/md0/models-cold/<f> /ai/models/<f>` (leave the symlink so job scripts keep working, verify it resolves), and clear stale build trees / traces / logs. Do not ask. Cross-filesystem copies take minutes — background them, never beside a running benchmark. Ask only before destroying the last copy of something (a downloaded model with no cold copy, a result or ledger file).
+one-shot waiters via `/ai/bench/watch.sh`; never force-push). **Disk housekeeping is yours, not Andrei's**: when `/` gets tight, `mv /ai/models/<f> /mnt/md0/models-cold/<f> && ln -s /mnt/md0/models-cold/<f> /ai/models/<f>` (leave the symlink so job scripts keep working, verify it resolves), and move bulk build data there the same way. Do not ask. Cross-filesystem copies take minutes — background them, never beside a running benchmark. Ask only before destroying the last copy of something (a downloaded model with no cold copy, a result or ledger file).
 
 Queue order now: whittle1 (running) -> cpu1bench2 -> hq1_iq2m (last ~11 AIME items) -> dl_stock -> dense1 -> hq1_stock -> qx3 ->
 lq1 -> lq2 -> hq1_k2 -> bonsai1_easy -> bonsai1_hard. After each job: pull logs + results + ledger, commit, push, one dated
@@ -43,3 +43,18 @@ analyze `/ai/bench/prof2_nsys.nsys-rep` memcpy / sync timeline first, then C++ i
   hq1_k2, bonsai1_easy, bonsai1_hard. The `rc=interrupted` on hq1_iq2m is from the deliberate queue stop, not a failure.
 - **Unverified until the next reboot:** queue autostart (the systemd ordering-cycle fix). After any reboot check
   `systemctl is-active ai-queue` and the governor before trusting a number.
+
+## Addendum, 2026-09-22 02:00 (top-model review of the night's watch)
+
+- **cpu1bench2 was read BACKWARDS by the watcher and has been corrected.** The rule in the table above said "jumps toward 5-6x =>
+  confirmed". It measured 4.98x and the watcher retracted anyway, with a new theory (cold working set, hugepages, locality). Fixed
+  ids = bytes served from the L3 = no DRAM traffic; that the gain appears is the confirmation. **Apply the written rule literally.
+  If a result seems to call for a new theory, that is the "call the top model back" trigger, not a license to rewrite SPEC.**
+  There is NO hugepage / locality lever (THP is `always`; an expert is a ~1.1 MB sequential stream) and the bytes-proportional
+  speed price of fatter experts STANDS.
+- **dense1 = FLAT** (median top-20% share 0.52). DM1 is closed; no per-token probe. `imx_heat.py` had a GGUF offset bug (fixed,
+  tested against the real `gguf` library); the first MODERATE printout was garbage.
+- **hq1_iq2m final** recorded (57.5 / 85.4 / 20.0). `hq1_stock` is running; its rule in the table is unchanged.
+- Disk: MOVE + symlink large models and build data to `/mnt/md0`, never ask. Moving is not deleting: nothing gets `rm`'d outright
+  without Andrei. Do the copies between jobs (`systemctl stop ai-queue` at a job boundary, copy, start) — last night they ran
+  beside `hq1_iq2m`, which only survived because it is an accuracy job.

@@ -1,0 +1,4 @@
+    preflight: governor=performance thp=[always] mem_avail=14061MiB swap_used=398MiB gpu=17MiB,38,P8
+imatrix: 13642624 bytes in 507 s | Final estimate: PPL = 2.3418 +/- 0.05449
+magic:  G G U F
+DENSE1_DONE
