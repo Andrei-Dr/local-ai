@@ -3,7 +3,7 @@
 State of record: `SPEC.md` section 1.0 (queue + verdicts), `notes.md` tail (every result with its reading). This file = decision
 rules, so results get RECORDED AND READ BY RULE, not re-interpreted. Standing rules in `SPEC.md` section 0 and CLAUDE.md apply
 (nothing runs beside a benchmark; stop the queue only with `systemctl stop ai-queue`; reorder with `/ai/bench/qorder.sh ID...`;
-one-shot waiters via `/ai/bench/watch.sh`; box deletions need Andrei; never force-push). **Making room is pre-authorized**: `mv /ai/models/<f> /mnt/md0/models-cold/<f> && ln -s /mnt/md0/models-cold/<f> /ai/models/<f>` — do it whenever `/` gets tight, never ask, always leave the symlink, never run the copy beside a benchmark.
+one-shot waiters via `/ai/bench/watch.sh`; never force-push). **Disk housekeeping is yours, not Andrei's**: when `/` gets tight, `mv /ai/models/<f> /mnt/md0/models-cold/<f> && ln -s /mnt/md0/models-cold/<f> /ai/models/<f>` (leave the symlink so job scripts keep working, verify it resolves), and clear stale build trees / traces / logs. Do not ask. Cross-filesystem copies take minutes — background them, never beside a running benchmark. Ask only before destroying the last copy of something (a downloaded model with no cold copy, a result or ledger file).
 
 Queue order now: whittle1 (running) -> cpu1bench2 -> hq1_iq2m (last ~11 AIME items) -> dl_stock -> dense1 -> hq1_stock -> qx3 ->
 lq1 -> lq2 -> hq1_k2 -> bonsai1_easy -> bonsai1_hard. After each job: pull logs + results + ledger, commit, push, one dated
