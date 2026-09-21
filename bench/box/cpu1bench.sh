@@ -7,8 +7,11 @@ source /ai/bench/preflight.sh || exit 1
 S=/ai/src/llama.cpp-mainline; B=$S/build75/bin; cd /ai/bench
 g++ -O2 -std=c++17 -I$S/ggml/include src/cpu1bench.cpp -o cpu1bench -L$B -lggml-cpu -lggml-base -lggml -Wl,-rpath,$B -lpthread 2> build_cpu1bench.log \
   || { head -30 build_cpu1bench.log; echo CPU1BENCH_BUILD_FAILED; exit 1; }
-for W in "" "OMP_WAIT_POLICY=active"; do
-  echo "##### ${W:-default OMP wait policy}"
-  env $W ./cpu1bench ${ITERS:-3000} 2>&1 | grep -vE "^ggml_|^load_backend" | cut -c1-200
+# run 1 (2026-09-21): task t6 = ggml t6, both ~3.5x on 6 cores, ~27 GB/s of expert bytes => read as "DRAM bound". That reading
+# had no control; `fixed` re-reads the same experts from cache. (OMP_WAIT_POLICY=active was dropped: it only made ggml's spinning
+# threads fight the task workers.)
+for MODE in "" fixed; do
+  echo "##### expert ids: ${MODE:-re-drawn every call}"
+  ./cpu1bench ${ITERS:-3000} $MODE 2>&1 | grep -vE "^ggml_|^load_backend" | cut -c1-200
 done
 echo CPU1BENCH_DONE

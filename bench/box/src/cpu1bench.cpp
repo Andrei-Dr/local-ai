@@ -7,6 +7,8 @@
 //          layer (the CPU1 proposal, emulated with stock ggml ops, no new kernel).
 // Prints microseconds per layer call and the speedup over 1 thread; pairs 4 = one decode token at ~50% cache hit, 12 = an MTP
 // verify batch of 3, 8 / 24 = no cache. Expert ids are re-drawn every call (the miss set moves, so do the weights touched).
+// CONTROL: `cpu1bench ITERS fixed` draws the ids ONCE, so the same expert bytes are re-read from the CPU caches (4 pairs = 4.6 MB
+// fit the 12 MB L3). If the 6-thread scaling jumps there, the stall in the normal mode is DRAM bandwidth, not the cores.
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -22,6 +24,7 @@
 #include <vector>
 
 static const int N_EMBD = 2048, N_FF = 512, N_EXPERT = 256;
+static bool g_fixed_ids = false;
 
 struct weights {
     ggml_context * ctx; ggml_backend_buffer_t buf;
@@ -59,11 +62,13 @@ struct layer {             // one FFN graph over n_pairs (token, expert) pairs
         std::vector<float> xv(N_EMBD); std::normal_distribution<float> nd(0.0f, 1.0f); for (float & v : xv) v = nd(rng);
         ggml_backend_tensor_set(x, xv.data(), 0, ggml_nbytes(x));
     }
+    bool drawn = false;
     void run() {
-        for (int i = 0; i < n_pairs; ++i) {       // distinct experts, as top-k routing gives
+        for (int i = 0; i < n_pairs && !(g_fixed_ids && drawn); ++i) {       // distinct experts, as top-k routing gives
             int e; bool dup; do { e = rng() % N_EXPERT; dup = false; for (int j = 0; j < i; ++j) dup |= idbuf[j] == e; } while (dup);
             idbuf[i] = e;
         }
+        drawn = true;
         ggml_backend_tensor_set(ids, idbuf.data(), 0, ggml_nbytes(ids));
         ggml_backend_graph_compute(be, gf);
     }
@@ -101,6 +106,7 @@ static double bench_task(const weights & w, int pairs, int nt, int iters) {
 
 int main(int argc, char ** argv) {
     const int iters = argc > 1 ? atoi(argv[1]) : 3000;
+    g_fixed_ids = argc > 2 && strcmp(argv[2], "fixed") == 0;
     std::mt19937 rng(7);
     weights w;
     ggml_init_params ip = { ggml_tensor_overhead() * 8, nullptr, true };
@@ -111,7 +117,7 @@ int main(int argc, char ** argv) {
     ggml_backend_t be0 = ggml_backend_cpu_init();
     w.buf = ggml_backend_alloc_ctx_tensors(w.ctx, be0);
     fill_experts(w.gate, N_EMBD, N_FF, rng); fill_experts(w.up, N_EMBD, N_FF, rng); fill_experts(w.down, N_FF, N_EMBD, rng);
-    printf("cpu1bench: %d iters per cell, weights %.0f MiB, us per layer call (speedup vs ggml 1 thread)\n", iters, ggml_backend_buffer_get_size(w.buf) / 1048576.0);
+    printf("cpu1bench [%s expert ids]: %d iters per cell, weights %.0f MiB, us per layer call (speedup vs ggml 1 thread)\n", g_fixed_ids ? "FIXED" : "re-drawn", iters, ggml_backend_buffer_get_size(w.buf) / 1048576.0);
     for (int pairs : {4, 8, 12, 24}) {
         const double base = bench_ggml(w, pairs, 1, iters);
         printf("pairs %2d | ggml t1 %7.1f us (%.1f G MAC/s)", pairs, base, pairs * 3.1457 / base * 1e3);
