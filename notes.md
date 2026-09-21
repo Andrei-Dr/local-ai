@@ -827,7 +827,7 @@ step; FA3 territory), never the K walk that dominates. The measurement wins: not
 concentration (top 1% of tiles = 63% of the mass) and parked under the same rule as FA5. Kept fact [scout-verified from config.json]:
 Qwen3.6 partial_rotary_factor = 0.25 (64 of 256 head dims rotated).
 
-**cpu1bench (2026-09-21): CPU1 is DEAD — the CPU expert phase sits on the DRAM wall, not on barriers.** Microbenchmark, real
+**cpu1bench (2026-09-21): CPU1 is DEAD — the task-parallel layout buys nothing. (The "DRAM wall" reading below was RETRACTED the same day by the `cpu1bench2` control; see the entry at the end.)** Microbenchmark, real
 shapes / types (gate, up Q2_K 2048->512; down Q3_K 512->2048; 256 experts, distinct random experts per call), microseconds per
 layer call:
 | pairs | ggml t1 | ggml t6 | task-parallel t6 (a thread owns whole pairs, one barrier per layer) |
@@ -835,10 +835,9 @@ layer call:
 | 4  | 582  | 174.8 (3.33x) | 193.7 (3.01x) |
 | 12 | 1721 | 489.1 (3.52x) | 484.0 (3.56x) |
 | 24 | 3423 | 952.1 (3.60x) | 938.7 (3.65x) |
-The task-parallel layout buys nothing: ggml's row split is already fine. Both stall at ~3.5x on 6 cores because 12 pairs x ~1.1 MB
-of expert bytes in 0.49 ms = **~27 GB/s = the DDR4-2667 dual-channel ceiling** (1 thread = 22 G MAC/s = 8 GB/s, compute bound; 6
-threads = bandwidth bound). The telemetry's "DRAM 5 of 38 GB/s" was a whole-round AVERAGE that hid the burst; SPEC 4.1's "misses are
-compute-bound" was true for the IQ2_S dot and is no longer true with K-quant experts.
+The task-parallel layout buys nothing: ggml's row split is already fine. Both stall at ~3.5x on 6 cores. ~~12 pairs x ~1.1 MB of
+expert bytes in 0.49 ms = ~27 GB/s = the DDR4-2667 dual-channel ceiling.~~ **RETRACTED — that inference had no control; the
+`cpu1bench2` entry below has the measurement.** The telemetry's "DRAM 5 of 38 GB/s" is a whole-round AVERAGE that hides the burst.
 Consequences: (1) no CPU kernel work — the only lever on the miss term is BYTES per token: hit rate (VRAM) or bits per expert;
 (2) higher-precision experts cost speed in proportion to their bytes on the miss path (Q4_K pair = 1.75 MB vs 1.1 => miss phase
 +55%) and cost cache slots on the hit path (1.6x VRAM per expert) — the QX3 / RAM1 accuracy levers have a quantified speed price,
@@ -875,3 +874,25 @@ First contact with the dense-27B-distilled-to-A3B model. It loads and runs on ou
 - Speed rows are clean (see the foreign-CPU entry above); the runner overlapped only the accuracy section.
 - Consequences: no `hq1 whittle` arm; T5 (continuing the recipe on Dave's box) stays parked; DM1's only live item is now `dense1`.
 - The 13 GB file stays on the box until Andrei OKs deleting it (`/ai/models/Whittle-Qwen-3.8-35B-A3B.i1-Q2_K.gguf`).
+
+### 2026-09-21 — cpu1bench2: the control. The "27 GB/s DRAM ceiling" reading is retracted
+
+`cpu1bench` re-drawn vs FIXED expert ids (same 12 pairs re-used every call, so the 278 MiB working set stays cache/page resident).
+If 3.5x on 6 threads were a hard DRAM-bandwidth ceiling, making the bytes free could not move it.
+
+| pairs | re-drawn t1 -> t6 | fixed t1 -> t6 |
+|---|---|---|
+| 12 | 1730 us -> 473.9 (3.65x), 21.8 G MAC/s at t1 | 1626 us -> 326.5 (**4.98x**), 23.2 G MAC/s at t1 |
+| 24 | 3496 -> 955.0 (3.66x) | 3464 -> 838.3 (4.13x) |
+| 8  | 1170 -> 350.3 (3.34x) | 1015 -> 228.2 (4.45x) |
+
+- 6-thread scaling moves 3.65x -> 4.98x and t6 absolute time drops 31% purely from re-using the same experts. **So the miss path is
+  NOT pinned at a 27 GB/s DRAM ceiling** — a hard bandwidth wall cannot be lifted by 31% by changing which addresses you touch.
+  What the re-drawn case actually pays is the cost of a COLD working set: page/TLB misses and no prefetch reuse across calls.
+- Retracted: "the CPU expert phase is bandwidth bound at 6 threads" and "~27 GB/s = the DDR4-2667 ceiling" (notes entry above, SPEC
+  CPU1 row). The honest statement: the miss phase is memory-LATENCY / cold-working-set bound, and single-thread is compute bound.
+- What does NOT change: **CPU1 stays dead** (task-parallel t6 = ggml t6 on the re-drawn, realistic case; the layout was the question
+  and the answer is no), and the lever on the miss term is still BYTES per token (hit rate, bits per expert).
+- What DOES change: the QX3 / RAM1 "speed price" of fatter experts was derived from a bandwidth model that is now void — the price is
+  real (more bytes, more cache slots) but its size must be measured, not extrapolated from 27 GB/s. HAND1 (~0.3 ms/layer of
+  CPU<->GPU handoff) is untouched by this. A THP / hugepage or expert-locality experiment is now a live, cheap idea for the miss path.

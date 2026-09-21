@@ -1,0 +1,22 @@
+    preflight: governor=performance thp=[always] mem_avail=14371MiB swap_used=511MiB gpu=17MiB,50,P8
+##### expert ids: re-drawn every call
+cpu1bench [re-drawn expert ids]: 3000 iters per cell, weights 278 MiB, us per layer call (speedup vs ggml 1 thread)
+pairs  4 | ggml t1   590.1 us (21.3 G MAC/s) | t2   324.7 (1.82x) | t3   230.1 (2.56x) | t4   206.8 (2.85x) | t6   175.1 (3.37x)
+         | task                         | t2   322.6 (1.83x) | t3   319.9 (1.84x) | t4   191.3 (3.08x) | t6   190.3 (3.10x)
+pairs  8 | ggml t1  1170.1 us (21.5 G MAC/s) | t2   614.9 (1.90x) | t3   444.7 (2.63x) | t4   379.4 (3.08x) | t6   350.3 (3.34x)
+         | task                         | t2   615.1 (1.90x) | t3   488.3 (2.40x) | t4   369.3 (3.17x) | t6   412.4 (2.84x)
+pairs 12 | ggml t1  1730.4 us (21.8 G MAC/s) | t2   918.8 (1.88x) | t3   658.4 (2.63x) | t4   553.1 (3.13x) | t6   473.9 (3.65x)
+         | task                         | t2   912.0 (1.90x) | t3   655.9 (2.64x) | t4   554.8 (3.12x) | t6   480.3 (3.60x)
+pairs 24 | ggml t1  3496.2 us (21.6 G MAC/s) | t2  1837.4 (1.90x) | t3  1287.7 (2.71x) | t4  1076.6 (3.25x) | t6   955.0 (3.66x)
+         | task                         | t2  1813.8 (1.93x) | t3  1280.0 (2.73x) | t4  1084.2 (3.22x) | t6   938.0 (3.73x)
+##### expert ids: fixed
+cpu1bench [FIXED expert ids]: 3000 iters per cell, weights 278 MiB, us per layer call (speedup vs ggml 1 thread)
+pairs  4 | ggml t1   511.4 us (24.6 G MAC/s) | t2   269.8 (1.90x) | t3   189.6 (2.70x) | t4   157.7 (3.24x) | t6   111.9 (4.57x)
+         | task                         | t2   272.2 (1.88x) | t3   270.4 (1.89x) | t4   146.7 (3.49x) | t6   148.5 (3.44x)
+pairs  8 | ggml t1  1014.6 us (24.8 G MAC/s) | t2   542.1 (1.87x) | t3   377.4 (2.69x) | t4   290.6 (3.49x) | t6   228.2 (4.45x)
+         | task                         | t2   540.5 (1.88x) | t3   402.5 (2.52x) | t4   278.9 (3.64x) | t6   285.0 (3.56x)
+pairs 12 | ggml t1  1625.7 us (23.2 G MAC/s) | t2   863.1 (1.88x) | t3   590.0 (2.76x) | t4   458.7 (3.54x) | t6   326.5 (4.98x)
+         | task                         | t2   854.4 (1.90x) | t3   579.1 (2.81x) | t4   448.8 (3.62x) | t6   310.4 (5.24x)
+pairs 24 | ggml t1  3464.0 us (21.8 G MAC/s) | t2  1790.4 (1.93x) | t3  1239.4 (2.79x) | t4   966.2 (3.59x) | t6   838.3 (4.13x)
+         | task                         | t2  1784.0 (1.94x) | t3  1212.0 (2.86x) | t4   971.5 (3.57x) | t6   714.1 (4.85x)
+CPU1BENCH_DONE
