@@ -19,6 +19,7 @@ if [ ! -f $F ] || [ "$(stat -c %s $F)" != "$SIZE" ]; then
   [ "$(stat -c %s $F.part)" = "$SIZE" ] || { echo "WHITTLE1_FAILED: size mismatch"; exit 1; }
   mv $F.part $F
 fi
+set +u   # preflight.sh reads optional env vars
 source /ai/bench/preflight.sh || exit 1
 cd /ai/bench
 # tensors over 400 MiB that are not fused experts (the n-gram memory, embeddings, output) stay on the CPU: names from the file itself
