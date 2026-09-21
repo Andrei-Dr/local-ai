@@ -22,6 +22,7 @@ MODE = os.environ.get("MODE", "cold").lower()
 TIMEOUT = int(os.environ.get("TIMEOUT", "3600"))
 PRE_GEN = int(os.environ.get("PRE_GEN", "1"))
 DROP = int(os.environ.get("DROP", "0"))
+NPROBS = int(os.environ.get("NPROBS", "0"))  # extend mode: keep the top-N logprobs of every generated token (probcmp.py)
 EXT = os.environ.get("EXT", "\n\nNow list the three most important open risks, one line each.")
 PROMPT_FILE = os.environ.get("PROMPT_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "w4_doc.txt"))
 QUESTION = "\n\nBased on the text above, summarize its current status and the next steps in one short paragraph."
@@ -122,11 +123,14 @@ elif MODE == "extend":
     e = api("/tokenize", {"content": EXT, "add_special": False, "parse_special": True})["tokens"]
     t0 = time.time()
     d = api("/completion", {"prompt": sid[:len(sid) - DROP] + e, "n_predict": GEN, "temperature": 0,
-                            "cache_prompt": True})
+                            "cache_prompt": True, **({"n_probs": NPROBS} if NPROBS else {})})
     r = trow(d, t0)
     r.update(s)
     r["base_n"], r["ext_n"], r["drop"] = len(sid), len(e), DROP
     r["reply"] = d["content"][:160]
+    if NPROBS:
+        r["probs"] = [{"id": t["id"], "top": [[c["id"], c["logprob"]] for c in t.get("top_logprobs", [])]}
+                      for t in d.get("completion_probabilities", [])]
     rows.append(r)
 else:
     print(f"unknown MODE '{MODE}' (cold|save|restore|warm|presave|extend)", file=sys.stderr)

@@ -22,7 +22,7 @@ build)
   [ -d $W ] || git -C $SRC worktree add -f $W 2582f5c > /dev/null 2>&1 || { echo FA1_WORKTREE_FAILED; exit 1; }
   cd $W || exit 1
   C=ggml/src/ggml-cuda
-  git checkout -q -- $C/fattn-vec.cuh $C/fattn.cu $C/common.cuh $C/ggml-cuda.cu tests/test-backend-ops.cpp
+  git checkout -q -- $C/fattn-vec.cuh $C/fattn.cu $C/common.cuh $C/ggml-cuda.cu $C/mmq.cu tests/test-backend-ops.cpp  # mmq.cu: run 1 left a hunk of the dropped ntc-mmq patch behind
   patch -s $C/fattn-vec.cuh < $PB/fa-gqa-vec.patch && patch -s $C/fattn.cu < $PB/fa-gqa-dispatch.patch && patch -s $C/common.cuh < $PB/ntc-common.patch \
     && patch -s $C/ggml-cuda.cu < $PB/ntc-ggml-cuda.patch || { echo FA1_PATCH_FAILED; exit 1; }
   python3 - <<'PY' || { echo FA1_TESTPATCH_FAILED; exit 1; }

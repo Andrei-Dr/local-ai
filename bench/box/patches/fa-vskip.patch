@@ -1,0 +1,107 @@
+--- fattn-vec.fa1.cuh	2026-09-21 07:45:03
++++ fattn-vec.cuh	2026-09-21 07:45:44
+@@ -20,7 +20,18 @@
+ // A column j = j1*ncols2 + c is (token ic0 + j1, head head0 + c). All columns of a block read the same K/V rows, so the K walk
+ // and the V dequantization are done once per block instead of once per query head (gqa_ratio x less K/V work at depth).
+ // ncols2 > 1 requires max_bias == 0 (one ALiBi slope per block) and gqa_ratio % ncols2 == 0; ncols2 == 1 is the old kernel.
+-template<int D, int ncols1, int ncols2, ggml_type type_K, ggml_type type_V, bool use_logit_softcap> // D == head size
++//
++// vskip: at depth the softmax is sparse, yet every K/V position pays the full V dequantization + ncols axpys.
++//   0 = every position (the old behavior).
++//   1 = a (position, column) pair whose weight against the RUNNING maximum is below FATTN_VEC_VSKIP_REL adds nothing to VKQ;
++//       a position where that holds for every column is not dequantized at all. The running maximum only grows, so a pair
++//       skipped here would only have been scaled down further. The skipped softmax mass is <= n_kv * FATTN_VEC_VSKIP_REL
++//       (2.6e-3 at 262k in the impossible case of every position sitting just under the bound). KQ_sum still counts every
++//       position, so the normalization is exact. With quantized V all threads of a warp work on the same position (no branch
++//       divergence); with F16 V they do not, which costs speed there, not correctness.
++//   2 = DIAGNOSTIC (GGML_CUDA_FA_VEC_DIAG builds only): no V work at all, the output is WRONG. It times the K walk alone.
++#define FATTN_VEC_VSKIP_REL 1e-8f // e^-18.4
++template<int D, int ncols1, int ncols2, ggml_type type_K, ggml_type type_V, bool use_logit_softcap, int vskip = 0> // D == head size
+ __launch_bounds__(ggml_cuda_fattn_vec_get_nthreads_device(), 1)
+ static __global__ void flash_attn_ext_vec(
+         const char * Q_ptr,
+@@ -130,6 +141,9 @@
+     const int tid = WARP_SIZE*threadIdx.y + threadIdx.x;
+     __builtin_assume(tid < nthreads);
+ 
++    // KQ holds exp(KQ - KQ_max) with KQ_max = running maximum + FATTN_KQ_MAX_OFFSET, so a stored weight is the relative one
++    // times exp(-FATTN_KQ_MAX_OFFSET) = 1/8.
++    constexpr float vskip_thr = FATTN_VEC_VSKIP_REL * 0.125f;
+     constexpr int ne_KQ      = ncols*D;
+     constexpr int ne_combine = nwarps*V_cols_per_iter*D;
+ #ifdef V_DOT2_F32_F16_AVAILABLE
+@@ -335,6 +349,7 @@
+             const int k = threadIdx.y*WARP_SIZE + k0 + (nthreads_V == WARP_SIZE ? 0 : threadIdx.x / nthreads_V);
+ 
+ #ifdef V_DOT2_F32_F16_AVAILABLE
++            static_assert(vskip == 0, "vskip: half weights already flush to zero below ~3e-8, not implemented for this path");
+             half2 KQ_k[ncols];
+ #pragma unroll
+             for (int j = 0; j < ncols; ++j) {
+@@ -365,19 +380,31 @@
+             }
+ #else
+             float KQ_k[ncols];
++            bool  V_needed = vskip == 0;
+ #pragma unroll
+             for (int j = 0; j < ncols; ++j) {
+                 KQ_k[j] = KQ[j*nthreads + k];
++                if constexpr (vskip == 1) {
++                    V_needed = V_needed || KQ_k[j] >= vskip_thr;
++                }
+             }
++            if (!V_needed) {
++                continue; // vskip 1: no column of this block attends to position k; vskip 2: diagnostic, never any V work
++            }
+ #pragma unroll
+             for (int i_VKQ_0 = 0; i_VKQ_0 < D/2; i_VKQ_0 += nthreads_V*V_rows_per_thread/2) {
+                 float2 tmp[V_rows_per_thread/2];
+                 dequantize_V(V + k*nb21, tmp,
+                     2*i_VKQ_0 + (nthreads_V == WARP_SIZE ? threadIdx.x : threadIdx.x % nthreads_V)*V_rows_per_thread);
+ #pragma unroll
+-                for (int i_VKQ_1 = 0; i_VKQ_1 < V_rows_per_thread/2; ++i_VKQ_1) {
++                for (int j = 0; j < ncols; ++j) {
++                    if constexpr (vskip == 1) {
++                        if (KQ_k[j] < vskip_thr) {
++                            continue;
++                        }
++                    }
+ #pragma unroll
+-                    for (int j = 0; j < ncols; ++j) {
++                    for (int i_VKQ_1 = 0; i_VKQ_1 < V_rows_per_thread/2; ++i_VKQ_1) {
+                         VKQ[j][i_VKQ_0/nthreads_V + i_VKQ_1].x += tmp[i_VKQ_1].x*KQ_k[j];
+                         VKQ[j][i_VKQ_0/nthreads_V + i_VKQ_1].y += tmp[i_VKQ_1].y*KQ_k[j];
+                     }
+@@ -569,13 +596,13 @@
+     return max_bias == 0.0f && logit_softcap == 0.0f;
+ }
+ 
+-template <int D, int cols_per_block, ggml_type type_K, ggml_type type_V, bool use_logit_softcap, int ncols2 = 1>
++template <int D, int cols_per_block, ggml_type type_K, ggml_type type_V, bool use_logit_softcap, int ncols2 = 1, int vskip = 0>
+ void ggml_cuda_flash_attn_ext_vec_case_impl(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+     const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+ 
+     const int nthreads = ggml_cuda_fattn_vec_get_nthreads_host(cc);
+     const int nwarps   = nthreads / WARP_SIZE;
+-    fattn_kernel_t fattn_kernel = flash_attn_ext_vec<D, cols_per_block, ncols2, type_K, type_V, use_logit_softcap>;
++    fattn_kernel_t fattn_kernel = flash_attn_ext_vec<D, cols_per_block, ncols2, type_K, type_V, use_logit_softcap, vskip>;
+     const bool need_f16_K = type_K == GGML_TYPE_F16;
+     const bool need_f16_V = type_V == GGML_TYPE_F16;
+     constexpr size_t nbytes_shared = 0;
+@@ -597,7 +624,15 @@
+         if (ggml_cuda_fattn_vec_gqa_applies(dst)) {
+             // GGML_CUDA_FA_VEC_GQA_NCOLS1=1: one query token per block even for multi-token batches (smaller per-thread state).
+             static const int ncols1_multi = [] { const char * e = getenv("GGML_CUDA_FA_VEC_GQA_NCOLS1"); return (e && atoi(e) == 1) ? 1 : 2; }();
+-            if (Q->ne[1] == 1 || ncols1_multi == 1) {
++            // GGML_CUDA_FA_VEC_VSKIP=1: skip the V work of (position, head) pairs below FATTN_VEC_VSKIP_REL (single-token decode).
++            static const int vskip_mode = [] { const char * e = getenv("GGML_CUDA_FA_VEC_VSKIP"); return e ? atoi(e) : 0; }();
++            if (Q->ne[1] == 1 && vskip_mode == 1) {
++                ggml_cuda_flash_attn_ext_vec_case_impl<D, 1, type_K, type_V, false, 8, 1>(ctx, dst);
++#ifdef GGML_CUDA_FA_VEC_DIAG
++            } else if (Q->ne[1] == 1 && vskip_mode == 2) {
++                ggml_cuda_flash_attn_ext_vec_case_impl<D, 1, type_K, type_V, false, 8, 2>(ctx, dst); // WRONG output, timing only
++#endif // GGML_CUDA_FA_VEC_DIAG
++            } else if (Q->ne[1] == 1 || ncols1_multi == 1) {
+                 ggml_cuda_flash_attn_ext_vec_case_impl<D, 1, type_K, type_V, false, 8>(ctx, dst);
+             } else {
+                 ggml_cuda_flash_attn_ext_vec_case_impl<D, 2, type_K, type_V, false, 8>(ctx, dst);
