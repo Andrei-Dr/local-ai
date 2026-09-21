@@ -1,5 +1,7 @@
 """offline tests for the HARD quality sets (aime, math_l5, humaneval_plus): number parsing, scoring, selection."""
-import sys, unittest
+import hashlib
+import json
+import sys, tempfile, unittest
 from fractions import Fraction
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "qual"))
@@ -134,6 +136,63 @@ class SetSpec(unittest.TestCase):
     def test_per_set_cap_overrides_the_global_limit(self):
         self.assertEqual(qual.parse_sets("math_l5,humaneval_plus,aime:15"), [("math_l5", 0), ("humaneval_plus", 0), ("aime", 15)])
         self.assertEqual(qual.parse_sets("gsm8k,aime:15", 50), [("gsm8k", 50), ("aime", 15)])
+
+
+class SeedSalt(unittest.TestCase):
+    # seeds lifted from the pre-salt code (sha256 of the bare id, first 4 bytes big-endian, shifted right by 1).
+    # they pin the S=0 compatibility: if one of these moves, every results/*.jsonl written so far becomes stale.
+    HARDCODED = [("aime/2024-60", 1824170521), ("math_l5/0", 1917799362), ("gsm8k/1", 1449337688), ("HumanEval/3", 1394051668)]
+
+    @staticmethod
+    def _want(s):
+        return int.from_bytes(hashlib.sha256(s.encode()).digest()[:4], "big") >> 1
+
+    def test_salt_zero_seeds_exactly_as_the_old_code(self):
+        for iid, want in self.HARDCODED:
+            self.assertEqual(qual.request_body("p", 100, True, iid)["seed"], want, iid)
+            self.assertEqual(qual.request_body("p", 100, True, iid, "aime", 0)["seed"], want, iid)
+
+    def test_salted_draws_differ_from_zero_and_each_other(self):
+        s0 = qual.request_body("p", 100, True, "aime/2024-60")["seed"]
+        s1 = qual.request_body("p", 100, True, "aime/2024-60", "aime", 1)["seed"]
+        s2 = qual.request_body("p", 100, True, "aime/2024-60", "aime", 2)["seed"]
+        self.assertEqual(s1, self._want("aime/2024-60#1"))
+        self.assertEqual(s2, self._want("aime/2024-60#2"))
+        self.assertNotIn(s0, (s1, s2))
+        self.assertNotEqual(s1, s2)
+        for b in (s1, s2):
+            self.assertTrue(0 <= b < 2 ** 31)
+
+    def test_sampler_tag_and_row_marking_per_salt(self):
+        self.assertEqual(qual.sampler_tag(0), qual.THINK_SAMPLER_TAG)
+        self.assertEqual(qual.sampler_tag(4), qual.THINK_SAMPLER_TAG + "+salt4")
+        base = {"id": "x", "set": "aime", "finish": "stop", "tokens": 5}
+        r0 = qual.apply_trace(dict(base), "some reasoning", 0)
+        self.assertEqual(r0["sampler"], qual.THINK_SAMPLER_TAG)
+        self.assertNotIn("salt", r0)
+        self.assertEqual(r0["think_chars"], 14)
+        r4 = qual.apply_trace(dict(base), "some reasoning", 4)
+        self.assertEqual(r4["sampler"], qual.THINK_SAMPLER_TAG + "+salt4")
+        self.assertEqual(r4["salt"], 4)
+
+    def test_row_is_current_never_resumes_across_salts(self):
+        row0 = {"id": "x", "set": "aime", "finish": "stop", "tokens": 10, "sampler": qual.THINK_SAMPLER_TAG}
+        row1 = dict(row0, sampler=qual.THINK_SAMPLER_TAG + "+salt1", salt=1)
+        self.assertTrue(qual.row_is_current(row0, True, 0))
+        self.assertFalse(qual.row_is_current(row1, True, 0))
+        self.assertTrue(qual.row_is_current(row1, True, 1))
+        self.assertFalse(qual.row_is_current(row0, True, 1))
+        self.assertTrue(qual.row_is_current({"id": "y", "set": "gsm8k", "finish": "stop", "tokens": 5}, False, 2))
+
+
+class IdFilter(unittest.TestCase):
+    def test_last_row_per_id_decides_cut_vs_all(self):
+        rows = [("a", "stop"), ("b", "length"), ("c", "length"), ("c", "stop")]  # c appears twice: its LAST row wins
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "res.jsonl"
+            p.write_text("".join(json.dumps({"id": i, "set": "aime", "finish": f, "tokens": 10}) + "\n" for i, f in rows))
+            self.assertEqual(qual.load_kept_ids(p, "cut"), {"b"})
+            self.assertEqual(qual.load_kept_ids(p, "all"), {"a", "b", "c"})
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 """Fixed-item quality eval against a running llama-server (chat endpoint, temp 0).
 
 usage: qual.py LABEL [--url http://localhost:8099] [--sets gsm8k,humaneval,mmlu_pro] [--limit N] [--data DIR] [--think]
+              [--seed-salt S] [--ids-from FILE --ids-filter cut|all]
 
 HARD sets (fetch.py --hard, run with --think): aime (AIME 2024 + 2025, integer answers), math_l5 (MATH-500 level 5, numeric
 golds only), humaneval_plus (EvalPlus tests on the same every-4th tasks as humaneval). The easy sets saturate (GSM8K 96-100%)
@@ -175,19 +176,49 @@ CODE_SETS = ("humaneval", "humaneval_plus")
 THINK_SAMPLER_TAG = "qwen36-card-seeded"
 
 
-def request_body(prompt, max_tokens, think, item_id, kind=""):
+def sampler_tag(salt=0):
+    """Row identity for the sampler: the plain tag at salt 0 (byte-compatible with every existing run), tag+saltN after a reseed."""
+    return THINK_SAMPLER_TAG if not salt else THINK_SAMPLER_TAG + f"+salt{salt}"
+
+
+def seed_for(item_id, salt=0):
+    """Seed input string: the bare item id at salt 0, id#S once reseeded — a different draw for the same problem."""
+    return item_id if not salt else f"{item_id}#{salt}"
+
+
+def request_body(prompt, max_tokens, think, item_id, kind="", salt=0):
     body = {"messages": [{"role": "user", "content": prompt}], "temperature": 0, "max_tokens": max_tokens,
             "chat_template_kwargs": {"enable_thinking": think}}
     if think:
-        body.update(THINK_SAMPLER_CODE if kind in CODE_SETS else THINK_SAMPLER, seed=int.from_bytes(hashlib.sha256(item_id.encode()).digest()[:4], "big") >> 1)
+        body.update(THINK_SAMPLER_CODE if kind in CODE_SETS else THINK_SAMPLER, seed=int.from_bytes(hashlib.sha256(seed_for(item_id, salt).encode()).digest()[:4], "big") >> 1)
     return body
 
 
-def row_is_current(r, think):
-    """a saved row counts as done unless it came from another sampler or was cut off under an older, smaller cap."""
-    if think and r.get("sampler") != THINK_SAMPLER_TAG:
+def apply_trace(r, reasoning, salt=0):
+    """Stamp a thinking row with the trace fields and its sampler identity; salt > 0 also marks the row with the salt."""
+    r.update(trace_fields(reasoning), sampler=sampler_tag(salt))
+    if salt:
+        r["salt"] = salt
+    return r
+
+
+def row_is_current(r, think, salt=0):
+    """a saved row counts as done unless it came from another sampler (another seed salt = another sampler) or was cut under an older, smaller cap."""
+    if think and r.get("sampler") != sampler_tag(salt):
         return False
     return not (r["finish"] == "length" and r["tokens"] < MAX_TOKENS.get(r["set"], 0) * (8 if think else 1))
+
+
+def load_kept_ids(path, mode="cut"):
+    """Ids from a results jsonl keeping the LAST row per id: cut keeps ids whose last row was cut (finish=length), all keeps every id."""
+    last = {}
+    for line in path.open():
+        if line.strip():
+            r = json.loads(line)
+            last[r["id"]] = r
+    if mode == "all":
+        return set(last)
+    return {i for i, r in last.items() if r["finish"] == "length"}
 
 
 def parse_sets(spec, limit=0):
@@ -199,8 +230,8 @@ def parse_sets(spec, limit=0):
     return out
 
 
-def ask(url, prompt, max_tokens, think, item_id="", kind=""):
-    body = json.dumps(request_body(prompt, max_tokens, think, item_id, kind)).encode()
+def ask(url, prompt, max_tokens, think, item_id="", kind="", salt=0):
+    body = json.dumps(request_body(prompt, max_tokens, think, item_id, kind, salt)).encode()
     req = urllib.request.Request(f"{url}/v1/chat/completions", body, {"Content-Type": "application/json"})
     d = json.load(urllib.request.urlopen(req, timeout=3600))
     msg = d["choices"][0]["message"]
@@ -217,8 +248,20 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="first N items per set (nested prefixes)")
     ap.add_argument("--data", default="data", help="item dir; relative to this script unless absolute")
     ap.add_argument("--think", action="store_true", help="enable thinking (multiply max_tokens by 8)")
+    ap.add_argument("--seed-salt", type=int, default=0, metavar="S",
+                    help="reseed thinking draws from id#S (0 = byte-identical to every existing run)")
+    ap.add_argument("--ids-from", metavar="FILE", help="ask only ids from a results jsonl (LAST row per id)")
+    ap.add_argument("--ids-filter", choices=("cut", "all"), default="cut",
+                    help="cut = ids whose last row has finish=length (default)")
     a = ap.parse_args()
     sets = parse_sets(a.sets, a.limit)
+    kept = None
+    if a.ids_from:
+        src = Path(a.ids_from)
+        if not src.is_file():
+            print(f"ids-from file not found: {a.ids_from}", flush=True)
+            sys.exit(2)
+        kept = load_kept_ids(src, a.ids_filter)
 
     (HERE / "results").mkdir(exist_ok=True)
     out_path = HERE / "results" / f"{a.label}.jsonl"
@@ -226,7 +269,9 @@ def main():
     if out_path.exists():
         for line in out_path.open():
             r = json.loads(line)
-            if not row_is_current(r, a.think):
+            if kept is not None and r["id"] not in kept:
+                continue
+            if not row_is_current(r, a.think, a.seed_salt):
                 done.pop(r["id"], None)
                 continue
             done[r["id"]] = r
@@ -240,12 +285,14 @@ def main():
             for it in items[: lim or None]:
                 if it["id"] in done:
                     continue
-                text, n, tps, fin, why = ask(a.url, prompt_for(kind, it), MAX_TOKENS[kind] * (8 if a.think else 1), a.think, it["id"], kind)
+                if kept is not None and it["id"] not in kept:
+                    continue
+                text, n, tps, fin, why = ask(a.url, prompt_for(kind, it), MAX_TOKENS[kind] * (8 if a.think else 1), a.think, it["id"], kind, a.seed_salt)
                 r = {"id": it["id"], "set": kind, "ok": bool(score(kind, it, text)), "tokens": n, "tps": tps,
                      "finish": fin, "empty": not text.strip(),
                      "text": text[:300] if kind == "overrefusal" else text}  # only the scored opener is kept for that set
                 if a.think:
-                    r.update(trace_fields(why), sampler=THINK_SAMPLER_TAG)
+                    apply_trace(r, why, a.seed_salt)
                 out.write(json.dumps(r, ensure_ascii=False) + "\n")
                 out.flush()
                 done[it["id"]] = r
