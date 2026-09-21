@@ -13,6 +13,7 @@
 source /ai/bench/preflight.sh || exit 1
 D=/ai/src/llama.cpp-mainline; B=$D/build75; M=/ai/models; N=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
 K=/ai/bench/kld; S=/mnt/md0/qx3; T=/ai/bench/traces; PY=/ai/.venv/bin/python
+export PYTHONPATH=$D/gguf-py   # expert_mix.py needs gguf-py; the venv has numpy only
 SRC=$M/$N-Q6_K_P.gguf; K2=$M/$N-K2-expQ2K-downQ3K.gguf; IM=$M/imatrix-$N-from-IQ2_M.dat; X4=$M/$N-X4-expQ4K.gguf
 for f in $SRC $K2 $IM $K/q6.kld $T/q36_code_tok.bin $T/q36_prose_tok.bin /ai/bench/expert_mix.py; do [ -s $f ] || { echo "QX3_REFUSED: $f missing"; exit 1; }; done
 mkdir -p $S; cd $K || exit 1
