@@ -801,3 +801,19 @@ different float order, and it moves logprobs as much as KROW does, so ~0.13 is w
 (this also explains FA3's "unexplained" 0.10-0.13: V-skip was not inaccurate, only slow). Side finding worth keeping: at depth the
 model's output is chaotic in the float order — long-context quality claims need task-level measures (lq1 / lq2), not text identity.
 KROW stays opt-in in code until the next build (no preemption for a default flip); launch configs set it.
+
+**fa5probe (2026-09-21): exact / bounded-error block-sparse attention is DEAD on this model.** Real Q and K of all 10 attention
+layers at 120k (summarization prompt), decode steps 8 / 32 / 64, per KV-head group of 8 query heads, 128-position tiles, n=60:
+tiles with every weight < 1e-8 of the max: **0.0%** (oracle, so no scheme can do better); < 1e-6: 0.0% for the group (0-19% per
+single head); < 1e-4: 10.9% mean for the group (0-63%), 5-80% per head. The three per-tile upper bounds (Quest min/max on the
+stored Hadamard-rotated channels, centroid + radius, min/max after a plain un-rotation) PROVE 0.0% even at 1e-4. The logit range is
+compressed (QK-norm): nothing is provably negligible. This is also why FA3's V-skip only ever paid its branch cost — nothing was
+under its threshold. What IS there: mass concentration — the top 1% of tiles hold 63% of the softmax mass on average (35-88%), the
+top 5% hold 79% (53-98%). Exploiting that is LOSSY top-k attention (3-47% of the mass dropped at 5%), not a bounded-error
+optimization; under accuracy-first it would need lq-style task proof per threshold and is parked. Long-context kernel work stops
+at FA4 unless a new idea shows up.
+Next C++ target is the SHORT-context round instead: ~31 of its 58 ms are CPU expert matvecs (~12 miss pairs x 3.4 M weights per
+layer in ~0.78 ms = ~9 G MAC/s per core, about a third of what AVX2 int8 can do); prof2 puts only ~60% of CPU-phase thread time in
+the q2_K / q3_K dots, the rest is per-op barriers on 65-microsecond matvecs. Plan: a task-parallel fused expert FFN on the CPU
+backend (a thread owns whole experts: gate_up -> act -> down with no barrier in between, one barrier per layer). Ceiling ~+26% on
+the round, realistic +10-15%; needs a perf profile of the CPU phase alone first.
