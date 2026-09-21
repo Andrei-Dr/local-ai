@@ -713,3 +713,20 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   the per-head dot/accumulate work and its fine-grained threading, not by K/V dequant. The real fix is a throughput-oriented
   quantized decode kernel (each thread = many keys, full-width int8 dots, GQA-shared K unpack); prof3 sizes it.
   (3) the 262k OOM cause above replaces "cache 8 does not fit" as the explanation.
+
+## RESULT 2026-09-21 (Fable) — ctx1d + ctx1c: 262k decode works; two-binary two-phase verified; MTP is a net loss at depth
+- **262k decode [M, n=1], from the kept slot (239,170 tokens restored in 0.87-0.97 s, request total ~10 s vs 2 h 10 min cold):**
+  cache 0 / ub 128 / FA1: decode **8.68 t/s**, compute buffer 698 MiB, 3322 MiB VRAM — it FITS once the expert cache is 0.
+  ub 4 + FA2 (mode 2): compute buffer **7.11 MiB** (the ~512 MiB F16-KV reserve is gone, hypothesis confirmed), cache 16 = 8.67,
+  cache 20 = 8.79 t/s (3482 MiB); Pascal build same (8.78). Suffix prefill 9.2 t/s at ub 4 vs 14.3 at ub 128. All replies coherent.
+  **Reading: at 240k the expert cache is worth ~1% — the round (~114 ms) is attention.** Simplest 262k decode config = cache 0,
+  ub 128, FA1. The lever left for long-context decode is the attention kernel itself (throughput-oriented quantized decode
+  kernel; prof3 sizes it), not VRAM.
+- **Prefill server on the REAL server, 32k, cache 0 [M, n=1]:** arch 75 ub 2048 = 136.4 t/s (199 s); **Pascal-path build ub 2048 =
+  328.1 t/s (85 s, 2.4x); ub 4096 = 362.7 t/s (77 s, 2.66x)**, compute buffer 1014 MiB at ub 4096. A slot written by the Pascal
+  build restores under the arch-75 decode server (3.1 s, decode 28.9 t/s, coherent) => **two-phase = two binaries, verified.**
+- **ctx1c: the in-model MTP head is NOT better after a restore, and "blind after restore" was my wrong inference.** Acceptance
+  was already 29/66 = 44% in the fresh presave run (no restore involved) and 27/71 = 38% after the restore; decode 18.5 t/s with
+  MTP vs 23.75 without, same slot. ctx1b's -md head: 36%. So MTP acceptance is LOW AT 27k DEPTH on this prompt regardless of
+  head or restore (it is ~85% in the short benchmarks) => long-context decode runs WITHOUT speculation until someone shows
+  otherwise; worth one row on a second prompt type before calling it general.

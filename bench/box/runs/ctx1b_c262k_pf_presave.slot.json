@@ -1,0 +1,1 @@
+{"mode": "presave", "prompt_chars": 802469, "rows": [{"prompt_n": 239107, "cache_n": 0, "prefill_tps": 30.767029243539717, "decode_tps": 8.2678358873947, "wall_s": 7779.25, "slot_bytes": 1450180664, "slot_ms": 706.261, "base_n": 239171}]}
