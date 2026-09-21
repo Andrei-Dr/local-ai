@@ -1,0 +1,34 @@
+    preflight: governor=performance thp=[always] mem_avail=14656MiB swap_used=642MiB gpu=17MiB,47,P8
+##### ctx1c_c32k_pf_presave mode=presave ctx=32768 reps=13 pre_gen=64 drop=0 | --moe-expert-cache 0 -ub 2048 -b 2048 --spec-type draft-mtp --spec-draft-n-max 2
+ctx1c_c32k_pf_presave PRESAVE | prompt_n 26824 | cache_n 0 | prefill     129.8 t/s | decode 15.04 t/s | wall  210.89 s | slot 617263300 bytes in 345.993 ms
+    vram: 3120 MiB
+    sched_reserve:      CUDA0 compute buffer size =   654.07 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   160.07 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =    64.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =   340.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   160.07 MiB
+    sched_reserve:      CUDA0 compute buffer size =   340.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   160.07 MiB
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    1     33     33, #gen drafts =     33, #acc drafts =    19, #gen tokens =     66, #acc tokens =    29, #mean acc len =
+##### ctx1c_c32k_mtp_extend mode=extend ctx=32768 reps=13 pre_gen=64 drop=0 | --moe-expert-cache 16 -ub 128 -b 256 --spec-type draft-mtp --spec-draft-n-max 2
+ctx1c_c32k_mtp_extend EXTEND | prompt_n 32 | cache_n 26887 | prefill      31.8 t/s | decode 18.54 t/s | wall    4.45 s | slot 617263300 bytes in 310.081 ms
+    reply: '1. **N1 Drafting Net Loss on GDN Models:** Using n-gram drafts longer than `n_rs_seq` on GDN models (like Qwen) forces a checkpoint+replay path that causes a si'
+    vram: 3044 MiB
+    sched_reserve:      CUDA0 compute buffer size =   136.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =    64.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =   156.25 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =   156.25 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    1     36     36, #gen drafts =     36, #acc drafts =    18, #gen tokens =     71, #acc tokens =    27, #mean acc len =
+##### ctx1c_c32k_nomtp_extend mode=extend ctx=32768 reps=13 pre_gen=64 drop=0 | --moe-expert-cache 16 -ub 128 -b 256
+ctx1c_c32k_nomtp_extend EXTEND | prompt_n 32 | cache_n 26887 | prefill      32.8 t/s | decode 23.75 t/s | wall    3.64 s | slot 617263300 bytes in 311.474 ms
+    reply: '1. **N1 Drafting Net Loss on GDN Models:** Using n-gram drafts longer than `n_rs_seq` (e.g., n=3) on GDN models like Qwen forces a costly checkpoint+replay path'
+    vram: 2644 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 16 slots, 2 inserts/step, admit 3 misses / 16 tokens, 659.0 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   136.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+CTX1C_DONE

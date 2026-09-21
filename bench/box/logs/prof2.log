@@ -1,0 +1,45 @@
+    preflight: governor=performance thp=[always] mem_avail=14615MiB swap_used=639MiB gpu=17MiB,45,P8
+model: /ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2-expQ2K-downQ3K.gguf
+########## A. perf, server attached, warm cache ##########
+prof2_perf     code    385 tok | wall 48.23 t/s | decode 55.86 t/s | prefill   38.7 t/s | accept 246/278=0.88    | vram perf | '```python\nfrom collections import OrderedDict\nfr'
+prof2_perf     reason  600 tok | wall 49.25 t/s | decode 56.31 t/s | prefill   38.8 t/s | accept 385/426=0.90    | vram perf | 'To solve this problem, we will use the formula:\n'
+0.47.849.236 I moe-cache: steps 2304 | hit rate 50.1% | uploads 35074 (38088.2 MiB, 16.53 MiB/step) | evictions 34034 | warm-up uploads 3858
+0.47.980.475 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    573    573, #gen drafts =    573, #acc drafts =   525, #gen tokens =   1145, #acc tokens =  1007, #mean acc len = 2.76, #acc rate/pos
+--- by dso,symbol
+grep: write error    47.93%  libgomp.so.1.0.0           [.] 0x00000000000256c0                                                                                                   
+    18.74%  libggml-cpu.so.0.24.0      [.] ggml_vec_dot_q2_K_q8_K                                                                                               
+    12.94%  libggml-cpu.so.0.24.0      [.] ggml_vec_dot_q3_K_q8_K                                                                                               
+     1.97%  libggml-cpu.so.0.24.0      [.] ggml_graph_compute_thread.isra.0                                                                                     
+     1.75%  libcuda.so.580.173.02      [.] 0x000000000046088c                                                                                                   
+     1.68%  libcuda.so.580.173.02      [.] 0x000000000022be17                                                                                                   
+     1.35%  libgomp.so.1.0.0           [.] 0x00000000000258a0                                                                                                   
+     0.52%  libggml-base.so.0.24.0     [.] quantize_row_q8_K_ref                                                                                                
+     0.51%  libcuda.so.580.173.02      [.] 0x0000000000460888                                                                                                   
+     0.39%  libcuda.so.580.173.02      [.] 0x0000000000460854                                                                                                   
+     0.39%  libcuda.so.580.173.02      [.] 0x0000000000460848                                                                                                   
+     0.37%  libcuda.so.580.173.02      [.] 0x0000000000460891                                                                                                   
+     0.36%  [vdso]                     [.] 0x0000000000000b00                                                                                                   
+     0.32%  [kernel.kallsyms]          [k] native_irq_return_iret                                                                                               
+     0.31%  libgomp.so.1.0.0           [.] 0x00000000000256cf                                                                                                   
+     0.27%  libcuda.so.580.173.02      [.] 0x000000000046088e                                                                                                   
+     0.27%  libcuda.so.580.173.02      [.] 0x000000000046084b                                                                                                   
+     0.24%  [kernel.kallsyms]          [k] sync_regs                                                                                                            
+     0.23%  libcuda.so.580.173.02      [.] 0x000000000021f6bd                                                                                                   
+     0.23%  [kernel.kallsyms]          [k] native_flush_tlb_one_user                                                                                            
+     0.23%  libcuda.so.580.173.02      [.] 0x000000000046084f                                                                                                   
+     0.22%  libcuda.so.580.173.02      [.] 0x0000000000460894                                                                                                   
+     0.22%  libgomp.so.1.0.0           [.] 0x00000000000256c2                                                                                                   
+     0.22%  libc.so.6                  [.] __memmove_avx_unaligned_erms                                                                                         
+     0.20%  libllama-common.so.0.4.1   [.] common_sampler_sample(common_sampler*, llama_context*, int, bool)                                                    
+     0.18%  libllama.so.0.4.1          [.] llama_token_data_array_partial_sort_inplace(llama_token_data_array*, int)                                            
+     0.17%  libcuda.so.580.173.02      [.] 0x000000000046087b                                                                                                   
+     0.15%  libcuda.so.580.173.02      [.] 0x00000000004608a1                                                                                                   
+: Broken pipe
+--- by thread
+########## B. nsys, GPU timeline ##########
+prof2_nsys     code    300 tok | wall 43.29 t/s | decode 52.64 t/s | prefill   34.6 t/s | accept 189/220=0.86    | vram nsys | '```python\nfrom collections import OrderedDict\nfr'
+prof2_nsys     reason  300 tok | wall 42.81 t/s | decode 55.06 t/s | prefill   38.1 t/s | accept 193/210=0.92    | vram nsys | 'To determine when the second train catches the f'
+    no nsys report written: Generating '/tmp/nsys-report-35d5.qdstrm'
+Generated:
+    /ai/bench/prof2_nsys.qdstrm
+PROF2_DONE

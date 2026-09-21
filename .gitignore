@@ -5,3 +5,4 @@ __pycache__/
 bench/traces/*.bin
 # local clones used for rebasing the patch series
 src/
+bench/box/traces/

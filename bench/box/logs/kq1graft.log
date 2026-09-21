@@ -1,0 +1,56 @@
+    preflight: governor=performance thp=[always] mem_avail=14625MiB swap_used=641MiB gpu=17MiB,44,P8
+  hparam qwen35moe.block_count: 40 -> 41
+  hparam qwen35moe.nextn_predict_layers: (absent) -> 1
+grafted 20 tensors (0.444 GiB) onto 733 (12.017 GiB); left out of HEAD: ['output.weight', 'output_norm.weight', 'token_embd.weight']; block_count 40 -> 41, nextn 1; wrote /ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2-expQ2K-downQ3K-MTP.gguf.part
+grafted file: 13390634432 bytes
+##### kq1g_k2_md_c26 | -ot exps=CPU --moe-expert-cache 26 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14540MiB swap_used=643MiB gpu=17MiB,42,P8
+kq1g_k2_md_c26 code    300 tok | wall 44.32 t/s | decode 53.95 t/s | prefill   35.0 t/s | accept 189/220=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+kq1g_k2_md_c26 reason  300 tok | wall 42.69 t/s | decode 54.61 t/s | prefill   38.7 t/s | accept 189/220=0.86    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+kq1g_k2_md_c26 edit    300 tok | wall 23.24 t/s | decode 58.16 t/s | prefill   48.5 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq1g_k2_md_c26 long    300 tok | wall  5.86 t/s | decode 45.61 t/s | prefill   48.9 t/s | accept 172/253=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[kq1g_k2_md_c26]: GPU util avg  90% max 100% | power avg  52W max  86W /100W | PCIe->GPU avg  2.11 max  5.44 GB/s (~13 cap) | CPU busy  265% of 1200% | DRAM read avg   4.9 max  11.6 GB/s (~38 cap)
+    moe-cache: steps 768 | hit rate 51.7% | uploads 12292 (13348.3 MiB, 17.38 MiB/step) | evictions 11252 | warm-up uploads 1955
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    2    220    220, #gen drafts =    220, #acc drafts =   198, #gen tokens =    440, #acc tokens =   378, #mean acc len = 2.72, #acc rate/pos
+    moe-cache: steps 1024 | hit rate 50.0% | uploads 17440 (18938.8 MiB, 18.49 MiB/step) | evictions 16400 | warm-up uploads 3276
+    moe-cache: steps 1280 | hit rate 49.5% | uploads 21063 (22873.1 MiB, 17.87 MiB/step) | evictions 20023 | warm-up uploads 3276
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    3    320    320, #gen drafts =    320, #acc drafts =   298, #gen tokens =    640, #acc tokens =   577, #mean acc len = 2.80, #acc rate/pos
+    moe-cache: steps 1536 | hit rate 49.0% | uploads 29070 (31568.2 MiB, 20.55 MiB/step) | evictions 28030 | warm-up uploads 7437
+    moe-cache: steps 1792 | hit rate 48.8% | uploads 32924 (35753.4 MiB, 19.95 MiB/step) | evictions 31884 | warm-up uploads 7437
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    447    447, #gen drafts =    447, #acc drafts =   396, #gen tokens =    893, #acc tokens =   749, #mean acc len = 2.68, #acc rate/pos
+##### kq1g_k2_inmodel_c26 | -ot exps=CPU --moe-expert-cache 26 -ub 128 -b 256 --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14547MiB swap_used=642MiB gpu=17MiB,50,P0
+kq1g_k2_inmodel_c26 code    300 tok | wall 42.03 t/s | decode 50.64 t/s | prefill   34.8 t/s | accept 191/216=0.88    | vram 2906 MiB | '```python\nfrom collections import OrderedDict\nfr'
+kq1g_k2_inmodel_c26 reason  300 tok | wall 38.61 t/s | decode 48.40 t/s | prefill   37.7 t/s | accept 188/221=0.85    | vram 2906 MiB | 'To determine when the second train catches the f'
+kq1g_k2_inmodel_c26 edit    300 tok | wall 22.86 t/s | decode 56.77 t/s | prefill   48.0 t/s | accept 199/200=0.99    | vram 2906 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq1g_k2_inmodel_c26 long    300 tok | wall  5.77 t/s | decode 42.99 t/s | prefill   48.4 t/s | accept 169/259=0.65    | vram 2906 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[kq1g_k2_inmodel_c26]: GPU util avg  89% max 100% | power avg  54W max  81W /100W | PCIe->GPU avg  2.04 max  5.36 GB/s (~13 cap) | CPU busy  286% of 1200% | DRAM read avg   5.1 max  12.1 GB/s (~38 cap)
+    moe-cache: steps 768 | hit rate 51.9% | uploads 12785 (14214.6 MiB, 18.51 MiB/step) | evictions 11719 | warm-up uploads 1997
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    2    219    219, #gen drafts =    219, #acc drafts =   203, #gen tokens =    437, #acc tokens =   379, #mean acc len = 2.73, #acc rate/pos
+    moe-cache: steps 1024 | hit rate 50.4% | uploads 18030 (20004.2 MiB, 19.54 MiB/step) | evictions 16964 | warm-up uploads 3321
+    moe-cache: steps 1280 | hit rate 49.9% | uploads 21777 (24132.7 MiB, 18.85 MiB/step) | evictions 20711 | warm-up uploads 3321
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    3    319    319, #gen drafts =    319, #acc drafts =   303, #gen tokens =    637, #acc tokens =   578, #mean acc len = 2.81, #acc rate/pos
+    moe-cache: steps 1536 | hit rate 49.4% | uploads 30037 (33248.7 MiB, 21.65 MiB/step) | evictions 28971 | warm-up uploads 7551
+    moe-cache: steps 1792 | hit rate 49.2% | uploads 34137 (37814.8 MiB, 21.10 MiB/step) | evictions 33071 | warm-up uploads 7551
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    449    449, #gen drafts =    449, #acc drafts =   401, #gen tokens =    896, #acc tokens =   747, #mean acc len = 2.66, #acc rate/pos
+##### kq1g_k2_inmodel_c38 | -ot exps=CPU --moe-expert-cache 38 -ub 128 -b 256 --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14653MiB swap_used=642MiB gpu=17MiB,53,P0
+kq1g_k2_inmodel_c38 code    300 tok | wall 45.97 t/s | decode 56.64 t/s | prefill   34.6 t/s | accept 189/220=0.86    | vram 3446 MiB | '```python\nfrom collections import OrderedDict\nfr'
+kq1g_k2_inmodel_c38 reason  300 tok | wall 43.44 t/s | decode 56.15 t/s | prefill   38.0 t/s | accept 190/218=0.87    | vram 3446 MiB | 'To determine when the second train catches the f'
+kq1g_k2_inmodel_c38 edit    300 tok | wall 23.33 t/s | decode 60.11 t/s | prefill   47.8 t/s | accept 198/202=0.98    | vram 3446 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq1g_k2_inmodel_c38 long    300 tok | wall  5.80 t/s | decode 46.71 t/s | prefill   48.1 t/s | accept 178/241=0.74    | vram 3446 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[kq1g_k2_inmodel_c38]: GPU util avg  91% max 100% | power avg  56W max  88W /100W | PCIe->GPU avg  2.76 max 12.23 GB/s (~13 cap) | CPU busy  271% of 1200% | DRAM read avg   4.7 max  10.7 GB/s (~38 cap)
+    moe-cache: steps 768 | hit rate 60.2% | uploads 11509 (12770.0 MiB, 16.63 MiB/step) | evictions 9951 | warm-up uploads 2791
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    2    219    219, #gen drafts =    219, #acc drafts =   199, #gen tokens =    438, #acc tokens =   379, #mean acc len = 2.73, #acc rate/pos
+    moe-cache: steps 1024 | hit rate 58.8% | uploads 16725 (18508.2 MiB, 18.07 MiB/step) | evictions 15167 | warm-up uploads 4652
+    moe-cache: steps 1280 | hit rate 58.7% | uploads 19528 (21591.8 MiB, 16.87 MiB/step) | evictions 17970 | warm-up uploads 4652
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    3    320    320, #gen drafts =    320, #acc drafts =   299, #gen tokens =    640, #acc tokens =   577, #mean acc len = 2.80, #acc rate/pos
+    moe-cache: steps 1536 | hit rate 58.4% | uploads 28721 (31707.8 MiB, 20.64 MiB/step) | evictions 27163 | warm-up uploads 10541
+    moe-cache: steps 1792 | hit rate 58.5% | uploads 31991 (35338.2 MiB, 19.72 MiB/step) | evictions 30433 | warm-up uploads 10541
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    441    441, #gen drafts =    441, #acc drafts =   404, #gen tokens =    881, #acc tokens =   755, #mean acc len = 2.71, #acc rate/pos
+--- temp-0 text identity, separate head vs in-model head at 26 slots (lossless speculation: divergences can only be numeric tie-breaks)
+    code  DIVERGES at char 392: 'self.capacity = capa' vs 'if capacity <= 0:\n  '
+    edit  IDENTICAL
+    long  DIVERGES at char 255: 'triggering a perform' vs 'introducing a perfor'
+    reason  DIVERGES at char 3: 'solve this problem, ' vs 'determine when the s'
+KQ1GRAFT_DONE

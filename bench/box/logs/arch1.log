@@ -1,0 +1,15 @@
+    preflight: governor=performance thp=[always] mem_avail=14219MiB swap_used=469MiB gpu=17MiB,35,P8
+##### build75
+The following devices will have suboptimal performance due to a lack of tensor cores:
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |           pp512 |        113.44 ± 0.96 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |            tg64 |         28.76 ± 0.09 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |    pp3 @ d32768 |         23.48 ± 0.00 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |   tg32 @ d32768 |         17.94 ± 0.00 |
+llama_bench: error: failed to create context with model '/ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf'
+##### build6180
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |           pp512 |        336.08 ± 5.20 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |            tg64 |         26.42 ± 0.08 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |    pp3 @ d32768 |         17.93 ± 0.00 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |   tg32 @ d32768 |         19.04 ± 0.00 |
+llama_bench: error: failed to create context with model '/ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf'
+ARCH1_DONE

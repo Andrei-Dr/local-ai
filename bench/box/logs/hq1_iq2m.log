@@ -1,0 +1,4 @@
+    preflight: governor=performance thp=[always] mem_avail=14444MiB swap_used=551MiB gpu=17MiB,46,P8
+    preflight: governor=performance thp=[always] mem_avail=14432MiB swap_used=551MiB gpu=17MiB,46,P8
+  aime/2024-60                 BAD 24576 tok  31.35 t/s length
+  aime/2024-61                 BAD 24576 tok  33.68 t/s length

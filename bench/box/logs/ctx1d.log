@@ -1,0 +1,62 @@
+    preflight: governor=performance thp=[always] mem_avail=14605MiB swap_used=638MiB gpu=17MiB,39,P8
+########## A. 262k decode from the kept slot ##########
+##### ctx1d_c262k_c0_ub128 build=build75 gqa=1 mode=extend ctx=262144 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 0 -ub 128 -b 256
+ctx1d_c262k_c0_ub128 EXTEND | prompt_n 32 | cache_n 239170 | prefill      14.3 t/s | decode  8.68 t/s | wall    9.57 s | slot 1450180664 bytes in 972.512 ms
+    reply: '1. **Rebase Hazard:** Merging PR #28391 could silently activate two drafters simultaneously if `--spec-type` is not explicitly set, potentially causing performa'
+    vram: 3322 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =  1440.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =   698.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    66.27 MiB
+##### ctx1d_c262k_c16_ub4 build=build75 gqa=2 mode=extend ctx=262144 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 16 -ub 4 -b 4
+ctx1d_c262k_c16_ub4 EXTEND | prompt_n 32 | cache_n 239170 | prefill       9.2 t/s | decode  8.67 t/s | wall   10.85 s | slot 1450180664 bytes in 879.293 ms
+    reply: "1. **N1 Drafting Cliff Risk:** The performance model shows a significant cliff at k=5 where expert fan-out increases, meaning gains from longer drafts (like N1'"
+    vram: 3326 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 16 slots, 2 inserts/step, admit 3 misses / 16 tokens, 659.0 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =  1440.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =     7.11 MiB
+    sched_reserve:  CUDA_Host compute buffer size =     2.77 MiB
+##### ctx1d_c262k_c20_ub4 build=build75 gqa=2 mode=extend ctx=262144 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 20 -ub 4 -b 4
+ctx1d_c262k_c20_ub4 EXTEND | prompt_n 32 | cache_n 239170 | prefill       9.1 t/s | decode  8.79 t/s | wall   10.77 s | slot 1450180664 bytes in 865.474 ms
+    reply: '1. **N1 Drafting Cliff Risk:** The hybrid n-gram drafting implementation is currently blocked on a "cliff" where `n_min = n_max = 2` discards valid 1-token hits'
+    vram: 3482 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 20 slots, 2 inserts/step, admit 3 misses / 16 tokens, 814.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =  1440.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =     7.11 MiB
+    sched_reserve:  CUDA_Host compute buffer size =     2.77 MiB
+##### ctx1d_c262k_c16_ub4_pascal build=build6180 gqa=2 mode=extend ctx=262144 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 16 -ub 4 -b 4
+ctx1d_c262k_c16_ub4_pascal EXTEND | prompt_n 32 | cache_n 239170 | prefill       9.4 t/s | decode  8.78 t/s | wall   10.65 s | slot 1450180664 bytes in 859.115 ms
+    reply: '1. **N1 Drafting Cliff:** The hybrid n-gram drafting is blocked on Qwen (GDN) models because drafts longer than `n_rs_seq` trigger a costly checkpoint+replay pa'
+    vram: 3324 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 16 slots, 2 inserts/step, admit 3 misses / 16 tokens, 659.0 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =  1440.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =     7.11 MiB
+    sched_reserve:  CUDA_Host compute buffer size =     2.77 MiB
+########## B. prefill server: arch 75 vs the Pascal-path build (32k, cache 0) ##########
+##### ctx1d_c32k_pf_b75_ub2048 build=build75 gqa=1 mode=presave ctx=32768 | --moe-expert-cache 0 -ub 2048 -b 2048
+ctx1d_c32k_pf_b75_ub2048 PRESAVE | prompt_n 26824 | cache_n 0 | prefill     136.4 t/s | decode 23.06 t/s | wall  199.41 s | slot 617263300 bytes in 349.908 ms
+    vram: 2516 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =   654.07 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   160.07 MiB
+##### ctx1d_c32k_pf_b6180_ub2048 build=build6180 gqa=1 mode=presave ctx=32768 | --moe-expert-cache 0 -ub 2048 -b 2048
+ctx1d_c32k_pf_b6180_ub2048 PRESAVE | prompt_n 26824 | cache_n 0 | prefill     328.1 t/s | decode 18.31 t/s | wall   85.20 s | slot 617263300 bytes in 360.263 ms
+    vram: 2516 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =   654.07 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   160.07 MiB
+##### ctx1d_c32k_pf_b6180_ub4096 build=build6180 gqa=1 mode=presave ctx=32768 | --moe-expert-cache 0 -ub 4096 -b 4096
+ctx1d_c32k_pf_b6180_ub4096 PRESAVE | prompt_n 26824 | cache_n 0 | prefill     362.7 t/s | decode 23.64 t/s | wall   76.63 s | slot 617263300 bytes in 327.828 ms
+    vram: 2914 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =  1014.14 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   320.14 MiB
+--- e) slot written by the Pascal build, restored by the arch-75 decode server
+##### ctx1d_c32k_xbuild_extend build=build75 gqa=1 mode=extend ctx=32768 | --moe-expert-cache 24 -ub 128 -b 256
+ctx1d_c32k_xbuild_extend EXTEND | prompt_n 32 | cache_n 26887 | prefill      34.9 t/s | decode 28.90 t/s | wall    3.11 s | slot 617263300 bytes in 317.761 ms
+    reply: '1. **N1 Draft Rejection on GDN Models:** Longer n-gram drafts (e.g., 16 tokens) on GDN models trigger a costly checkpoint+replay path that causes a 24% performa'
+    vram: 2954 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =   136.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+CTX1D_DONE

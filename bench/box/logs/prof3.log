@@ -1,0 +1,6 @@
+    preflight: governor=performance thp=[always] mem_avail=14624MiB swap_used=639MiB gpu=17MiB,50,P8
+prof3_c131k_extend EXTEND | prompt_n 27 | cache_n 119632 | prefill      17.0 t/s | decode 11.44 t/s | wall   12.74 s | slot 758294720 bytes in 502.041 ms
+    no nsys report: Generating '/tmp/nsys-report-f801.qdstrm'
+Generated:
+    /ai/bench/prof3_nsys.qdstrm
+PROF3_DONE

@@ -1,0 +1,33 @@
+    preflight: governor=performance thp=[always] mem_avail=14561MiB swap_used=600MiB gpu=17MiB,43,P8
+##### kld1_base_q6 | 03:06:00 | saving reference logits (slow: the file streams from NVMe)
+    15.05.204.279 I Final estimate: PPL = 5.8665 +/- 0.13980
+    reference: 5065891540 bytes, done 03:21:07
+##### kld1_IQ2_M | 03:21:07 | 11659235456 bytes
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+    Mean PPL(Q)                   :   6.919819 ±   0.168293
+    Mean ln(PPL(Q)/PPL(base))     :   0.165738 ±   0.007456
+    Mean PPL(Q)/PPL(base)         :   1.180264 ±   0.008800
+    Mean PPL(Q)-PPL(base)         :   1.056878 ±   0.055438
+    Mean    KLD:   0.218799 ±   0.003886
+    Maximum KLD:   6.282579
+    99.9%   KLD:   4.372207
+    99.0%   KLD:   2.001481
+    Median  KLD:   0.109238
+    Mean    Δp: -3.785 ± 0.135 %
+    RMS Δp    : 14.130 ± 0.257 %
+    Same top p: 79.784 ± 0.398 %
+##### kld1_K2-expQ2K-downQ3K | 03:24:49 | 12913676416 bytes
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+    Mean PPL(Q)                   :   6.832051 ±   0.164450
+    Mean ln(PPL(Q)/PPL(base))     :   0.152974 ±   0.007315
+    Mean PPL(Q)/PPL(base)         :   1.165294 ±   0.008524
+    Mean PPL(Q)-PPL(base)         :   0.969110 ±   0.052567
+    Mean    KLD:   0.218138 ±   0.003675
+    Maximum KLD:   6.163810
+    99.9%   KLD:   4.008780
+    99.0%   KLD:   1.883502
+    Median  KLD:   0.114214
+    Mean    Δp: -3.893 ± 0.134 %
+    RMS Δp    : 14.044 ± 0.236 %
+    Same top p: 79.941 ± 0.397 %
+KLD1_DONE

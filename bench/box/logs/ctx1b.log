@@ -1,0 +1,118 @@
+    preflight: governor=performance thp=[always] mem_avail=14375MiB swap_used=498MiB gpu=17MiB,54,P8
+##### ctx1b_c16k_g64_presave mode=presave ctx=16384 reps=6 pre_gen=64 drop=0 | 
+ctx1b_c16k_g64_presave PRESAVE | prompt_n 12397 | cache_n 0 | prefill      84.5 t/s | decode 31.67 t/s | wall  148.69 s | slot 321394384 bytes in 146.689 ms
+    vram: 2678 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   186.02 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    24.02 MiB
+##### ctx1b_c16k_g64_d0_extend mode=extend ctx=16384 reps=6 pre_gen=64 drop=0 | 
+ctx1b_c16k_g64_d0_extend EXTEND | prompt_n 32 | cache_n 12460 | prefill      35.4 t/s | decode 30.45 t/s | wall    3.00 s | slot 321394384 bytes in 627.998 ms
+    reply: '1. **N1 Drafting Rejection:** The hybrid n-gram drafting (N1) may fail to meet the +3% gain threshold on the edit workload or cause a >1% performance drop on co'
+    vram: 2684 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   186.02 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    24.02 MiB
+##### ctx1b_c16k_g64_d1_extend mode=extend ctx=16384 reps=6 pre_gen=64 drop=1 | 
+ctx1b_c16k_g64_d1_extend EXTEND | prompt_n 31 | cache_n 12460 | prefill      35.7 t/s | decode 28.88 t/s | wall    3.05 s | slot 321394384 bytes in 551.038 ms
+    reply: '1. **N1 Drafting Performance Risk:** The hybrid n-gram drafting (N1) may fail to meet the +3% gain threshold on the edit workload or could cause a -1% regressio'
+    vram: 2684 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   186.02 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    24.02 MiB
+##### ctx1b_c16k_g1_presave mode=presave ctx=16384 reps=6 pre_gen=1 drop=0 | 
+ctx1b_c16k_g1_presave PRESAVE | prompt_n 12397 | cache_n 0 | prefill      84.5 t/s | decode  0.00 t/s | wall  146.67 s | slot 320102380 bytes in 149.416 ms
+    vram: 2678 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   186.02 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    24.02 MiB
+##### ctx1b_c16k_g1_d0_extend mode=extend ctx=16384 reps=6 pre_gen=1 drop=0 | 
+ctx1b_c16k_g1_d0_extend EXTEND | prompt_n 32 | cache_n 12397 | prefill      28.6 t/s | decode 30.64 t/s | wall    3.18 s | slot 320102380 bytes in 768.391 ms
+    reply: '1. **N1 Drafting Performance Risk:** The hybrid n-gram drafting (N1) may cause a -24% performance drop on the edit workload for GDN models if the draft length e'
+    vram: 2684 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   186.02 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    24.02 MiB
+##### ctx1b_c16k_g1_d1_extend mode=extend ctx=16384 reps=6 pre_gen=1 drop=1 | 
+ctx1b_c16k_g1_d1_extend EXTEND | prompt_n 31 | cache_n 12397 | prefill      29.7 t/s | decode 24.65 t/s | wall    3.60 s | slot 320102380 bytes in 152.438 ms
+    reply: '1. **N1 Drafting Performance Risk:** The hybrid n-gram drafting (N1) may result in a net loss on code/reason workloads if it fails to meet the +3% gain threshol'
+    vram: 2684 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   186.02 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    24.02 MiB
+    extend gate: PASS with pre_gen=64 drop=0 => deep rungs ON
+##### ctx1b_c32k_pf_presave mode=presave ctx=32768 reps=13 pre_gen=64 drop=0 | --moe-expert-cache 0 -ub 2048 -b 2048
+ctx1b_c32k_pf_presave PRESAVE | prompt_n 26824 | cache_n 0 | prefill     135.9 t/s | decode 19.07 t/s | wall  200.65 s | slot 617263300 bytes in 339.579 ms
+    vram: 2516 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   654.07 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   160.07 MiB
+##### ctx1b_c32k_dec_extend mode=extend ctx=32768 reps=13 pre_gen=64 drop=0 | --moe-expert-cache 24 -ub 128 -b 256
+ctx1b_c32k_dec_extend EXTEND | prompt_n 32 | cache_n 26887 | prefill      34.6 t/s | decode 28.55 t/s | wall    3.14 s | slot 617263300 bytes in 305.295 ms
+    reply: '1. **N1 Draft Rejection on GDN Models:** Using n-gram drafts longer than `n_rs_seq` (e.g., 16 tokens) on GDN models like Qwen forces a costly checkpoint+replay '
+    vram: 2954 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   136.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+##### ctx1b_c32k_mtp_extend mode=extend ctx=32768 reps=13 pre_gen=64 drop=0 | --moe-expert-cache 8 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2
+ctx1b_c32k_mtp_extend EXTEND | prompt_n 32 | cache_n 26887 | prefill      34.0 t/s | decode 17.16 t/s | wall    4.62 s | slot 617263300 bytes in 317.264 ms
+    reply: '1. **N1 Drafting Net Loss on GDN:** Implementing longer n-gram drafts on GDN models (like Qwen) incurs a -24% performance penalty due to recurrent checkpoint/re'
+    vram: 3276 MiB
+    sched_reserve:      CUDA0 compute buffer size =   136.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =    64.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =    20.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+    sched_reserve:      CUDA0 compute buffer size =    20.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    10.00 MiB
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    1     36     36, #gen drafts =     36, #acc drafts =    18, #gen tokens =     72, #acc tokens =    26, #mean acc len =
+##### ctx1b_c131k_pf_presave mode=presave ctx=131072 reps=58 pre_gen=64 drop=0 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 0 -ub 1024 -b 2048
+ctx1b_c131k_pf_presave PRESAVE | prompt_n 119569 | cache_n 0 | prefill      56.8 t/s | decode 10.71 t/s | wall 2109.72 s | slot 758294720 bytes in 405.493 ms
+    vram: 2648 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =   720.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   718.04 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   272.30 MiB
+##### ctx1b_c131k_dec_extend mode=extend ctx=131072 reps=58 pre_gen=64 drop=0 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 24 -ub 128 -b 256
+ctx1b_c131k_dec_extend EXTEND | prompt_n 32 | cache_n 119632 | prefill      21.6 t/s | decode 12.43 t/s | wall    6.60 s | slot 758294720 bytes in 434.897 ms
+    reply: '1. **N1 Drafting Cliff:** The n-gram drafting implementation is sensitive to `n_min` settings, where setting `n_min = n_max = 2` discards valid 1-token hits, po'
+    vram: 3310 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   720.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   410.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    34.27 MiB
+##### ctx1b_c262k_pf_presave mode=presave ctx=262144 reps=116 pre_gen=64 drop=0 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 0 -ub 512 -b 1024
+ctx1b_c262k_pf_presave PRESAVE | prompt_n 239107 | cache_n 0 | prefill      30.8 t/s | decode  8.27 t/s | wall 7779.25 s | slot 1450180664 bytes in 706.261 ms
+    vram: 3564 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =  1440.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   926.02 MiB
+    sched_reserve:  CUDA_Host compute buffer size =   264.28 MiB
+##### ctx1b_c262k_dec_extend mode=extend ctx=262144 reps=116 pre_gen=64 drop=0 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 8 -ub 128 -b 256
+HTTP error on /completion: Remote end closed connection without response
+    vram: 3674 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 8 slots, 2 inserts/step, admit 3 misses / 16 tokens, 348.9 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =  1440.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    sched_reserve:      CUDA0 compute buffer size =   698.00 MiB
+    sched_reserve:  CUDA_Host compute buffer size =    66.27 MiB
+    CUDA error: out of memory
+    ctx1b_c262k_dec_extend: slotclient exit 1
+--- verdict input: runs/ctx1b_*.slot.json. extend rows: prompt_n ~= ext_n + a coherent reply = restore works; decode_tps =
+    decode at depth under the decode config. Kept slots: 758294720 /ai/bench/slots/ctx1b_c131k.slot 1450180664 /ai/bench/slots/ctx1b_c262k.slot 
+CTX1B_DONE

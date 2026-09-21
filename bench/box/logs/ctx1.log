@@ -1,0 +1,86 @@
+    preflight: governor=performance thp=[always] mem_avail=14422MiB swap_used=346MiB gpu=17MiB,53,P8
+##### ctx1_c16k_save mode=save ctx=16384 reps=6 |  
+ctx1_c16k_save SAVE | prompt_n 12397 | cache_n 0 | prefill      84.5 t/s | decode 27.85 t/s | wall  149.01 s | slot 321394384 bytes in 158.109 ms
+    vram: 2678 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c16k_restore mode=restore ctx=16384 reps=6 |  
+ctx1_c16k_restore RESTORE | prompt_n 12397 | cache_n 0 | prefill      84.5 t/s | decode 24.58 t/s | wall  149.66 s | slot 321394384 bytes in 592.028 ms
+    vram: 2678 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   320.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    restore gate: 16k restore did NOT skip the prompt => deep restores OFF
+##### ctx1_c32k_save mode=save ctx=32768 reps=13 |  
+ctx1_c32k_save SAVE | prompt_n 26824 | cache_n 0 | prefill      75.7 t/s | decode 28.09 t/s | wall  356.68 s | slot 617263300 bytes in 345.225 ms
+    vram: 3038 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c32k_restore SKIPPED: the 16k restore did not skip the prompt
+##### ctx1_c32k_nkvo_save mode=save ctx=32768 reps=13 | -nkvo 
+ctx1_c32k_nkvo_save SAVE | prompt_n 26824 | cache_n 0 | prefill      74.6 t/s | decode  9.04 t/s | wall  366.47 s | slot 617263300 bytes in 286.688 ms
+    vram: 2340 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:        CPU KV buffer size =   640.00 MiB
+    llama_memory_recurrent:        CPU RS buffer size =    62.81 MiB
+##### ctx1_c32k_q8_save mode=save ctx=32768 reps=13 | -ctk q8_0 -ctv q8_0 
+ctx1_c32k_q8_save SAVE | prompt_n 26824 | cache_n 0 | prefill      75.6 t/s | decode 25.69 t/s | wall  357.31 s | slot 359148100 bytes in 333.323 ms
+    vram: 2738 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   340.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c32k_q4_save mode=save ctx=32768 reps=13 | -ctk q4_0 -ctv q4_0 
+ctx1_c32k_q4_save SAVE | prompt_n 26824 | cache_n 0 | prefill      75.6 t/s | decode 22.10 t/s | wall  357.75 s | slot 221486660 bytes in 223.364 ms
+    vram: 2578 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   180.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c32k_mtp_save mode=save ctx=32768 reps=13 | --moe-expert-cache 16 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2 
+HTTP error on /v1/chat/completions: Remote end closed connection without response
+    vram: 3686 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 16 slots, 2 inserts/step, admit 3 misses / 16 tokens, 659.0 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =   188.44 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =    64.00 MiB
+    CUDA error: out of memory
+    ctx1_c32k_mtp_save: slotclient exit 1 (row kept in runs/ctx1_c32k_mtp_save.slot.json only if it got that far)
+##### ctx1_c32k_pf1024_save mode=save ctx=32768 reps=13 | -ub 1024 -b 2048 --moe-expert-cache 0 
+ctx1_c32k_pf1024_save SAVE | prompt_n 26824 | cache_n 0 | prefill     107.6 t/s | decode 17.75 t/s | wall  252.99 s | slot 617263300 bytes in 295.667 ms
+    vram: 2168 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c32k_pf2048_save mode=save ctx=32768 reps=13 | -ub 2048 -b 2048 --moe-expert-cache 0 
+ctx1_c32k_pf2048_save SAVE | prompt_n 26824 | cache_n 0 | prefill     135.4 t/s | decode 24.05 t/s | wall  200.73 s | slot 617263300 bytes in 974.132 ms
+    vram: 2516 MiB
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c32k_pf2048_xrestore mode=restore ctx=32768 reps=13 |  
+ctx1_c32k_pf2048_xrestore RESTORE | prompt_n 26824 | cache_n 0 | prefill      75.7 t/s | decode 26.64 t/s | wall  356.64 s | slot 617263300 bytes in 302.192 ms
+    vram: 3038 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   640.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c64k_save mode=save ctx=65536 reps=27 |  
+HTTP error on /v1/chat/completions: Remote end closed connection without response
+    vram: 3676 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =  1280.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+    CUDA error: out of memory
+    ctx1_c64k_save: slotclient exit 1 (row kept in runs/ctx1_c64k_save.slot.json only if it got that far)
+##### ctx1_c64k_restore SKIPPED: the 16k restore did not skip the prompt
+##### ctx1_c131k_save mode=save ctx=131072 reps=58 | -ctk q4_0 -ctv q4_0 
+ctx1_c131k_save SAVE | prompt_n 119569 | cache_n 0 | prefill      46.2 t/s | decode 11.55 t/s | wall 2594.79 s | slot 758294720 bytes in 397.175 ms
+    vram: 3434 MiB
+    llama_moe_cache_init: MoE expert cache enabled: 40 layers x 24 slots, 2 inserts/step, admit 3 misses / 16 tokens, 969.1 MiB device memory
+    llama_kv_cache:      CUDA0 KV buffer size =   720.00 MiB
+    llama_memory_recurrent:      CUDA0 RS buffer size =    62.81 MiB
+##### ctx1_c131k_restore SKIPPED: the 16k restore did not skip the prompt
+##### ctx1_c262k_save mode=save ctx=262144 reps=116 | -ctk q4_0 -ctv q4_0 --moe-expert-cache 12 
+    ctx1_c262k_save: SERVER DIED: 0.08.793.027 E srv  llama_server: exiting due to model loading error
+##### ctx1_c262k_restore SKIPPED: the 16k restore did not skip the prompt
+--- verdict input: runs/ctx1_*.slot.json. Per rung: save row = cold prefill t/s + decode t/s at depth; restore row =
+    prompt_n near 0 + wall seconds. A rung without rows died: read the SERVER DIED / out of memory line above it.
+CTX1_DONE

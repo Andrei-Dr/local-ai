@@ -1,0 +1,225 @@
+    preflight: governor=performance thp=[always] mem_avail=14399MiB swap_used=0MiB gpu=17MiB,43,P8
+downloaded /ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf (30649317504 bytes)
+imatrix: 192223904 bytes, 747 partial-data warnings
+quantized: 12913676416 bytes | llama_model_quantize_impl: model size  = 29218.99 MiB (7.07 BPW) llama_model_quantize_impl: quant size  = 12304.96 MiB (2.98 BPW) 
+##### kq_q36iq2m_off | -ot exps=CPU
+    preflight: governor=performance thp=[always] mem_avail=14481MiB swap_used=482MiB gpu=17MiB,35,P8
+kq_q36iq2m_off code    300 tok | wall 24.90 t/s | decode 27.40 t/s | prefill   37.9 t/s | accept -               | vram 1434 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+kq_q36iq2m_off reason  300 tok | wall 24.50 t/s | decode 27.68 t/s | prefill   41.6 t/s | accept -               | vram 1434 MiB | 'To solve this problem, we will use the formula f'
+kq_q36iq2m_off edit    300 tok | wall 18.84 t/s | decode 26.95 t/s | prefill   78.2 t/s | accept -               | vram 1434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq_q36iq2m_off long    300 tok | wall  8.84 t/s | decode 26.98 t/s | prefill   95.4 t/s | accept -               | vram 1434 MiB | 'Here is the summary and answers based on the doc'
+    telemetry[kq_q36iq2m_off]: GPU util avg  63% max 100% | power avg  44W max  49W /100W | PCIe->GPU avg  0.71 max  4.74 GB/s (~13 cap) | CPU busy  409% of 1200% | DRAM read avg   6.0 max   9.2 GB/s (~38 cap)
+    mem: {'gpu_mem_util_avg': 17.5, 'mem_avail_mib_min': 3723, 'swap_used_mib_max': 502}
+##### kq_q36k2_off | -ot exps=CPU
+    preflight: governor=performance thp=[always] mem_avail=14577MiB swap_used=499MiB gpu=17MiB,44,P0
+kq_q36k2_off   code    295 tok | wall 27.09 t/s | decode 30.26 t/s | prefill   36.6 t/s | accept -               | vram 1436 MiB | '```python\nfrom typing import Optional\n\n\nclass LR'
+kq_q36k2_off   reason  300 tok | wall 29.18 t/s | decode 34.03 t/s | prefill   40.2 t/s | accept -               | vram 1436 MiB | 'To determine when the second train catches the f'
+kq_q36k2_off   edit    300 tok | wall 23.10 t/s | decode 34.12 t/s | prefill   89.3 t/s | accept -               | vram 1436 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq_q36k2_off   long    300 tok | wall 10.10 t/s | decode 33.67 t/s | prefill  104.8 t/s | accept -               | vram 1436 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[kq_q36k2_off]: GPU util avg  68% max 100% | power avg  49W max  55W /100W | PCIe->GPU avg  1.24 max  5.76 GB/s (~13 cap) | CPU busy  419% of 1200% | DRAM read avg   7.7 max  12.6 GB/s (~38 cap)
+    mem: {'gpu_mem_util_avg': 20.5, 'mem_avail_mib_min': 2500, 'swap_used_mib_max': 517}
+##### kq_q36k2_c26_mtp2 | -ot exps=CPU --moe-expert-cache 26 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14545MiB swap_used=516MiB gpu=17MiB,49,P0
+kq_q36k2_c26_mtp2 code    300 tok | wall 45.02 t/s | decode 54.90 t/s | prefill   35.5 t/s | accept 187/223=0.84    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+kq_q36k2_c26_mtp2 reason  300 tok | wall 43.05 t/s | decode 55.29 t/s | prefill   38.5 t/s | accept 190/218=0.87    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+kq_q36k2_c26_mtp2 edit    300 tok | wall 23.11 t/s | decode 57.94 t/s | prefill   48.2 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq_q36k2_c26_mtp2 long    300 tok | wall  5.82 t/s | decode 45.04 t/s | prefill   48.6 t/s | accept 170/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[kq_q36k2_c26_mtp2]: GPU util avg  91% max 100% | power avg  54W max  84W /100W | PCIe->GPU avg  2.37 max 11.80 GB/s (~13 cap) | CPU busy  260% of 1200% | DRAM read avg   4.9 max  11.8 GB/s (~38 cap)
+    moe-cache: steps 1280 | hit rate 49.3% | uploads 21111 (22925.2 MiB, 17.91 MiB/step) | evictions 20071 | warm-up uploads 3261
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    3    322    322, #gen drafts =    322, #acc drafts =   298, #gen tokens =    643, #acc tokens =   575, #mean acc len = 2.79, #acc rate/pos = (0.925,
+    moe-cache: steps 1536 | hit rate 48.7% | uploads 29127 (31630.1 MiB, 20.59 MiB/step) | evictions 28087 | warm-up uploads 7424
+    moe-cache: steps 1792 | hit rate 48.7% | uploads 32951 (35782.7 MiB, 19.97 MiB/step) | evictions 31911 | warm-up uploads 7424
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    451    451, #gen drafts =    451, #acc drafts =   395, #gen tokens =    901, #acc tokens =   745, #mean acc len = 2.65, #acc rate/pos = (0.876,
+    mem: {'gpu_mem_util_avg': 16.8, 'mem_avail_mib_min': 1947, 'swap_used_mib_max': 521}
+##### kq_q36iq2m_c30_mtp2 | -ot exps=CPU --moe-expert-cache 30 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14417MiB swap_used=511MiB gpu=17MiB,53,P0
+kq_q36iq2m_c30_mtp2 code    300 tok | wall 41.28 t/s | decode 48.88 t/s | prefill   37.9 t/s | accept 188/219=0.86    | vram 3460 MiB | '```python\nfrom typing import Optional, Dict, Tup'
+kq_q36iq2m_c30_mtp2 reason  300 tok | wall 38.94 t/s | decode 48.24 t/s | prefill   39.9 t/s | accept 190/217=0.88    | vram 3460 MiB | 'To find when the second train catches the first,'
+kq_q36iq2m_c30_mtp2 edit    300 tok | wall 18.95 t/s | decode 49.56 t/s | prefill   38.5 t/s | accept 199/200=0.99    | vram 3460 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq_q36iq2m_c30_mtp2 long    300 tok | wall  4.69 t/s | decode 37.75 t/s | prefill   38.9 t/s | accept 169/260=0.65    | vram 3460 MiB | 'Here is the summary and answers based on the doc'
+    telemetry[kq_q36iq2m_c30_mtp2]: GPU util avg  89% max 100% | power avg  52W max  79W /100W | PCIe->GPU avg  1.86 max 11.49 GB/s (~13 cap) | CPU busy  251% of 1200% | DRAM read avg   3.5 max   8.6 GB/s (~38 cap)
+    moe-cache: steps 1280 | hit rate 55.1% | uploads 19392 (18802.3 MiB, 14.69 MiB/step) | evictions 18192 | warm-up uploads 3737
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    3    319    319, #gen drafts =    319, #acc drafts =   298, #gen tokens =    636, #acc tokens =   577, #mean acc len = 2.81, #acc rate/pos = (0.934,
+    moe-cache: steps 1536 | hit rate 54.2% | uploads 27835 (26991.2 MiB, 17.57 MiB/step) | evictions 26635 | warm-up uploads 8531
+    moe-cache: steps 1792 | hit rate 54.1% | uploads 31283 (30334.1 MiB, 16.93 MiB/step) | evictions 30083 | warm-up uploads 8531
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    449    449, #gen drafts =    449, #acc drafts =   397, #gen tokens =    896, #acc tokens =   746, #mean acc len = 2.66, #acc rate/pos = (0.884,
+    mem: {'gpu_mem_util_avg': 12.9, 'mem_avail_mib_min': 3319, 'swap_used_mib_max': 513}
+##### kq_q36k2_c24_mtp3 | -ot exps=CPU --moe-expert-cache 24 -ub 128 -b 256 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 3
+    preflight: governor=performance thp=[always] mem_avail=14577MiB swap_used=511MiB gpu=17MiB,55,P0
+kq_q36k2_c24_mtp3 code    300 tok | wall 43.12 t/s | decode 51.83 t/s | prefill   36.1 t/s | accept 214/253=0.85    | vram 3408 MiB | '```python\nfrom collections import OrderedDict\nfr'
+kq_q36k2_c24_mtp3 reason  300 tok | wall 43.23 t/s | decode 55.50 t/s | prefill   38.7 t/s | accept 211/262=0.81    | vram 3408 MiB | 'To determine when the second train catches the f'
+kq_q36k2_c24_mtp3 edit    300 tok | wall 23.59 t/s | decode 61.49 t/s | prefill   48.0 t/s | accept 224/225=1.00    | vram 3408 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+kq_q36k2_c24_mtp3 long    300 tok | wall  5.73 t/s | decode 41.60 t/s | prefill   48.3 t/s | accept 192/316=0.61    | vram 3408 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[kq_q36k2_c24_mtp3]: GPU util avg  89% max 100% | power avg  53W max  83W /100W | PCIe->GPU avg  2.81 max 11.64 GB/s (~13 cap) | CPU busy  276% of 1200% | DRAM read avg   5.0 max  12.2 GB/s (~38 cap)
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    3    248    248, #gen drafts =    248, #acc drafts =   232, #gen tokens =    740, #acc tokens =   649, #mean acc len = 3.62, #acc rate/pos = (0.935,
+    moe-cache: steps 1280 | hit rate 47.2% | uploads 23667 (25700.9 MiB, 20.08 MiB/step) | evictions 22707 | warm-up uploads 6918
+    moe-cache: steps 1536 | hit rate 47.0% | uploads 27357 (29708.0 MiB, 19.34 MiB/step) | evictions 26397 | warm-up uploads 6918
+    moe-cache: steps 1792 | hit rate 46.7% | uploads 31034 (33701.0 MiB, 18.81 MiB/step) | evictions 30074 | warm-up uploads 6918
+    spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    354    354, #gen drafts =    354, #acc drafts =   314, #gen tokens =   1056, #acc tokens =   841, #mean acc len = 3.38, #acc rate/pos = (0.887,
+    mem: {'gpu_mem_util_avg': 16.1, 'mem_avail_mib_min': 2088, 'swap_used_mib_max': 524}
+    preflight: governor=performance thp=[always] mem_avail=14540MiB swap_used=511MiB gpu=17MiB,56,P0
+  gsm8k/0                      ok    98 tok  40.35 t/s stop
+  gsm8k/1                      ok    58 tok  38.19 t/s stop
+  gsm8k/2                      ok   254 tok  37.85 t/s stop
+  gsm8k/3                      ok    61 tok  37.86 t/s stop
+  gsm8k/4                      ok   236 tok  37.15 t/s stop
+  gsm8k/5                      ok   347 tok  39.18 t/s stop
+  gsm8k/6                      ok   169 tok  36.30 t/s stop
+  gsm8k/7                      ok   365 tok  38.08 t/s stop
+  gsm8k/8                      ok   493 tok  39.09 t/s stop
+  gsm8k/9                      ok   227 tok  39.43 t/s stop
+  gsm8k/10                     ok   181 tok  38.46 t/s stop
+  gsm8k/11                     ok   264 tok  38.48 t/s stop
+  gsm8k/12                     BAD  255 tok  39.89 t/s stop
+  gsm8k/13                     ok   233 tok  38.54 t/s stop
+  gsm8k/14                     ok   239 tok  38.60 t/s stop
+  gsm8k/15                     ok   208 tok  38.57 t/s stop
+  gsm8k/16                     ok    77 tok  39.24 t/s stop
+  gsm8k/17                     ok   181 tok  39.15 t/s stop
+  gsm8k/18                     ok   115 tok  40.56 t/s stop
+  gsm8k/19                     ok   329 tok  39.01 t/s stop
+  gsm8k/20                     ok   215 tok  39.26 t/s stop
+  gsm8k/21                     ok   106 tok  39.96 t/s stop
+  gsm8k/22                     ok   131 tok  38.37 t/s stop
+  gsm8k/23                     ok   179 tok  39.27 t/s stop
+  gsm8k/24                     ok   158 tok  39.43 t/s stop
+  gsm8k/25                     ok   160 tok  39.17 t/s stop
+  gsm8k/26                     ok   225 tok  38.44 t/s stop
+  gsm8k/27                     ok   201 tok  39.91 t/s stop
+  gsm8k/28                     ok   174 tok  39.88 t/s stop
+  gsm8k/29                     ok   128 tok  39.23 t/s stop
+  gsm8k/30                     ok   119 tok  39.11 t/s stop
+  gsm8k/31                     ok   238 tok  38.63 t/s stop
+  gsm8k/32                     ok    57 tok  39.63 t/s stop
+  gsm8k/33                     ok   188 tok  38.21 t/s stop
+  gsm8k/34                     ok   114 tok  38.59 t/s stop
+  gsm8k/35                     ok   137 tok  39.60 t/s stop
+  gsm8k/36                     ok   120 tok  38.93 t/s stop
+  gsm8k/37                     BAD  768 tok  38.46 t/s length
+  gsm8k/38                     ok   208 tok  39.71 t/s stop
+  gsm8k/39                     ok   284 tok  35.91 t/s stop
+  gsm8k/40                     ok    98 tok  38.52 t/s stop
+  gsm8k/41                     ok   202 tok  37.36 t/s stop
+  gsm8k/42                     ok    95 tok  38.84 t/s stop
+  gsm8k/43                     ok   397 tok  39.95 t/s stop
+  gsm8k/44                     ok   253 tok  38.01 t/s stop
+  gsm8k/45                     ok   280 tok  35.64 t/s stop
+  gsm8k/46                     ok   210 tok  39.06 t/s stop
+  gsm8k/47                     ok   250 tok  39.46 t/s stop
+  gsm8k/48                     ok   151 tok  38.65 t/s stop
+  gsm8k/49                     ok   115 tok  39.05 t/s stop
+  HumanEval/0                  ok   173 tok  38.77 t/s stop
+  HumanEval/4                  ok   169 tok  39.24 t/s stop
+  HumanEval/8                  ok   173 tok  38.79 t/s stop
+  HumanEval/12                 ok   175 tok  39.22 t/s stop
+  HumanEval/16                 ok    81 tok  38.00 t/s stop
+  HumanEval/20                 ok   299 tok  36.83 t/s stop
+  HumanEval/24                 ok    91 tok  37.87 t/s stop
+  HumanEval/28                 ok    70 tok  37.81 t/s stop
+  HumanEval/32                 ok   460 tok  37.38 t/s stop
+  HumanEval/36                 ok   142 tok  38.78 t/s stop
+  HumanEval/40                 ok   336 tok  39.37 t/s stop
+  HumanEval/44                 ok   194 tok  38.93 t/s stop
+  HumanEval/48                 ok    87 tok  38.80 t/s stop
+  HumanEval/52                 ok   100 tok  38.10 t/s stop
+  HumanEval/56                 ok   157 tok  39.17 t/s stop
+  HumanEval/60                 ok   125 tok  39.41 t/s stop
+  HumanEval/64                 ok   193 tok  37.64 t/s stop
+  HumanEval/68                 ok   436 tok  36.84 t/s stop
+  HumanEval/72                 ok   269 tok  38.12 t/s stop
+  HumanEval/76                 ok   282 tok  39.16 t/s stop
+  HumanEval/80                 ok   183 tok  37.99 t/s stop
+  HumanEval/84                 ok   210 tok  37.52 t/s stop
+  HumanEval/88                 ok   285 tok  37.94 t/s stop
+  HumanEval/92                 ok   193 tok  37.59 t/s stop
+  HumanEval/96                 ok   298 tok  39.57 t/s stop
+  HumanEval/100                ok   266 tok  37.16 t/s stop
+  HumanEval/104                ok   200 tok  37.57 t/s stop
+  HumanEval/108                BAD  225 tok  37.85 t/s stop
+  HumanEval/112                ok   256 tok  37.19 t/s stop
+  HumanEval/116                ok   198 tok  36.92 t/s stop
+  HumanEval/120                ok   270 tok  36.57 t/s stop
+  HumanEval/124                ok   661 tok  39.15 t/s stop
+  HumanEval/128                ok   223 tok  37.05 t/s stop
+  HumanEval/132                BAD  307 tok  40.16 t/s stop
+  HumanEval/136                ok   213 tok  39.14 t/s stop
+  HumanEval/140                ok   170 tok  39.21 t/s stop
+  HumanEval/144                ok   262 tok  38.71 t/s stop
+  HumanEval/148                ok   353 tok  39.21 t/s stop
+  HumanEval/152                ok   257 tok  39.18 t/s stop
+  HumanEval/156                ok   282 tok  37.73 t/s stop
+  HumanEval/160                BAD  332 tok  36.53 t/s stop
+  mmlu_pro/3126                ok   302 tok  37.42 t/s stop
+  mmlu_pro/503                 BAD  334 tok  39.05 t/s stop
+  mmlu_pro/3989                ok   178 tok  41.22 t/s stop
+  mmlu_pro/7483                ok    75 tok  39.40 t/s stop
+  mmlu_pro/11820               ok  1345 tok  38.68 t/s stop
+  mmlu_pro/6607                ok   111 tok  40.08 t/s stop
+  mmlu_pro/4863                ok    98 tok  38.81 t/s stop
+  mmlu_pro/1373                ok   106 tok  39.64 t/s stop
+  mmlu_pro/8347                ok    75 tok  36.81 t/s stop
+  mmlu_pro/5738                ok   143 tok  40.09 t/s stop
+  mmlu_pro/10950               ok  1428 tok  38.64 t/s stop
+  mmlu_pro/9208                ok   365 tok  38.25 t/s stop
+  mmlu_pro/2247                ok   242 tok  39.87 t/s stop
+  mmlu_pro/3146                ok   113 tok  38.26 t/s stop
+  mmlu_pro/523                 ok   360 tok  39.76 t/s stop
+  mmlu_pro/4009                ok   474 tok  39.21 t/s stop
+  mmlu_pro/7503                ok    91 tok  41.76 t/s stop
+  mmlu_pro/11840               BAD 2048 tok  38.99 t/s length
+  mmlu_pro/6627                ok   148 tok  40.00 t/s stop
+  mmlu_pro/4883                BAD  146 tok  42.68 t/s stop
+  mmlu_pro/1395                ok   355 tok  42.46 t/s stop
+  mmlu_pro/8367                ok   113 tok  39.96 t/s stop
+  mmlu_pro/5758                ok    52 tok  41.43 t/s stop
+  mmlu_pro/10971               ok    99 tok  43.16 t/s stop
+  mmlu_pro/9228                BAD 2048 tok  40.31 t/s length
+  mmlu_pro/2268                BAD  183 tok  40.23 t/s stop
+  mmlu_pro/3166                ok   234 tok  38.33 t/s stop
+  mmlu_pro/544                 ok   564 tok  40.67 t/s stop
+  mmlu_pro/4030                ok   315 tok  40.67 t/s stop
+  mmlu_pro/7524                ok    98 tok  43.06 t/s stop
+  mmlu_pro/11860               ok  1103 tok  40.65 t/s stop
+  mmlu_pro/6647                ok   167 tok  42.55 t/s stop
+  mmlu_pro/4903                ok    94 tok  42.76 t/s stop
+  mmlu_pro/1416                BAD  581 tok  40.26 t/s stop
+  mmlu_pro/8387                ok   283 tok  38.19 t/s stop
+  mmlu_pro/5778                ok   283 tok  39.47 t/s stop
+  mmlu_pro/10992               BAD   71 tok  39.67 t/s stop
+  mmlu_pro/9248                ok  1266 tok  40.53 t/s stop
+  mmlu_pro/2288                ok   137 tok  42.10 t/s stop
+  mmlu_pro/3186                ok    88 tok  40.60 t/s stop
+  mmlu_pro/564                 ok  1235 tok  41.39 t/s stop
+  mmlu_pro/4050                ok  1544 tok  40.35 t/s stop
+  mmlu_pro/7544                BAD  994 tok  41.29 t/s stop
+  mmlu_pro/11881               BAD 2048 tok  40.78 t/s length
+  mmlu_pro/6667                ok   228 tok  43.69 t/s stop
+  mmlu_pro/4923                ok   133 tok  40.56 t/s stop
+  mmlu_pro/1438                ok   812 tok  42.12 t/s stop
+  mmlu_pro/8407                ok   852 tok  40.11 t/s stop
+  mmlu_pro/5799                ok   104 tok  42.70 t/s stop
+  mmlu_pro/11013               ok    73 tok  41.63 t/s stop
+  mmlu_pro/9268                ok  1339 tok  39.83 t/s stop
+  mmlu_pro/2308                ok   475 tok  39.31 t/s stop
+  mmlu_pro/3206                ok   317 tok  41.62 t/s stop
+  mmlu_pro/584                 BAD  350 tok  40.46 t/s stop
+  mmlu_pro/4070                ok   131 tok  42.10 t/s stop
+  mmlu_pro/7564                BAD   99 tok  40.44 t/s stop
+  mmlu_pro/11901               ok  1169 tok  39.81 t/s stop
+  mmlu_pro/6687                ok   466 tok  40.21 t/s stop
+  mmlu_pro/4943                ok   122 tok  40.49 t/s stop
+  mmlu_pro/1458                BAD 2048 tok  41.16 t/s length
+  mmlu_pro/8427                ok  1267 tok  40.43 t/s stop
+  mmlu_pro/5820                ok   121 tok  39.65 t/s stop
+  mmlu_pro/11034               BAD 1495 tok  41.04 t/s stop
+  mmlu_pro/9288                ok   337 tok  38.09 t/s stop
+  mmlu_pro/2328                BAD  409 tok  38.60 t/s stop
+  mmlu_pro/10073               BAD 2048 tok  39.85 t/s length
+  mmlu_pro/10094               ok  1644 tok  40.14 t/s stop
+  mmlu_pro/10115               ok   969 tok  40.04 t/s stop
+  mmlu_pro/10136               ok   783 tok  41.01 t/s stop
+  mmlu_pro/10156               ok  1637 tok  40.36 t/s stop
+QUALITY[q36_k2_cache26] think=off | gsm8k  96.0% +- 2.8 (n=50) | humaneval  92.7% +- 4.1 (n=41) | mmlu_pro  78.6% +- 4.9 (n=70) | mean 382 tok, 39.3 t/s | truncated 6 | empty 0 | 2014s
+    telemetry[qual_q36_k2_cache26]: GPU util avg  84% max 100% | power avg  71W max  89W /100W | PCIe->GPU avg  1.63 max 11.78 GB/s (~13 cap) | CPU busy  532% of 1200% | DRAM read avg   7.3 max  11.0 GB/s (~38 cap)
+    vram: 2692 MiB
+KQ1_DONE

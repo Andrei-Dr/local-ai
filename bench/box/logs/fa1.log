@@ -1,0 +1,48 @@
+    preflight: governor=performance thp=[always] mem_avail=14485MiB swap_used=593MiB gpu=17MiB,35,P8
+########## 1. test-backend-ops vs the CPU reference (added GQA cases included) ##########
+    gqa2 (FLASH_ATTN_EXT; GGML_CUDA_FA_VEC_GQA=2): exit 0 | 4079/4079 tests passed
+    gqa0 (FLASH_ATTN_EXT; GGML_CUDA_FA_VEC_GQA=0): exit 0 | 4079/4079 tests passed
+    gqa2_f16 (FLASH_ATTN_EXT; GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_FA_VEC_GQA_F16=1): exit 0 | 4079/4079 tests passed
+    ntc_fa (FLASH_ATTN_EXT; GGML_CUDA_NO_TENSOR_CORES=1 GGML_CUDA_FA_VEC_GQA=2 GGML_CUDA_FA_VEC_GQA_F16=1): exit 0 | 4079/4079 tests passed
+    ntc_mm (MUL_MAT; GGML_CUDA_NO_TENSOR_CORES=1): exit 0 | 1297/1297 tests passed
+    ntc_mmid (MUL_MAT_ID; GGML_CUDA_NO_TENSOR_CORES=1): exit 0 | 929/929 tests passed
+########## 2. decode from the kept deep slots: old vs new kernel (same math per head => the text must be identical) ##########
+##### fa1_c131k_gqa0 ctx=131072 cache=24 GGML_CUDA_FA_VEC_GQA=0
+fa1_c131k_gqa0 EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.8 t/s | decode 12.68 t/s | wall   11.35 s | slot 758294720 bytes in 441.265 ms
+##### fa1_c131k_gqa2 ctx=131072 cache=24 GGML_CUDA_FA_VEC_GQA=2
+fa1_c131k_gqa2 EXTEND | prompt_n 27 | cache_n 119632 | prefill      19.3 t/s | decode 13.99 t/s | wall   10.52 s | slot 758294720 bytes in 448.404 ms
+    c131k: decode old 12.68 -> new 13.99 t/s (+10.3%) | reply identical: True
+##### fa1_c262k_gqa0 ctx=262144 cache=8 GGML_CUDA_FA_VEC_GQA=0
+HTTP error on /completion: Remote end closed connection without response
+##### fa1_c262k_gqa2 ctx=262144 cache=8 GGML_CUDA_FA_VEC_GQA=2
+HTTP error on /completion: Remote end closed connection without response
+    c262k: no comparison ([Errno 2] No such file or directory: '/ai/bench/runs/fa1_c262k_gqa0.slot.json')
+########## 3. llama-bench: pp3 = a 3-token verify batch, tg32 = decode; one binary, env switches ##########
+--- q4_0 KV @32k: old kernels
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |    pp3 @ d32768 |         25.30 ± 0.00 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |   tg32 @ d32768 |         16.11 ± 0.00 |
+--- q4_0 KV @32k: GQA vec (2 tokens/block)
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |    pp3 @ d32768 |         23.14 ± 0.00 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |   tg32 @ d32768 |         17.61 ± 0.00 |
+--- q4_0 KV @32k: GQA vec (1 token/block), pp3 only
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |    pp3 @ d32768 |         22.19 ± 0.00 |
+--- q4_0 KV @32k: GQA vec + no-tensor-cores
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |    pp3 @ d32768 |         24.35 ± 0.00 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     2048 |   q4_0 |   q4_0 |   1 | exps=CPU              |       none |   tg32 @ d32768 |         16.37 ± 0.00 |
+--- F16 KV @16k: upstream (MMA_F16)
+llama_bench: error: failed to create context with model '/ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf'
+--- F16 KV @16k: GQA vec
+llama_bench: error: failed to create context with model '/ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf'
+--- F16 KV @16k: no-tensor-cores (tile/vec)
+llama_bench: error: failed to create context with model '/ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf'
+--- short context: upstream
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |           pp512 |        111.24 ± 0.96 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |            tg64 |         24.93 ± 4.24 |
+--- short context: no-tensor-cores
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |           pp512 |        112.04 ± 1.07 |
+| qwen35moe 35B.A3B IQ2_M - 2.7 bpw |  10.85 GiB |    34.66 B | CUDA       | 999 |     512 |   1 | exps=CPU              |       none |            tg64 |         24.41 ± 5.13 |
+########## 4. real MTP verify path (in-model head, q4_0 KV, temp 0): old vs new ##########
+    GQA=0: decode 33.01 t/s | draft n 181 accepted 108 | 'Based on the text provided, here are the five most important facts:\n\n1.  **Performance Bot'
+    GQA=2: decode 32.44 t/s | draft n 183 accepted 106 | 'Based on the text provided, here are the five most important facts:\n\n1.  **Performance Bot'
+    MTP text identical: False (common prefix 287 of 846 chars; MMA-on-F16 vs vec-on-q4 are different arithmetic, a late greedy tie flip is not a bug, garbage is)
+FA1_DONE
