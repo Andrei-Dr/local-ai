@@ -689,3 +689,27 @@ Untried items worth pulling from there, beyond the queue below: mainline #28739 
   the two-phase split) and the F16 llama-bench rows passed -ctk/-ctv flags that config rejects. Both fixed in the next run.
 - MTP text differs after 287 chars between GQA=0 and GQA=2 — expected: MMA-on-F16 vs vec-on-q4 are different arithmetic, so a
   late greedy tie can flip. The FA1 decode path (the one shipping) was byte-identical on the 131k slot.
+
+## RESULT 2026-09-21 (Fable, review of the Opus turns + two results it did not see) — arch1, kld1, the 262k OOM
+- **arch1 [M, n=2 short / n=1 depth]: the Pascal-path build (61-virtual;80-virtual + FORCE_MMQ) prefills 3x faster**: pp512
+  336.1 vs 113.4 t/s. Decode is slower there: tg64 26.42 vs 28.76 (-8%), pp3 @d32768 17.93 vs 23.48 (-24%); tg32 @d32768 19.04 vs
+  17.94 (+6%). The arch-75 MMQ tiles are sized for tensor cores the GTX 1650 lacks. The old "4 s fixed per ubatch = PCIe expert
+  streaming" reading (lat1 / ctx1 fit) was WRONG: most of it was that matmul path. => two-phase gets TWO BINARIES: Pascal build
+  = prefill server, arch 75 + FA1 = decode server. ctx1d verifies on the real server (32k presave both builds, ub 4096, cross-build restore).
+- **kld1 [M]: vs the Q6_K_P reference (wikitext-2, 40 x 512): IQ2_M mean KLD 0.2188, PPL ratio 1.180, same top token 79.8%,
+  99% KLD 2.00; K2 0.2181 / 1.165 / 79.9% / 1.88.** (1) K2 >= IQ2_M in fidelity (tail better), + paired non-inferior, + 15.6%
+  faster => every instrument so far favors K2. (2) BOTH are heavily degraded: the served model disagrees with its own
+  high-precision self on 1 token in 5. The standard sets hide it. hq1 shows whether it bites on hard reasoning; RAM1 (32 GB =>
+  3-4 bit experts) and QX have large headroom to attack. Report: bench/reports/kld1.md. Caveat: wikitext is off-distribution
+  for a chat model; add a code / chat corpus before quoting the absolute level.
+- **Why every 262k decode row died (ctx1b extend, fa1 A/B): runtime OOM** = model ~1430 + KV 1440 + RS 63 + cache 8 (349) +
+  compute buffer **698 MiB even at ub 128**; ~512 MiB of it is the reserve to dequantize the whole used KV to F16 for the
+  multi-token attention path on quantized KV. FA2 (GQA vec, <= 4 query tokens) needs no such copy => a decode server at
+  -ub 4 -b 4 with GGML_CUDA_FA_VEC_GQA=2 should reserve almost nothing and fit 262k WITH a cache. FA2 lost on speed but may be
+  what makes 262k decode fit. ctx1d tests it (queued first).
+- Corrections to the Opus entries: (1) FA2's loss is NOT "giving up the tensor-core matmul" — this card has no tensor cores;
+  the MMA/tile kernels simply have better arithmetic intensity than the vec kernel, whose threads split ONE 256-dim dot 32
+  ways (latency design, poor at 100k+ keys). (2) FA1's +10% (not the ~3x I predicted) says the vec kernel at depth is bound by
+  the per-head dot/accumulate work and its fine-grained threading, not by K/V dequant. The real fix is a throughput-oriented
+  quantized decode kernel (each thread = many keys, full-width int8 dots, GQA-shared K unpack); prof3 sizes it.
+  (3) the 262k OOM cause above replaces "cache 8 does not fit" as the explanation.
