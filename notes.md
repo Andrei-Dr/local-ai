@@ -6,7 +6,7 @@ Repo: **https://github.com/Andrei-Dr/local-ai** (private; `~/dev/local-ai`). Com
 
 - GPU: GTX 1650 SUPER 4 GB — Turing cc 7.5 but **TU116: no tensor cores**, no bf16/FP8. ~3.45 GB usable. PCIe 3.0 x16 (idles at gen1, gen3 under load). Power cap already at max (100 W).
 - CPU: i5-10400F 6c/12t — `avx2 fma f16c bmi2`, **no AVX-VNNI / AVX-512**. RAM 2x8 GB DDR4-2667 dual channel (~38 GB/s theoretical, ~30 real). 2 GB swap.
-- Disk: `/` is nvme ext4 (155 G free). **`/opt` and `/mnt/md0` are the same spinning md0 btrfs+zstd — never put models or build trees there.** `/root`, `/tmp` are nvme.
+- Disk: `/` is nvme ext4 (**~21 G free on 2026-09-21**, 111 G of it models). `/opt` and `/mnt/md0` are the same spinning md0 btrfs+zstd (531 G free): **never serve models or build from there**; it holds `models-cold/` (cold model files, symlinked back into `/ai/models`) and is the place for large intermediates. `/root`, `/tmp` are nvme.
 - Layout: **`/ai/{src,models,bench,.venv}`** (nvme). tmux session `ai` (windows: build, dl, bench, mv).
 - `/root/bin/docker-cleanup.py` (mirrored at `~/bin/docker-cleanup.py` on the Mac): `-a` now prunes anonymous 64-hex dangling volumes (named volumes always spared), `-y` skips the prompt (`-ay` for cron), refuses without a tty unless `-y`.
 
@@ -16,19 +16,29 @@ Repo: **https://github.com/Andrei-Dr/local-ai** (private; `~/dev/local-ai`). Com
 |---|---|---|---|
 | cpufreq governor (all cores) | `powersave` | `performance` | CPU-resident layers are CPU-bound |
 | `/sys/kernel/mm/transparent_hugepage/enabled` | `madvise` | `always` | fewer TLB misses on the ~5 GB of CPU-side weights (pairs with no-mmap) |
+| power profile (power-profiles-daemon) | `balanced` | `performance` (2026-09-21) | the daemon re-applied `powersave` + EPP `balance_performance` after our sysfs write; the unit now runs `powerprofilesctl set performance` first and orders `After=power-profiles-daemon.service` (the old `After=multi-user.target` made an ordering cycle that silently dropped `ai-queue` at boot) |
+| GPU persistence mode | off | on (`nvidia-smi -pm 1`, 2026-09-20) | no driver reload between jobs |
 
 Box was hard-reset 2026-09-19 12:09 EEST (see RAM rule in the runbook); tmux session `ai` recreated (windows build, dl, bench).
 
 ## Runtime
 
-Not ollama, not vllm. PQ2_0 / PTQ1_0 only load in **PrismML-Eng/llama.cpp, branch `prism`** (not `prism-v6`). vLLM has no MLX backend and no PQ2_0 support; ollama ships stock llama.cpp.
+**Default tree (decided 2026-09-20): mainline llama.cpp + our patches**, `/ai/src/llama.cpp-mainline` @ 2582f5c (b11056), `build75`
+(arch 75) = every Qwen / Gemma benchmark and the decode server. Same source, two more builds: `/ai/src/llama.cpp-fa1` (worktree; the
+CUDA attention patches from `bench/box/patches/`: FA1 GQA vec kernel default on, FA4 `GGML_CUDA_FA_VEC_KROW=1`, FA2 / NTC opt-in) and
+`build6180` there (`61-virtual;80-virtual` + `FORCE_MMQ`: the Pascal-path build, prefill 2.4-3x, used as the PREFILL server). Status of
+every piece: `SPEC.md` section 1. Not ollama (an `ollama.service` is active on the box, not ours, Andrei's call), not vllm.
+
+**The PrismML fork is kept for ONE job: the ternary Bonsai model.** PQ2_0 / PTQ1_0 only load in PrismML-Eng/llama.cpp, branch `prism`
+(not `prism-v6`); vLLM has no PQ2_0 support. The rest of this section and the Bonsai section below are the 2026-09-19 fork work, kept
+as the record (the fork lacks `qwen4exp`, and mainline + patches measured +5-7% on the same configs, SPEC U2).
 
 Local branch `i5-tuning` at `/ai/src/llama.cpp` = prism@9a9394a plus:
 1. `fix:` BoldingBuilds `0001-qwen35-mtp-hadamard-inverse.patch` — without it `--spec-type draft-mtp` dies with "Hadamard-latent table 'token_embd.weight' is read without the inverse transform". Not upstream yet.
 2. `perf:` **AVX2 path for `ggml_vec_dot_pq2_0_q8_0`**. Upstream has only a VNNI path and a scalar `#else`; this CPU has no VNNI so 60% of the model ran scalar. 38.5 -> 5.6 cycles/32 weights (6.9x). `test-quantize-fns` exit 0, `test-backend-ops MUL_MAT type_a=pq2_0` 45/45 CUDA-vs-CPU. Upstream candidate.
 
 Build: `cmake -S . -B build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75 -DCMAKE_BUILD_TYPE=Release -DLLAMA_CURL=OFF`.
-Untested: the fork itself suggests `-DCMAKE_CUDA_ARCHITECTURES="61-virtual;80-virtual" -DGGML_CUDA_FORCE_MMQ=ON` for tensor-core-less Turing.
+The suggested `-DCMAKE_CUDA_ARCHITECTURES="61-virtual;80-virtual" -DGGML_CUDA_FORCE_MMQ=ON` for tensor-core-less Turing was tested on mainline (`arch1`, 2026-09-21): prefill 2.4-3x, decode -8% => two binaries.
 
 ## Model: Ternary-Bonsai-2-27B (dense, qwen35 hybrid, base Qwen3.8-27B, multimodal via mmproj)
 
