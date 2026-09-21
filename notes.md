@@ -855,3 +855,23 @@ Andrei's GitHub Actions runner (`ci-runner@1/2`, vite builds) ran on the box dur
 - `mon.py` now samples per-process CPU at 1 Hz and sums everything that is not `llama-*`/`nvidia-smi`/`perf`. A window averaging over
   50% of one core prints `FOREIGN CPU [label]` above the telemetry line and sets `foreign_cpu_flag` in the run's mon.json.
   Idle baseline on the box is about 6% of a core. Same pid + same start time = same process (kernel workers rename themselves).
+
+### 2026-09-21 — whittle1: Whittle-Qwen-3.8-35B-A3B (i1-Q2_K) killed on quality
+
+First contact with the dense-27B-distilled-to-A3B model. It loads and runs on our mainline tree; the 10B n-gram table
+(`per_layer_token_embd.weight`) is pinned to the CPU by name, experts on the CPU, 2458 MiB VRAM at cache 16.
+
+| row | result | reference (Qwen3.6 IQ2_M, same harness, think off) |
+|---|---|---|
+| decode, cache 0 / 16 | 29.5 / 34.8 t/s, no MTP head | ~56 t/s served config |
+| expert-cache hit rate, 16 slots | ~43% | |
+| GSM8K-200 | 81.5 +-2.7 | 96.0 +-1.4 |
+| MMLU-Pro-280 | 43.6 +-3.0 | 71.4 +-2.7 |
+
+- Kill rule was "> 2 sigma under either set or < 30 t/s". It is 5 and 7 sigma under. 38 of 480 answers hit the 2048-token cap;
+  counting all 38 as correct still leaves MMLU-Pro at 57%.
+- Our GSM8K equals the author's self-reported 41-44/50, so the weak row is the model as published, not only the blunt Q2_K quant.
+  The card calls it a research preview (3.3 h of joint training on 1,840 traces).
+- Speed rows are clean (see the foreign-CPU entry above); the runner overlapped only the accuracy section.
+- Consequences: no `hq1 whittle` arm; T5 (continuing the recipe on Dave's box) stays parked; DM1's only live item is now `dense1`.
+- The 13 GB file stays on the box until Andrei OKs deleting it (`/ai/models/Whittle-Qwen-3.8-35B-A3B.i1-Q2_K.gguf`).
