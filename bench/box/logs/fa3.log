@@ -1,0 +1,21 @@
+    preflight: governor=performance thp=[always] mem_avail=14692MiB swap_used=321MiB gpu=17MiB,45,P8
+built (diag) in 161 s
+unit VSKIP=0: exit 0 | 4079/4079 tests passed
+unit VSKIP=1: exit 0 | 4079/4079 tests passed
+##### depth 131k | --moe-expert-cache 24 -ub 128 -b 256
+fa3_131k_v0 EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.6 t/s | decode 14.89 t/s | wall    7.74 s | slot 758294720 bytes in 438.973 ms
+fa3_131k_v0b EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.9 t/s | decode 14.63 t/s | wall    7.83 s | slot 758294720 bytes in 462.854 ms
+fa3_131k_v1 EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.2 t/s | decode  7.69 t/s | wall   13.74 s | slot 758294720 bytes in 436.666 ms
+fa3_131k_v2 EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.6 t/s | decode 18.30 t/s | wall    6.55 s | slot 758294720 bytes in 432.125 ms
+  floor (VSKIP=0 twice): PROBCMP tokens 96 | identical True (same prefix 96) | max |dlogprob| 0.0 | mean 0.0 over 960 pairs
+  VSKIP=1 vs 0:          PROBCMP tokens 96 | identical True (same prefix 96) | max |dlogprob| 0.896377 | mean 0.10329933 over 925 pairs
+##### depth 262k | --moe-expert-cache 0 -ub 128 -b 256
+fa3_262k_v0 EXTEND | prompt_n 27 | cache_n 239170 | prefill      14.0 t/s | decode  8.89 t/s | wall   12.70 s | slot 1450180664 bytes in 849.163 ms
+fa3_262k_v0b EXTEND | prompt_n 27 | cache_n 239170 | prefill      13.8 t/s | decode  9.00 t/s | wall   12.61 s | slot 1450180664 bytes in 874.787 ms
+fa3_262k_v1 EXTEND | prompt_n 27 | cache_n 239170 | prefill      13.9 t/s | decode  4.10 t/s | wall   25.22 s | slot 1450180664 bytes in 856.106 ms
+fa3_262k_v2 EXTEND | prompt_n 27 | cache_n 239170 | prefill      13.7 t/s | decode 11.24 t/s | wall   10.52 s | slot 1450180664 bytes in 856.699 ms
+  floor (VSKIP=0 twice): PROBCMP tokens 96 | identical True (same prefix 96) | max |dlogprob| 0.0 | mean 0.0 over 960 pairs
+  VSKIP=1 vs 0:          PROBCMP tokens 96 | identical True (same prefix 96) | max |dlogprob| 1.15213 | mean 0.13493292 over 923 pairs
+built (ship) in 159 s
+ship build, VSKIP=2 must be inert: exit 0 | 4079/4079 tests passed
+FA3_DONE

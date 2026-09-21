@@ -1,0 +1,21 @@
+    preflight: governor=performance thp=[always] mem_avail=14562MiB swap_used=358MiB gpu=17MiB,49,P8
+built (krow) in 144 s
+unit KROW=0: exit 0 | 4079/4079 tests passed
+unit KROW=1: exit 0 | 4079/4079 tests passed
+##### depth 131k | --moe-expert-cache 24 -ub 128 -b 256
+fa4_131k_gqa0 EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.4 t/s | decode 12.41 t/s | wall    9.03 s | slot 758294720 bytes in 459.42 ms
+fa4_131k_fa1 EXTEND | prompt_n 27 | cache_n 119632 | prefill      21.0 t/s | decode 14.64 t/s | wall    7.83 s | slot 758294720 bytes in 431.186 ms
+fa4_131k_k1 EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.5 t/s | decode 17.05 t/s | wall    6.94 s | slot 758294720 bytes in 438.041 ms
+fa4_131k_k1b EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.2 t/s | decode 17.17 t/s | wall    6.93 s | slot 758294720 bytes in 435.702 ms
+  floor  (KROW=1 twice): PROBCMP tokens 96 | identical True (same prefix 96) | max |dlogprob| 0.0 | mean 0.0 over 960 pairs
+  accepted change (GQA=0 vs FA1): PROBCMP tokens 84 | identical False (same prefix 83) | max |dlogprob| 1.029191 | mean 0.13600178 over 805 pairs
+  KROW=1 vs FA1:         PROBCMP tokens 84 | identical False (same prefix 83) | max |dlogprob| 1.7891 | mean 0.13354332 over 800 pairs
+##### depth 262k | --moe-expert-cache 0 -ub 128 -b 256
+fa4_262k_gqa0 EXTEND | prompt_n 27 | cache_n 239170 | prefill      13.7 t/s | decode  8.32 t/s | wall   13.48 s | slot 1450180664 bytes in 863.194 ms
+fa4_262k_fa1 EXTEND | prompt_n 27 | cache_n 239170 | prefill      13.9 t/s | decode  8.99 t/s | wall   12.61 s | slot 1450180664 bytes in 836.65 ms
+fa4_262k_k1 EXTEND | prompt_n 27 | cache_n 239170 | prefill      13.9 t/s | decode 10.95 t/s | wall   10.71 s | slot 1450180664 bytes in 852.467 ms
+fa4_262k_k1b EXTEND | prompt_n 27 | cache_n 239170 | prefill      13.8 t/s | decode 11.00 t/s | wall   10.68 s | slot 1450180664 bytes in 855.515 ms
+  floor  (KROW=1 twice): PROBCMP tokens 96 | identical True (same prefix 96) | max |dlogprob| 0.0 | mean 0.0 over 960 pairs
+  accepted change (GQA=0 vs FA1): PROBCMP tokens 96 | identical True (same prefix 96) | max |dlogprob| 1.077395 | mean 0.14633367 over 919 pairs
+  KROW=1 vs FA1:         PROBCMP tokens 95 | identical False (same prefix 94) | max |dlogprob| 0.768676 | mean 0.1355609 over 908 pairs
+FA4_DONE

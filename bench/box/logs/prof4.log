@@ -1,0 +1,40 @@
+    preflight: governor=performance thp=[always] mem_avail=14612MiB swap_used=271MiB gpu=17MiB,43,P8
+##### prof4_gqa0 | GGML_CUDA_FA_VEC_GQA=0, CUDA graphs off
+prof4_gqa0_extend EXTEND | prompt_n 27 | cache_n 119632 | prefill      20.4 t/s | decode 12.89 t/s | wall    6.26 s | slot 758294720 bytes in 441.162 ms
+--- gpu kernels: time%, total ns, instances, avg ns, name
+Time (%),Total Time (ns),Instances,Avg (ns),GridXYZ,BlockXYZ,Name
+57.1,2749336940,630,4364026.9,   1    5   16,  32    4    1,"void flash_attn_ext_vec<(int)256, (int)1, (int)1, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char
+12.7,610788161,20,30539408.1,  20    1    1,  32    4    1,"void flash_attn_ext_f16<(int)256, (int)256, (int)4, (int)8, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char 
+3.8,182031330,2520,72234.7, 128    8    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)1, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device,
+2.8,136501212,2331,58559.1, 512    8    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device,
+2.7,130212236,66,1972912.7,248320    1    1,  32    2    1,"void mul_mat_vec_q<(ggml_type)13, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_devic
+2.3,108709676,1890,57518.3,8192    1    1,  32    2    1,"void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device,
+1.9,92254221,1890,48811.8,2048    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, 
+1.6,79038197,1890,41819.2,1024    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, 
+1.2,56977780,2010,28347.2,  32    1   32,  32    4    1,"void gated_delta_net_cuda<(int)128, (bool)0, (bool)0>(const float *, const float *, const float *, const float *, const float *, const float *,
+1.1,51335147,2010,25539.9,   1  512    1, 256    1    1,"void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, 
+1.0,48903000,630,77623.8,2048    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, f
+1.0,47701991,40,1192549.8,239616    1    1,  32    1    1,"void dequantize_block_q4_0<__half>(const void *, T1 *, int)"
+0.9,40911569,2520,16234.7, 128    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)1, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, 
+0.8,36505121,2520,14486.2, 256    1    1, 256    1    1,"void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, f
+0.7,32201174,630,51113.0,2048    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)21, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, f
+##### prof4_gqa1 | GGML_CUDA_FA_VEC_GQA=1, CUDA graphs off
+prof4_gqa1_extend EXTEND | prompt_n 27 | cache_n 119632 | prefill      19.7 t/s | decode 13.78 t/s | wall    6.01 s | slot 758294720 bytes in 445.644 ms
+--- gpu kernels: time%, total ns, instances, avg ns, name
+Time (%),Total Time (ns),Instances,Avg (ns),GridXYZ,BlockXYZ,Name
+52.6,2304030344,630,3657191.0,   1   20    2,  32    4    1,"void flash_attn_ext_vec<(int)256, (int)1, (int)8, (ggml_type)2, (ggml_type)2, (bool)0>(const char *, const char *, const char *, const char
+14.2,623230883,20,31161544.2,  20    1    1,  32    4    1,"void flash_attn_ext_f16<(int)256, (int)256, (int)4, (int)8, (bool)0, (bool)0, (bool)0>(const char *, const char *, const char *, const char 
+4.1,180796427,2520,71744.6, 128    8    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)1, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device,
+3.1,135704919,2331,58217.5, 512    8    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device,
+3.0,130212656,66,1972919.0,248320    1    1,  32    2    1,"void mul_mat_vec_q<(ggml_type)13, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_devic
+2.5,108679963,1890,57502.6,8192    1    1,  32    2    1,"void mul_mat_vec_q<(ggml_type)12, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device,
+2.1,91745864,1890,48542.8,2048    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, 
+1.8,78585243,1890,41579.5,1024    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, 
+1.3,56966751,2010,28341.7,  32    1   32,  32    4    1,"void gated_delta_net_cuda<(int)128, (bool)0, (bool)0>(const float *, const float *, const float *, const float *, const float *, const float *,
+1.2,51269910,2010,25507.4,   1  512    1, 256    1    1,"void k_get_rows_float_vec<float>(const T1 *, const int *, T1 *, long, long, uint3, unsigned long, unsigned long, unsigned long, unsigned long, 
+1.1,48615615,630,77167.6,2048    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)0, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, f
+1.1,48170463,40,1204261.6,239616    1    1,  32    1    1,"void dequantize_block_q4_0<__half>(const void *, T1 *, int)"
+0.9,40673415,2520,16140.2, 128    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)22, (int)1, (bool)1, (bool)1, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, 
+0.8,36420253,2520,14452.5, 256    1    1, 256    1    1,"void mul_mat_vec_f<float, float, (int)1, (int)256, (bool)0, (bool)0>(const T1 *, const float *, const int *, ggml_cuda_mm_fusion_args_device, f
+0.7,32427648,630,51472.5,2048    1    1,  32    4    1,"void mul_mat_vec_q<(ggml_type)21, (int)1, (bool)1, (bool)0, (bool)0>(const void *, const void *, const int *, ggml_cuda_mm_fusion_args_device, f
+PROF4_DONE
