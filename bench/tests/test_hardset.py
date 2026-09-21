@@ -85,5 +85,25 @@ class SelectHard(unittest.TestCase):
         self.assertEqual(h[1]["entry_point"], "f4")
 
 
+class ThinkingTrace(unittest.TestCase):
+    def test_repeat_frac_separates_a_loop_from_live_reasoning(self):
+        live = " ".join(f"step {i} gives value {i * i} so move on" for i in range(400))
+        loop = "wait, let me recheck the sum of the digits again. " * 300
+        self.assertLess(qual.repeat_frac(live), 0.2)
+        self.assertGreater(qual.repeat_frac(loop), 0.9)
+        self.assertEqual(qual.repeat_frac(""), 0.0)
+        self.assertEqual(qual.repeat_frac("too short to judge"), 0.0)
+
+    def test_trace_fields_keep_the_tail_not_the_whole_chain(self):
+        t = qual.trace_fields("a" * 5000 + " THE END")
+        self.assertEqual(t["think_chars"], 5008)
+        self.assertTrue(t["think_tail"].endswith("THE END"))
+        self.assertLessEqual(len(t["think_tail"]), qual.THINK_TAIL)
+        self.assertEqual(qual.trace_fields(""), {"think_chars": 0, "think_tail": "", "repeat": 0.0})
+
+    def test_aime_cap_follows_the_vendor_budget(self):
+        self.assertGreaterEqual(qual.MAX_TOKENS["aime"] * 8, 38912)  # Qwen's thinking budget guidance for competition math
+
+
 if __name__ == "__main__":
     unittest.main()

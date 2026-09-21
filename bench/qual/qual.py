@@ -33,7 +33,10 @@ HERE = Path(__file__).parent
 # the current cap are re-run on the next pass (an answer that finished is the same under a larger cap at temp 0).
 # mmlu_pro cap is overridable via MMLU_CAP (Qwen3.6 is wordier with thinking off; 19/70 hit 1024, so its score was a floor).
 MAX_TOKENS = {"gsm8k": 768, "humaneval": 1024, "mmlu_pro": int(os.environ.get("MMLU_CAP", "1024")), "overrefusal": 96,
-              "aime": 3072, "math_l5": 2048, "humaneval_plus": 1024}  # refusal is judged on the first 300 chars, so ~96 tokens is enough
+              "aime": 5120, "math_l5": 2048, "humaneval_plus": 1024}  # refusal is judged on the first 300 chars, so ~96 tokens is enough
+# aime was 3072 (x8 thinking = 24.5k): the first two hq1 items both ran the whole cap inside the reasoning block and scored as
+# empty. 5120 x8 = 41k sits at the vendor's thinking budget for competition math, so a cut chain past it is the model's own.
+THINK_TAIL = 1200  # chars of the reasoning kept per row: enough to tell a live chain from a loop, not the whole 100+ KB
 LETTERS = "ABCDEFGHIJ"
 # Standard refusal openers (case-insensitive substrings, matched on the first 300 chars only: a long
 # benign answer that merely mentions "can't" later must still count as compliance).
@@ -145,6 +148,19 @@ def score(kind, it, text):
     return bool(m) and m[-1] == it["gold"]
 
 
+def repeat_frac(text, n=12, window=2000):
+    """share of duplicated word n-grams in the last `window` words: ~0 for a live chain, ~1 for a degenerate loop."""
+    w = text.split()[-window:]
+    if len(w) < 4 * n:
+        return 0.0
+    grams = [tuple(w[i:i + n]) for i in range(len(w) - n + 1)]
+    return round(1 - len(set(grams)) / len(grams), 3)
+
+
+def trace_fields(reasoning):
+    return {"think_chars": len(reasoning), "think_tail": reasoning[-THINK_TAIL:], "repeat": repeat_frac(reasoning)}
+
+
 def ask(url, prompt, max_tokens, think):
     body = json.dumps({"messages": [{"role": "user", "content": prompt}], "temperature": 0, "max_tokens": max_tokens,
                        "chat_template_kwargs": {"enable_thinking": think}}).encode()
@@ -152,7 +168,8 @@ def ask(url, prompt, max_tokens, think):
     d = json.load(urllib.request.urlopen(req, timeout=3600))
     msg = d["choices"][0]["message"]
     return (msg.get("content") or ""), d.get("usage", {}).get("completion_tokens", 0), \
-        d.get("timings", {}).get("predicted_per_second", 0.0), d["choices"][0].get("finish_reason")
+        d.get("timings", {}).get("predicted_per_second", 0.0), d["choices"][0].get("finish_reason"), \
+        (msg.get("reasoning_content") or "")
 
 
 def main():
@@ -186,14 +203,17 @@ def main():
             for it in items[: a.limit or None]:
                 if it["id"] in done:
                     continue
-                text, n, tps, fin = ask(a.url, prompt_for(kind, it), MAX_TOKENS[kind] * (8 if a.think else 1), a.think)
+                text, n, tps, fin, why = ask(a.url, prompt_for(kind, it), MAX_TOKENS[kind] * (8 if a.think else 1), a.think)
                 r = {"id": it["id"], "set": kind, "ok": bool(score(kind, it, text)), "tokens": n, "tps": tps,
                      "finish": fin, "empty": not text.strip(),
                      "text": text[:300] if kind == "overrefusal" else text}  # only the scored opener is kept for that set
+                if a.think:
+                    r.update(trace_fields(why))
                 out.write(json.dumps(r, ensure_ascii=False) + "\n")
                 out.flush()
                 done[it["id"]] = r
-                print(f"  {it['id']:28s} {'ok ' if r['ok'] else 'BAD'} {n:4d} tok {tps:6.2f} t/s {fin}", flush=True)
+                print(f"  {it['id']:28s} {'ok ' if r['ok'] else 'BAD'} {n:4d} tok {tps:6.2f} t/s {fin}"
+                      + (f" repeat {r['repeat']:.2f}" if fin == "length" and "repeat" in r else ""), flush=True)
 
     cells = []
     for kind in a.sets.split(","):
@@ -212,7 +232,8 @@ def main():
         if ks:
             p = sum(r["ok"] for r in ks) / len(ks)
             summary["sets"][kind] = {"n": len(ks), "correct": sum(r["ok"] for r in ks), "pct": round(100 * p, 1), "se_pct": round(100 * math.sqrt(p * (1 - p) / len(ks)), 1),
-                                     "truncated": sum(r["finish"] == "length" for r in ks), "empty": sum(r["empty"] for r in ks)}
+                                     "truncated": sum(r["finish"] == "length" for r in ks), "empty": sum(r["empty"] for r in ks),
+                                     "looping": sum(r["finish"] == "length" and r.get("repeat", 0) >= 0.5 for r in ks)}
             if kind == "overrefusal":  # pct is compliance here; split by published source (id prefix)
                 bs = {}
                 for r in ks:
