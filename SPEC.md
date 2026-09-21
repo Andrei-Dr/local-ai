@@ -24,23 +24,52 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 
 ## 1. Status board
 
-### 1.0 In flight right now (2026-09-21) — the one table to read first
-Box jobs run strictly in this order (`/ai/bench/queue.sh list`; durable, resumes after a poweroff; one job at a time, box exclusive). Every job script in `bench/box/` opens with its hypothesis and kill criterion; results land in `bench/box/ledger.jsonl` / `bench/qual/results/` and are rendered by `bench/jobreport.py`, `bench/ctxreport.py`, `bench/qual/paired.py` (and `bench/qreport.py` once Qwen's brief 23 lands).
+### 1.0 In flight right now (2026-09-22 02:30) — the one board to read first
+Three lists: what the box runs (A), what is owed OFF the box and by whom (B), what waits for Andrei (C). Nothing pending lives
+anywhere else. Box jobs run strictly in order (`/ai/bench/queue.sh list`; durable, one job at a time, box exclusive; nothing
+runs beside a job). Per-job decision rules: `research/HANDOFF-2026-09-21-queue-watch.md` — apply them literally.
+
+**A. Box queue**
 
 | # | box job | work ID | question it answers | decision it feeds |
 |---|---|---|---|---|
-| 1 | `cpu1bench` (3 min) | CPU1 | does ggml's CPU backend thread the expert FFN (real shapes: Q2_K 2048->512 x2, Q3_K 512->2048) well, and what would a task-parallel layout (a thread owns whole experts, one barrier per layer) buy | write the CPU1 kernel or not |
-| 2 | `whittle1` **done 2026-09-21** | S4 / DM1 | GSM8K 81.5 +-2.7 / MMLU-Pro 43.6 +-3.0 vs 96.0 / 71.4; 34.8 t/s | **killed** on both quality sets; no `hq1` arm |
-| 3 | `hq1_iq2m` **done 2026-09-22** | HQ1 | MATH-L5 57.5% (23/40, 16 cut at 32k, 23 of 24 finished correct); EvalPlus 85.4% (35/41); AIME 20% (3/15, 10 cut at 41k, 3 of 5 finished correct); 0 looping chains on the math sets | record only; the verdict waits for `hq1_stock` |
-| 3 | `hq1_iq2m` (last ~11 AIME items; AIME capped at 15) | HQ1 | so far: **MATH-L5 57.5% (23/40), 16 of 40 chains cut at the card's own 32k budget, none a loop; 23 of 24 finished are right; EvalPlus 85% (35/41)** | everything about the quant |
-| 4 | `dl_stock` **done 2026-09-22** | HQ1 | stock Qwen3.6 bartowski IQ2_M on the box, size + GGUF header verified | feeds `hq1_stock` (running) |
-| 4 | `dl_stock` | HQ1 | stock Qwen3.6 bartowski IQ2_M (12.96 GB) = the control; moves 2 closed-decision models to `/mnt/md0/models-cold` first | - |
-| 5 | `dense1` **done 2026-09-22** | DM1 | **FLAT**: median top-20% of FFN neurons = 52% of the energy (threshold 60%), top-5% = 32%, Gini 0.43 | static hot / cold neuron split: **closed** |
-| 5 | `dense1` (~15 min) | DM1 | FFN neuron-energy concentration of dense Qwen3.8-27B | static hot / cold neuron split: dead or probe further |
-| 6 | `hq1_stock` (~16 h) | HQ1 | same items / sampler / seeds on stock weights: is the overthinking the 2.5-bit quant or the fine-tune | which model file we serve |
-| 7 | `qx3` (~4 h) | QX | KLD of all-Q4_K experts (ceiling = price tag of RAM1) and of hot-25% / hot-50% mixes vs K2 0.218 | runtime hot / cold precision split: GO needs >= 25% lower mean KLD |
-| 8-11 | `lq1`, `hq1_k2`, `bonsai1_easy`, `bonsai1_hard` | LQ1 / HQ1 / BON1 | KV type at depth; K2 on the hard sets; Bonsai accuracy | - |
-| next to write | `lq2` = retrieval A/B with `GGML_CUDA_FA_VEC_KROW` 0/1 (written, queued); "race" decoding (3 seeded chains in one batch, first finisher) as an hq1 variant; CPU1 kernel if `cpu1bench` says GO | FA4 / S4 / HQ1 / CPU1 | | |
+| running | `hq1_stock` (~14 h, since 09-22 01:24) | HQ1 | same items / sampler / seeds on STOCK weights: are the unfinished chains the 2.5-bit quant or the fine-tune | stock also cut => quantization => QX3 is the priority. Stock finishes => the fine-tune => which file we serve on hard reasoning (C2) |
+| 1 | `hand1` (~1 min) | HAND1 | exports the prof2 / prof4 nsys timelines to sqlite | unblocks B1 |
+| 2 | `qx3` (~4 h) | QX | KLD of all-Q4_K experts and of hot-25% / hot-50% mixes vs K2 0.218 | GO (mix25 >= 25% lower mean KLD) => B2 |
+| 3 | `lq1` | LQ1 | retrieval at depth per KV type (f16 / q8 / q4 / q4 no-rot) | the shipped long-context KV type (C3) |
+| 4 | `lq2` | FA4 | retrieval at depth, K-walk kernel `GGML_CUDA_FA_VEC_KROW` 0 vs 1, to 131k | pass => KROW becomes the code default (B5) |
+| 5 | `hq1_k2` (~14 h) | HQ1 | K2 quant on the hard sets, paired vs IQ2_M | K2 as default (C1) |
+| 6-7 | `bonsai1_easy`, `bonsai1_hard` | BON1 | ternary Bonsai accuracy | record |
+| to queue | `race1` = hq1 on the CUT items with seed salts 1 and 2 (16 MATH-L5 + 10 AIME chains x 2, <= ~10 h) | RACE1 | is a cut chain a property of the problem or of the seed | needs B3 merged; slot it right after `qx3` |
+
+Done 2026-09-21/22 (numbers in `notes.md`): `whittle1` KILLED (GSM8K 81.5 / MMLU-Pro 43.6 vs 96.0 / 71.4, 34.8 t/s; judges that
+checkpoint, not the approach); `cpu1bench` + `cpu1bench2` (CPU miss phase memory bound at 6 threads, CONFIRMED by the control; CPU1
+dead); `hq1_iq2m` final (MATH-L5 57.5 / EvalPlus 85.4 / AIME 20.0; finished chains 23 of 24, 35 of 40, 3 of 5 correct; 16 + 10
+chains cut at the budget, 0 looping); `dl_stock`; `dense1` = FLAT (DM1 static split closed); `fa4` (KROW +17-22% at depth, opt-in).
+
+**B. Owed off the box**
+
+| # | item | owner | state | trigger / next step |
+|---|---|---|---|---|
+| B1 | **HAND1**: where do the ~0.3 ms per layer go between the bare expert ops (0.49 ms) and the server (0.78 ms) = up to ~12 ms of a 58 ms round. Timeline analysis (memcpy / sync / graph splits), then C++ in the expert-cache path if the slack is real | Fable | blocked on `hand1` (A1) | pull the sqlite files, analyze on the Mac; a patch = build + unit gate + A/B as front-of-queue jobs |
+| B2 | **Runtime hot / cold expert precision split** (hot experts Q4_K resident, cold stay K2): C++ in the loader + cache | Fable | blocked on `qx3` | only on GO. Speed price is bytes-proportional on the miss path (cpu1bench2); measure it in the same A/B |
+| B3 | **RACE1 tooling**: `qual.py --seed-salt / --ids-from` + offline `bench/qual/race.py` | Qwen | brief written: `research/qwen-queue/27-race-reseed.md`, `QUEUE11.md`; NOT yet handed to Qwen | hand over (tmux, file pointer), review, cherry-pick; then write `bench/box/race1.sh` (a salted `hq1.sh` arm) and queue it |
+| B4 | RACE1 follow-through: if `RACE_VERDICT seed`, decide the serving form (sequential retry-on-cut vs parallel slots; parallel costs KV VRAM x N and splits the expert cache, so retry first) | Fable | after `race1` | `problem` verdict => dead, the budget / quant is the lever |
+| B5 | Flip `GGML_CUDA_FA_VEC_KROW` to default-on in code | Opus-level | after `lq2` passes | one-line patch + rebuild + unit gate, front of queue |
+| B6 | Housekeeping: rebuild the `fa1` tree once (stale `mmq.cu` hunk); fix the F16 `llama-bench` "failed to create context" rows in the fa1 harness; verify `ai-queue` autostart + governor at the next reboot | Opus-level | open | between jobs only |
+| B7 | W1 write-up rows + `bench/LEDGER.md` stay current after every job | whoever watches | continuous | handoff rules |
+| parked | MIG1; per-token FFN sparsity probe on the dense 27B (moot on this box: 8.7B always-active floor); `mradermacher/Qwen3.6-Whittle-25B-A3B` first contact (untested, card unread) | - | parked | reopen only on Andrei's word |
+
+**C. Waiting for Andrei — in his priority order (2026-09-22). Each needs the named rows first.**
+
+| # | decision | needs |
+|---|---|---|
+| C1 | K2 as the default Qwen quant; in-model MTP head as the shipped head | `hq1_k2` + kld1 (have) + his spot-check |
+| C2 | which file serves hard reasoning (uncensored fine-tune vs stock) | `hq1_stock` |
+| C3 | the shipped long-context config (KV type, KROW) | `lq1`, `lq2` |
+| C4 | Gemma default; `ollama.service` on the box; anything public (upstream PRs, fork) | his call, no data pending |
+| C5 | **second to last: Dave's box for a better distillation than Whittle's (T5)** | T0 (1 h ROCm throughput spike) prices it; only after everything above |
+| C6 | **LAST: RAM1 (16 -> 32 GB)** | only if `qx3` shows a precision ceiling that no hot / cold split reaches in 16 GB |
 
 Done since the last board (2026-09-21, numbers in `notes.md`): `fa1` run 2, `arch1`, `kld1`, `ctx1c`, `ctx1d`, `prof2`, `prof3` (blind: nsys 2022.4 cannot see kernels inside CUDA graphs), `kq1graft`, `prof4`, `fa3` (dead), `fa4`. Box fixes: the queue never autostarted because of a **systemd ordering cycle** (ai-queue After ai-perf-tweaks After multi-user.target; fixed, unproven until the next boot); power-profiles-daemon kept resetting the governor (the tweak unit now sets the `performance` profile through it); `systemctl stop` no longer marks the running job `failed`.
 
@@ -96,13 +125,13 @@ Done tonight, verdicts in the rows below: S2, S3, U1, N1, N2, P1/G4, P2, `p4c1` 
 | CPU1 | Task-parallel fused expert FFN on the CPU backend (a thread owns whole experts, one barrier per layer) | **dead [D]** (`cpu1bench`, real shapes / types): task-parallel t6 = ggml t6 (484 vs 489 us for 12 pairs); both stall at ~3.5x on 6 cores because the miss phase pulls ~27 GB/s of expert bytes from DRAM. **Memory bound at 6 threads, CONFIRMED by the `cpu1bench2` control [V]**: the same experts re-used (bytes served from the 12 MiB L3) scale 4.98x and cut t6 by 31%, and the gain fades where the set outgrows the L3 (24 pairs 4.13x). Compute bound only at 1 thread. (27 GB/s is under the ~38 GB/s measured peak: "memory bound" is proven, "at the hard ceiling" is not) | lever on the miss term = bytes per token only (hit rate, bits per expert); THP is already `always`, expert placement does not help a ~1.1 MB sequential stream. Fatter experts cost the miss phase in proportion to their bytes. Open slack: ~0.3 ms per layer of CPU<->GPU handoff in the server (0.78 ms measured vs 0.49 bare) = up to ~12 ms of the 58 ms round; measure on the prof2 nsys timeline first (HAND1) |
 | C2 | **Long-context product layer**: `ctxproxy2` (token-exact proxy: keeps the exact ids of every stored conversation, tokenizes only the new suffix, `/completion` with id arrays, OpenAI streaming, slot + id sidecar store with LRU disk budget) + a two-phase supervisor (prefill-config server for new long documents, decode-config server for serving) | proxy = Qwen brief 22 (queue 8); supervisor = design after the 262k + `ctx1c` numbers | brief 16's chat-text proxy would never hit on this model |
 | QX | **Own quantization** ("our rainbow table": unlimited offline compute, consulted on every token). [M] routing: top 25% of experts carry 72-78% of the mass, but the hot set is workload-specific (code vs prose overlap = chance). Steps, each gated by KLD then paired: QX1 imatrix from the Q6 source with expert-balanced calibration (Dave's box); QX2 per-layer type recipe — replay Unsloth Dynamic's from its GGUF header (`bench/gguf_types.py`, merged) onto our Q6 source; QX3 hot/cold per-expert precision — FIRST emulated in one GGUF (`expert_mix.py`, Qwen brief 24) and priced by KLD, runtime C++ (split tensors + two MUL_MAT_ID with skip ids + expert-cache interplay, 2-3 sessions) only if mean KLD drops >= ~25% at equal size; QX4 ik_llama IQK types only if the FORMAT is the limit | accuracy answer for QX3: ~12-16 h after kld1 + brief 24 land | codebook / trellis formats only for GPU-resident tensors: they decode slowly on the CPU miss path |
-| RAM1 | Hardware: 16 -> 32 GB DDR4 (~$50-70, board takes 128 GB) | proposal, Andrei's call | unlocks 3-4 bit expert files (16.7-20 GB do not fit today), the biggest accuracy lever per dollar if `hq1` shows a reasoning collapse; also page cache for slot files |
+| RAM1 | Hardware: 16 -> 32 GB DDR4 (~$50-70, board takes 128 GB) | **LAST on the table (Andrei 2026-09-22)**: only after every software lever and after T5 | unlocks 3-4 bit expert files (16.7-20 GB do not fit today), the biggest accuracy lever per dollar if `hq1` shows a reasoning collapse; also page cache for slot files |
 | MIG1 | Repo layout: flatten `bench/box/*` -> `bench/*` so the repo mirrors `/ai/bench` 1:1, then make `/ai` a git checkout (box identity + GitHub SSH already set) | parked, plan in `research/MIGRATION-flatten-bench.md` | only when the queue AND the Qwen worktree are idle |
 | T0 | ROCm throughput spike on Dave's MI210 pair (1 h) | todo | gate for every T item |
 | T1 | MTP head / drafter fine-tune with TV loss (self-distillation) | design in section 7 | after T0 |
 | T2 | Router-only locality fine-tune (ReMoE-style) | design in section 7 | after T0 and P1 |
 | T3 | Full logit KD dense 27B -> 35B-A3B | parked [L] | 15-193 days student + teacher-logit generation; see 7.4 |
-| T5 | Continue the Whittle recipe (memory transfer + dependence loss + forward-KL) on Dave's box | lead [L] | after S4 shows the preview is worth continuing, and after T0; see 7.5 |
+| T5 | Continue the Whittle recipe (memory transfer + dependence loss + forward-KL) on Dave's box = a better distillation than the 3.3 h preview | lead [L]; **second to last in Andrei's order (2026-09-22), just before RAM1** | after S4 shows the preview is worth continuing, and after T0; see 7.5 |
 | T4 | Dense -> A3B/A4B conversion of Qwen3.8-27B | dead [D] | see 3.2 |
 | F1 | Qwen3.8-Flash-Next (native n-gram table + MoE + MTP) | parked by Andrei | see 3.4 |
 | W1 | Write-up / paper | outline in section 10 | after the ablation matrix is filled |
