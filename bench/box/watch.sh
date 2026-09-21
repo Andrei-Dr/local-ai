@@ -37,7 +37,8 @@ job)
   while :; do
     if ! fresh; then
       if [ $(date +%s) -ge $end ]; then echo "EXIT job: TIMEOUT ${tmin}min ($log never written after the watcher started)"; diag; exit 4; fi
-      pgrep -af "$proc_re" | grep -vE "watch\.sh|pgrep|grep" | grep -q . || { echo "EXIT job: PROCESS GONE ($proc_re) and $log is stale"; tail -4 "$log" 2>/dev/null; diag; exit 5; }
+      # the queue runner waits ~1-2 min for an idle box before it starts a job: no verdict on a stale log in the first 5 min
+      [ $(( $(date +%s) - t0 )) -lt 300 ] || pgrep -af "$proc_re" | grep -vE "watch\.sh|pgrep|grep" | grep -q . || { echo "EXIT job: PROCESS GONE ($proc_re) and $log is stale"; tail -4 "$log" 2>/dev/null; diag; exit 5; }
       sleep 30; continue
     fi
     if grep -qE "$done_re" "$log" 2>/dev/null; then echo "EXIT job: DONE ($done_re in $log)"; tail -6 "$log"; exit 0; fi
