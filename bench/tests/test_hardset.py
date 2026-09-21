@@ -102,7 +102,32 @@ class ThinkingTrace(unittest.TestCase):
         self.assertEqual(qual.trace_fields(""), {"think_chars": 0, "think_tail": "", "repeat": 0.0})
 
     def test_aime_cap_follows_the_vendor_budget(self):
-        self.assertGreaterEqual(qual.MAX_TOKENS["aime"] * 8, 38912)  # Qwen's thinking budget guidance for competition math
+        self.assertGreaterEqual(qual.MAX_TOKENS["aime"] * 8, 38912)
+        self.assertEqual(qual.MAX_TOKENS["math_l5"] * 8, 32768)  # the card's budget for normal queries
+
+
+class ThinkingSampler(unittest.TestCase):
+    def test_thinking_uses_the_vendor_sampler_with_a_per_item_seed(self):
+        b = qual.request_body("p", 100, True, "aime/2024-60")
+        self.assertEqual((b["temperature"], b["top_p"], b["top_k"], b["min_p"], b["presence_penalty"]), (1.0, 0.95, 20, 0.0, 1.5))
+        c = qual.request_body("p", 100, True, "HumanEval/3", "humaneval_plus")
+        self.assertEqual((c["temperature"], c["presence_penalty"]), (0.6, 0.0))
+        self.assertEqual(b["seed"], qual.request_body("p", 100, True, "aime/2024-60")["seed"])
+        self.assertNotEqual(b["seed"], qual.request_body("p", 100, True, "aime/2024-61")["seed"])
+        self.assertTrue(0 <= b["seed"] < 2 ** 31)
+
+    def test_non_thinking_stays_greedy(self):
+        b = qual.request_body("p", 100, False, "gsm8k/1")
+        self.assertEqual(b["temperature"], 0)
+        self.assertNotIn("seed", b)
+
+    def test_rows_from_another_sampler_are_rerun(self):
+        greedy = {"id": "x", "set": "aime", "finish": "stop", "tokens": 10}
+        self.assertFalse(qual.row_is_current(greedy, think=True))
+        self.assertTrue(qual.row_is_current(dict(greedy, sampler=qual.THINK_SAMPLER_TAG), think=True))
+        self.assertTrue(qual.row_is_current(greedy, think=False))
+        cut = dict(greedy, sampler=qual.THINK_SAMPLER_TAG, finish="length", tokens=100)
+        self.assertFalse(qual.row_is_current(cut, think=True))  # cut off under an older, smaller cap
 
 
 if __name__ == "__main__":

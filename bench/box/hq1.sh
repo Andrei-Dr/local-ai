@@ -7,8 +7,10 @@
 # Read: absolute AIME % against the model card's full-precision score = is the served ~2.5-bit file broken on hard reasoning?
 # (if yes: RAM upgrade + 4-bit experts outranks every speed lever); and IQ2_M vs K2 paired per question (bench/qual/paired.py).
 # Also `truncated` + `looping`: a chain cut at the cap scores wrong. Run 1 (aime cap 24.5k, -c 32768) lost both of its first two
-# items that way, all 24.5k tokens inside the reasoning block. The cap is now 41k (the vendor's thinking budget for competition
-# math) and each row keeps the reasoning tail + a repetition score, so a cut chain reads as "still working" or "degenerate loop".
+# items that way, all 24.5k tokens inside the reasoning block; run 2 lost a prealgebra item at 16k with a repetition score of
+# 0.00. Both runs decoded GREEDILY, which is off the model card. qual.py now samples as the card says (seeded per item), caps
+# are 32k (math_l5) / 41k (aime; the card allows 81k, F16 KV at -c 49152 does not), and each row keeps the reasoning tail + a
+# repetition score, so a cut chain reads as "still working" or "degenerate loop".
 # Set order: math_l5 and humaneval_plus first (short chains, a usable paired read within hours), aime last (up to ~25 min/item).
 # Config: mainline, F16 KV (the KV precision is NOT under test here), -c 49152 (KV 960 MiB, ~3.1 of 3.6 GiB used), cache 24,
 # -ub 128, no MTP (F16 KV + head = OOM).

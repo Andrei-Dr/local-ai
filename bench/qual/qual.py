@@ -25,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import hashlib
 import urllib.request
 from pathlib import Path
 
@@ -33,9 +34,10 @@ HERE = Path(__file__).parent
 # the current cap are re-run on the next pass (an answer that finished is the same under a larger cap at temp 0).
 # mmlu_pro cap is overridable via MMLU_CAP (Qwen3.6 is wordier with thinking off; 19/70 hit 1024, so its score was a floor).
 MAX_TOKENS = {"gsm8k": 768, "humaneval": 1024, "mmlu_pro": int(os.environ.get("MMLU_CAP", "1024")), "overrefusal": 96,
-              "aime": 5120, "math_l5": 2048, "humaneval_plus": 1024}  # refusal is judged on the first 300 chars, so ~96 tokens is enough
+              "aime": 5120, "math_l5": 4096, "humaneval_plus": 1024}  # refusal is judged on the first 300 chars, so ~96 tokens is enough
 # aime was 3072 (x8 thinking = 24.5k): the first two hq1 items both ran the whole cap inside the reasoning block and scored as
-# empty. 5120 x8 = 41k sits at the vendor's thinking budget for competition math, so a cut chain past it is the model's own.
+# empty. 5120 x8 = 41k is what -c 49152 of F16 KV leaves room for; the card allows competition math up to 81,920, so
+# `truncated` on aime is still partly ours. math_l5 4096 x8 = the card's 32,768 for normal queries.
 THINK_TAIL = 1200  # chars of the reasoning kept per row: enough to tell a live chain from a loop, not the whole 100+ KB
 LETTERS = "ABCDEFGHIJ"
 # Standard refusal openers (case-insensitive substrings, matched on the first 300 chars only: a long
@@ -161,9 +163,35 @@ def trace_fields(reasoning):
     return {"think_chars": len(reasoning), "think_tail": reasoning[-THINK_TAIL:], "repeat": repeat_frac(reasoning)}
 
 
-def ask(url, prompt, max_tokens, think):
-    body = json.dumps({"messages": [{"role": "user", "content": prompt}], "temperature": 0, "max_tokens": max_tokens,
-                       "chat_template_kwargs": {"enable_thinking": think}}).encode()
+# Thinking mode is sampled the way the vendor specifies (Qwen3.6-35B-A3B model card, read 2026-09-21): general thinking =
+# temperature 1.0, top-p 0.95, top-k 20, min-p 0, presence penalty 1.5; precise coding = temperature 0.6, presence penalty 0.
+# Output budget on the card: 32,768 tokens for normal queries, up to 81,920 for competition math. hq1 run 1+2 were greedy
+# (off-spec) and 3 of 3 items ran the whole cap inside the reasoning block with a repetition score of 0.00: a live chain that
+# never concludes. The seed is a hash of the item id, so a (file, item) pair is reproducible and both arms of a paired test
+# draw from the same seed.
+THINK_SAMPLER = {"temperature": 1.0, "top_p": 0.95, "top_k": 20, "min_p": 0.0, "presence_penalty": 1.5}
+THINK_SAMPLER_CODE = {"temperature": 0.6, "top_p": 0.95, "top_k": 20, "min_p": 0.0, "presence_penalty": 0.0}
+CODE_SETS = ("humaneval", "humaneval_plus")
+THINK_SAMPLER_TAG = "qwen36-card-seeded"
+
+
+def request_body(prompt, max_tokens, think, item_id, kind=""):
+    body = {"messages": [{"role": "user", "content": prompt}], "temperature": 0, "max_tokens": max_tokens,
+            "chat_template_kwargs": {"enable_thinking": think}}
+    if think:
+        body.update(THINK_SAMPLER_CODE if kind in CODE_SETS else THINK_SAMPLER, seed=int.from_bytes(hashlib.sha256(item_id.encode()).digest()[:4], "big") >> 1)
+    return body
+
+
+def row_is_current(r, think):
+    """a saved row counts as done unless it came from another sampler or was cut off under an older, smaller cap."""
+    if think and r.get("sampler") != THINK_SAMPLER_TAG:
+        return False
+    return not (r["finish"] == "length" and r["tokens"] < MAX_TOKENS.get(r["set"], 0) * (8 if think else 1))
+
+
+def ask(url, prompt, max_tokens, think, item_id="", kind=""):
+    body = json.dumps(request_body(prompt, max_tokens, think, item_id, kind)).encode()
     req = urllib.request.Request(f"{url}/v1/chat/completions", body, {"Content-Type": "application/json"})
     d = json.load(urllib.request.urlopen(req, timeout=3600))
     msg = d["choices"][0]["message"]
@@ -188,9 +216,8 @@ def main():
     if out_path.exists():
         for line in out_path.open():
             r = json.loads(line)
-            cap = MAX_TOKENS.get(r["set"], 0) * (8 if a.think else 1)
-            if r["finish"] == "length" and r["tokens"] < cap:
-                done.pop(r["id"], None)  # cut off under an older, smaller cap
+            if not row_is_current(r, a.think):
+                done.pop(r["id"], None)
                 continue
             done[r["id"]] = r
     t0 = time.time()
@@ -203,12 +230,12 @@ def main():
             for it in items[: a.limit or None]:
                 if it["id"] in done:
                     continue
-                text, n, tps, fin, why = ask(a.url, prompt_for(kind, it), MAX_TOKENS[kind] * (8 if a.think else 1), a.think)
+                text, n, tps, fin, why = ask(a.url, prompt_for(kind, it), MAX_TOKENS[kind] * (8 if a.think else 1), a.think, it["id"], kind)
                 r = {"id": it["id"], "set": kind, "ok": bool(score(kind, it, text)), "tokens": n, "tps": tps,
                      "finish": fin, "empty": not text.strip(),
                      "text": text[:300] if kind == "overrefusal" else text}  # only the scored opener is kept for that set
                 if a.think:
-                    r.update(trace_fields(why))
+                    r.update(trace_fields(why), sampler=THINK_SAMPLER_TAG)
                 out.write(json.dumps(r, ensure_ascii=False) + "\n")
                 out.flush()
                 done[it["id"]] = r
