@@ -967,3 +967,40 @@ exact box error before the fix. Checked on the real files: 733 tensors, 0 elemen
 (= 40 layers x 3 expert tensors in different types). The X4 arm already ran before the failure: mean KLD 0.1370 vs K2 0.2181
 (-37%), same top token 84.0% vs 79.9%, 99% KLD 1.03 — the all-Q4_K ceiling is well below K2, so QX3 is alive; the mixes decide GO.
 `hand1` finished (sqlite exports of prof2 / prof4 present) => B1 is unblocked.
+
+### 2026-09-22 — HAND1: the "0.3 ms handoff" was the serial GPU dense phase; real handoff is 84 us per layer
+
+Source: the prof2 nsys trace (K2, cache 26, MTP n 2, short context), `bench/hand1_phases.py prof2_nsys.sqlite`. Decode runs
+through CUDA graphs, so nsys 2022.4 sees no kernels there (same blind spot as prof3), but the host CUDA API trace is complete:
+per layer the main thread does D launch (async: expert-cache hits) -> CPU experts -> H2D of the host outputs -> B launch + a
+long sync (serial device work) -> D2H of hidden state + router. Over 8,153 decode layers:
+
+| per layer (mean) | us | per 40-layer pass |
+|---|---|---|
+| CPU experts (gap after the D launch) | 473.0 | 18.9 ms |
+| device phase (sync after the B launch) | 458.1 | 18.3 ms |
+| cudaStreamSynchronize (short ones) | 35.4 | 1.4 ms |
+| cudaGraphLaunch API | 26.5 | 1.1 ms |
+| cudaMemcpyAsync API | 12.4 | 0.5 ms |
+| host gaps between calls | 9.9 | 0.4 ms |
+| period | 1018.3 (p10 754, p50 955, p90 1287) | 40.7 ms |
+
+Reading: (1) the server's CPU expert phase is 473 us, the SAME as the bare ops (0.49 ms, cpu1bench): the 0.78 ms figure was
+inferred from a round model, never measured, and nothing is lost on the CPU side. (2) The device phase is REAL kernel time, not
+latency: a stretch of the trace that ran without graphs (7.6 s) shows back-to-back kernels with ~0.5 us gaps, ~470-520 us per
+layer: merge of host + cache outputs, the SHARED EXPERT (~55-60 us), residual / norm, the next layer's attention (QKV mmvq 70-120,
+FA 59, out 58) or delta net (in-proj 70, concat_non_cont 53, state get_rows 27, gated_delta_net 57, out 62 + 57), router + top-k.
+It runs while the CPU waits, and the CPU experts run while the GPU idles apart from the hit chain. (3) The true handoff (syncs,
+launches, copies, gaps) is 84 us per layer = ~3.4 ms per pass, not ~12 ms.
+Levers, all bit-identical (same kernels, same inputs, reordered or moved), ranked by size:
+- **SHEXP overlap** (~2 ms per pass): qwen35moe builds the shared expert AFTER `build_moe_ffn` (`qwen35moe.cpp:468` then
+  `:488-496`), so it lands in the serial B split. It depends only on the layer input, so it can go into the D split next to the
+  cache-hit chain and run while the CPU does the misses. Needs a hook in our `build_moe_ffn` barrier section.
+- **GDN concat** (~1.5 ms per pass): `concat_non_cont` takes 53 us per delta-net layer (30 of them) to move ~100-200 KB; a
+  contiguous layout or a better non-contiguous kernel is pure data movement.
+- **Async H2D of the host expert outputs** (~0.7 ms): the 196,608 B result copy goes through the scheduler's synchronous fallback
+  (CUDA cannot `cpy_tensor_async` from the CPU backend): sync, memcpy, sync 18.8 us (15.8 of it the transfer), then the ~20 us
+  graph launch. Enqueued on the stream, the launch would overlap the transfer. Needs care on host-buffer reuse.
+- Small: the two D2H copies each carry a sync (~4 us).
+Ceiling of the three: ~4 ms of the ~58 ms round (~7%). The rest of the device phase is dense-weight matvecs (bandwidth bound,
+changing them is a precision question), and CPU vs GPU are serial by data dependency across layers.
