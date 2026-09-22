@@ -1004,3 +1004,17 @@ Levers, all bit-identical (same kernels, same inputs, reordered or moved), ranke
 - Small: the two D2H copies each carry a sync (~4 us).
 Ceiling of the three: ~4 ms of the ~58 ms round (~7%). The rest of the device phase is dense-weight matvecs (bandwidth bound,
 changing them is a precision question), and CPU vs GPU are serial by data dependency across layers.
+
+### 2026-09-23 — HAND1 levers 2 and 3 built; all three go through one gate job (hand2)
+
+- 0008 (CUDA concat): the non-contiguous kernel ran one 256-thread block per row; the delta-net conv state is 6 elements x 8,192
+  rows (3 cached + 3 new tokens, the new part a transpose), so 8,192 blocks each used 6 threads. New flat kernel (one thread per
+  destination element, identical element selection) whenever ne0 <= 64. test-backend-ops gains the transposed-b variant (v & 16)
+  at the real shape for 1 / 3 / 4 / 17 tokens, plus a perf case.
+- 0009 (ggml-backend sched): a host -> device split input the backend cannot `cpy_tensor_async` went sync + copy on the per-thread
+  stream + sync (18.8 us per layer for the 196 KB expert outputs, 15.8 of it the transfer, before the ~20 us graph launch). It is
+  now `ggml_backend_tensor_set_async` on the split backend's stream when the source is a host buffer. Safe because every later
+  host split first synchronizes the device backend (it copies inputs from it, or has none and syncs the previous backend).
+- Build: the ov tree is a `cp -a` of the served tree; after touching the old objects, make rebuilt exactly ggml-backend.cpp,
+  concat.cu and test-backend-ops.cpp (checked with make -n first; the new kernel symbols are in libggml-cuda). `shov1` was replaced
+  by `hand2` (unit -> identity -> nsys mechanism -> ABAB speed); a divergence gets bisected over the three commits.
