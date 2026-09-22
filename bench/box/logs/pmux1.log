@@ -1,0 +1,103 @@
+    preflight: governor=performance thp=[always] mem_avail=14726MiB swap_used=591MiB gpu=17MiB,39,P8
+##### pmux1_base_a | served | -ub 128 -b 256
+    preflight: governor=performance thp=[always] mem_avail=14712MiB swap_used=591MiB gpu=17MiB,39,P8
+pmux1_base_a   code    300 tok | wall 48.36 t/s | decode 59.84 t/s | prefill   35.8 t/s | accept 190/217=0.88    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+pmux1_base_a   reason  300 tok | wall 44.82 t/s | decode 58.00 t/s | prefill   39.0 t/s | accept 187/224=0.83    | vram 3434 MiB | 'To solve this problem, we will use the formula f'
+pmux1_base_a   edit    300 tok | wall 23.90 t/s | decode 62.55 t/s | prefill   48.5 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+pmux1_base_a   long    300 tok | wall  5.91 t/s | decode 48.76 t/s | prefill   48.9 t/s | accept 172/253=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[pmux1_base_a]: GPU util avg  92% max 100% | power avg  53W max  84W /100W | PCIe->GPU avg  2.37 max  5.12 GB/s (~13 cap) | CPU busy  250% of 1200% | DRAM read avg   5.0 max  12.5 GB/s (~38 cap)
+    peak VRAM 3518 MiB
+          1 1.29.216.786 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+          1 0.11.610.151 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.11.610.148 I sched_reserve:      CUDA0 compute buffer size =    25.00 MiB
+          1 0.11.607.937 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.11.607.935 I sched_reserve:      CUDA0 compute buffer size =    25.00 MiB
+          1 0.10.519.761 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.10.519.758 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+##### pmux1_ub256 | served | -ub 256 -b 512
+    preflight: governor=performance thp=[always] mem_avail=14649MiB swap_used=592MiB gpu=17MiB,48,P0
+pmux1_ub256    code    300 tok | wall 45.78 t/s | decode 56.54 t/s | prefill   34.9 t/s | accept 187/223=0.84    | vram 3480 MiB | '```python\nfrom collections import OrderedDict\nfr'
+pmux1_ub256    reason  300 tok | wall 44.19 t/s | decode 57.11 t/s | prefill   39.1 t/s | accept 189/220=0.86    | vram 3480 MiB | 'To solve this problem, we will use the formula:\n'
+pmux1_ub256    edit    300 tok | wall 26.85 t/s | decode 59.17 t/s | prefill   62.4 t/s | accept 198/202=0.98    | vram 3480 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+pmux1_ub256    long    300 tok | wall  8.16 t/s | decode 45.05 t/s | prefill   72.9 t/s | accept 165/267=0.62    | vram 3480 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[pmux1_ub256]: GPU util avg  88% max 100% | power avg  57W max  88W /100W | PCIe->GPU avg  2.19 max  5.18 GB/s (~13 cap) | CPU busy  292% of 1200% | DRAM read avg   5.5 max  12.2 GB/s (~38 cap)
+    peak VRAM 3536 MiB
+          1 1.16.085.206 W ~llama_context:      CUDA0 compute buffer size of 148.1495 MiB, does not match expectation of 148.0089 MiB
+          1 0.12.783.684 I sched_reserve:  CUDA_Host compute buffer size =     6.01 MiB
+          1 0.12.783.681 I sched_reserve:      CUDA0 compute buffer size =    50.01 MiB
+          1 0.12.779.570 I sched_reserve:  CUDA_Host compute buffer size =     6.01 MiB
+          1 0.12.779.567 I sched_reserve:      CUDA0 compute buffer size =    50.01 MiB
+          1 0.11.646.371 I sched_reserve:  CUDA_Host compute buffer size =     6.01 MiB
+          1 0.11.646.367 I sched_reserve:      CUDA0 compute buffer size =   148.01 MiB
+##### pmux1_ubp512 | ov | -ub 128 -b 2048 -ubp 512
+    preflight: governor=performance thp=[always] mem_avail=14715MiB swap_used=595MiB gpu=17MiB,52,P0
+pmux1_ubp512   code    300 tok | wall 46.93 t/s | decode 57.69 t/s | prefill   35.5 t/s | accept 188/220=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+pmux1_ubp512   reason  300 tok | wall 44.95 t/s | decode 58.41 t/s | prefill   38.6 t/s | accept 190/218=0.87    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+pmux1_ubp512   edit    300 tok | wall 23.55 t/s | decode 46.25 t/s | prefill   60.1 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+pmux1_ubp512   long    300 tok | wall  9.87 t/s | decode 37.64 t/s | prefill   97.1 t/s | accept 172/252=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[pmux1_ubp512]: GPU util avg  79% max 100% | power avg  54W max  89W /100W | PCIe->GPU avg  1.49 max  5.52 GB/s (~13 cap) | CPU busy  335% of 1200% | DRAM read avg   6.5 max  13.9 GB/s (~38 cap)
+    peak VRAM 3484 MiB
+          1 0.57.553.844 W moe-cache: could not re-allocate the device slots on CUDA0 - cache stays off (outputs unchanged, decode slower)
+          1 0.57.553.829 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.57.553.826 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+          1 0.38.044.481 I sched_reserve:  CUDA_Host compute buffer size =    12.02 MiB
+          1 0.38.044.462 I sched_reserve:      CUDA0 compute buffer size =   186.02 MiB
+          1 0.28.785.967 W moe-cache: could not re-allocate the device slots on CUDA0 - cache stays off (outputs unchanged, decode slower)
+          1 0.28.785.952 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.28.785.948 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+##### pmux1_ubp1024 | ov | -ub 128 -b 2048 -ubp 1024
+    preflight: governor=performance thp=[always] mem_avail=14720MiB swap_used=595MiB gpu=17MiB,53,P0
+pmux1_ubp1024  code    300 tok | wall 43.61 t/s | decode 53.33 t/s | prefill   34.7 t/s | accept 188/221=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+pmux1_ubp1024  reason  300 tok | wall 41.17 t/s | decode 52.34 t/s | prefill   38.6 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+pmux1_ubp1024  edit    300 tok | wall 22.19 t/s | decode 41.95 t/s | prefill   59.8 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+pmux1_ubp1024  long    300 tok | wall 11.65 t/s | decode 34.42 t/s | prefill  129.2 t/s | accept 178/242=0.74    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    FOREIGN CPU [pmux1_ubp1024]: avg 57% max 127% of one core, top 'kcompactd0' -- speed numbers in this window are contaminated
+    telemetry[pmux1_ubp1024]: GPU util avg  72% max 100% | power avg  50W max  82W /100W | PCIe->GPU avg  1.47 max 10.36 GB/s (~13 cap) | CPU busy  411% of 1200% | DRAM read avg   6.6 max  13.0 GB/s (~38 cap)
+    peak VRAM 3484 MiB
+          1 0.55.981.159 W moe-cache: could not re-allocate the device slots on CUDA0 - cache stays off (outputs unchanged, decode slower)
+          1 0.55.981.133 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.55.981.129 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+          1 0.42.073.786 I sched_reserve:  CUDA_Host compute buffer size =    24.04 MiB
+          1 0.42.073.781 I sched_reserve:      CUDA0 compute buffer size =   262.04 MiB
+          1 0.31.999.980 W moe-cache: could not re-allocate the device slots on CUDA0 - cache stays off (outputs unchanged, decode slower)
+          1 0.31.999.952 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.31.999.947 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+##### pmux1_ubp2048 | ov | -ub 128 -b 2048 -ubp 2048
+    preflight: governor=performance thp=[always] mem_avail=14714MiB swap_used=596MiB gpu=17MiB,53,P0
+pmux1_ubp2048  code    300 tok | wall 45.18 t/s | decode 55.23 t/s | prefill   35.0 t/s | accept 189/220=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+pmux1_ubp2048  reason  300 tok | wall 42.40 t/s | decode 54.28 t/s | prefill   38.5 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+pmux1_ubp2048  edit    300 tok | wall 23.69 t/s | decode 46.91 t/s | prefill   60.0 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+pmux1_ubp2048  long    300 tok | wall 13.52 t/s | decode 36.64 t/s | prefill  155.6 t/s | accept 172/253=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[pmux1_ubp2048]: GPU util avg  73% max 100% | power avg  56W max  82W /100W | PCIe->GPU avg  1.07 max  4.66 GB/s (~13 cap) | CPU busy  401% of 1200% | DRAM read avg   7.2 max  14.1 GB/s (~38 cap)
+    peak VRAM 3484 MiB
+          1 0.49.741.465 W moe-cache: could not re-allocate the device slots on CUDA0 - cache stays off (outputs unchanged, decode slower)
+          1 0.49.741.454 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.49.741.450 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+          1 0.38.684.922 I sched_reserve:  CUDA_Host compute buffer size =    48.07 MiB
+          1 0.38.684.919 I sched_reserve:      CUDA0 compute buffer size =   526.07 MiB
+          1 0.29.524.288 W moe-cache: could not re-allocate the device slots on CUDA0 - cache stays off (outputs unchanged, decode slower)
+          1 0.29.524.254 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.29.524.251 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+##### pmux1_base_b | served | -ub 128 -b 256
+    preflight: governor=performance thp=[always] mem_avail=14722MiB swap_used=600MiB gpu=17MiB,53,P0
+pmux1_base_b   code    300 tok | wall 45.55 t/s | decode 55.67 t/s | prefill   35.5 t/s | accept 190/217=0.88    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+pmux1_base_b   reason  300 tok | wall 45.49 t/s | decode 59.46 t/s | prefill   38.4 t/s | accept 190/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+pmux1_base_b   edit    300 tok | wall 23.71 t/s | decode 61.78 t/s | prefill   48.3 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+pmux1_base_b   long    300 tok | wall  5.86 t/s | decode 47.61 t/s | prefill   48.6 t/s | accept 169/260=0.65    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[pmux1_base_b]: GPU util avg  91% max 100% | power avg  55W max  87W /100W | PCIe->GPU avg  2.75 max 11.59 GB/s (~13 cap) | CPU busy  269% of 1200% | DRAM read avg   4.9 max  12.3 GB/s (~38 cap)
+    peak VRAM 3518 MiB
+          1 1.29.983.060 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+          1 0.11.337.209 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.11.337.207 I sched_reserve:      CUDA0 compute buffer size =    25.00 MiB
+          1 0.11.334.863 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.11.334.861 I sched_reserve:      CUDA0 compute buffer size =    25.00 MiB
+          1 0.10.239.380 I sched_reserve:  CUDA_Host compute buffer size =     3.00 MiB
+          1 0.10.239.377 I sched_reserve:      CUDA0 compute buffer size =   129.00 MiB
+--- READ (long prompt prefill, decode 4-prompt mean vs base mean +- base spread)
+  base      long prefill   48.8 t/s | decode mean  56.71 (spread 1.89)
+  pmux1_ub256   long prefill   72.9 t/s (1.50x) | long wall  36.6 s vs  51.0 s | decode mean  54.47 ( -4.0%) | -
+  pmux1_ubp512  long prefill   97.1 t/s (1.99x) | long wall  30.4 s vs  51.0 s | decode mean  50.00 (-11.8%) | -
+  pmux1_ubp1024 long prefill  129.2 t/s (2.65x) | long wall  25.6 s vs  51.0 s | decode mean  45.51 (-19.7%) | -
+  pmux1_ubp2048 long prefill  155.6 t/s (3.19x) | long wall  22.2 s vs  51.0 s | decode mean  48.27 (-14.9%) | -
+  best fitting prefill-mode ubatch: none
+PMUX1_DONE

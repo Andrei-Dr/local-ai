@@ -1,0 +1,148 @@
+    preflight: governor=performance thp=[always] mem_avail=14579MiB swap_used=553MiB gpu=17MiB,50,P8
+##### opt1_base_a | env: none | extra: 
+    preflight: governor=performance thp=[always] mem_avail=14567MiB swap_used=553MiB gpu=17MiB,50,P8
+opt1_base_a    code    300 tok | wall 47.62 t/s | decode 58.86 t/s | prefill   35.2 t/s | accept 190/218=0.87    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_base_a    reason  300 tok | wall 44.33 t/s | decode 57.35 t/s | prefill   38.7 t/s | accept 189/220=0.86    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt1_base_a    edit    300 tok | wall 23.05 t/s | decode 57.56 t/s | prefill   48.2 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt1_base_a    long    300 tok | wall  5.89 t/s | decode 49.61 t/s | prefill   48.6 t/s | accept 175/246=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    [opt1_base_a] Rss: 12628692 kB Anonymous: 578844 kB AnonHugePages: 98304 kB 
+    telemetry[opt1_base_a]: GPU util avg  91% max 100% | power avg  54W max  87W /100W | PCIe->GPU avg  2.52 max  5.59 GB/s (~13 cap) | CPU busy  265% of 1200% | DRAM read avg   4.9 max  12.5 GB/s (~38 cap)
+    1.29.245.007 I moe-cache: steps 1792 | hit rate 48.2% | uploads 33138 (35985.8 MiB, 20.08 MiB/step) | evictions 32098 | warm-up uploads 7433
+    1.29.494.353 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    443    443, #gen drafts =    443, #acc drafts =   398, #gen tokens =    886, #acc tokens =   
+    1.30.121.931 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+##### opt1_t5 | env: none | extra: -t 5
+    preflight: governor=performance thp=[always] mem_avail=14601MiB swap_used=568MiB gpu=17MiB,55,P0
+opt1_t5        code    300 tok | wall 43.21 t/s | decode 52.84 t/s | prefill   34.4 t/s | accept 188/221=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_t5        reason  300 tok | wall 43.18 t/s | decode 55.61 t/s | prefill   38.7 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt1_t5        edit    300 tok | wall 23.20 t/s | decode 59.47 t/s | prefill   48.2 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+    [opt1_t5] Rss: 12269992 kB Anonymous: 474132 kB AnonHugePages: 81920 kB 
+opt1_t5        long    300 tok | wall  5.72 t/s | decode 40.94 t/s | prefill   48.5 t/s | accept 167/263=0.63    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt1_t5]: GPU util avg  89% max 100% | power avg  54W max  84W /100W | PCIe->GPU avg  2.67 max 11.82 GB/s (~13 cap) | CPU busy  247% of 1200% | DRAM read avg   4.9 max  12.1 GB/s (~38 cap)
+    1.33.352.495 I moe-cache: steps 1792 | hit rate 49.1% | uploads 32805 (35624.2 MiB, 19.88 MiB/step) | evictions 31765 | warm-up uploads 7423
+    1.34.187.636 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    453    453, #gen drafts =    453, #acc drafts =   398, #gen tokens =    904, #acc tokens =   
+    1.34.858.094 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+##### opt1_pin | env: OMP_PROC_BIND=close OMP_PLACES=cores | extra: 
+    preflight: governor=performance thp=[always] mem_avail=14710MiB swap_used=590MiB gpu=17MiB,55,P0
+opt1_pin       code    300 tok | wall 44.53 t/s | decode 54.98 t/s | prefill   33.9 t/s | accept 189/219=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_pin       reason  300 tok | wall 40.40 t/s | decode 51.09 t/s | prefill   38.6 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula f'
+opt1_pin       edit    300 tok | wall 22.34 t/s | decode 54.22 t/s | prefill   48.1 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+    [opt1_pin] Rss: 12262812 kB Anonymous: 473168 kB AnonHugePages: 49152 kB 
+opt1_pin       long    300 tok | wall  5.78 t/s | decode 44.12 t/s | prefill   48.5 t/s | accept 173/252=0.69    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt1_pin]: GPU util avg  89% max 100% | power avg  55W max  85W /100W | PCIe->GPU avg  2.28 max  7.18 GB/s (~13 cap) | CPU busy  284% of 1200% | DRAM read avg   4.9 max  11.4 GB/s (~38 cap)
+    1.35.463.076 I moe-cache: steps 1792 | hit rate 48.5% | uploads 33331 (36195.4 MiB, 20.20 MiB/step) | evictions 32291 | warm-up uploads 7449
+    1.35.915.672 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    446    446, #gen drafts =    446, #acc drafts =   401, #gen tokens =    891, #acc tokens =   
+    1.36.556.217 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+##### opt1_nopin | env: GGML_CUDA_NO_PINNED=1 | extra: 
+    preflight: governor=performance thp=[always] mem_avail=14679MiB swap_used=589MiB gpu=17MiB,56,P0
+opt1_nopin     code    300 tok | wall 46.02 t/s | decode 57.08 t/s | prefill   33.4 t/s | accept 190/218=0.87    | vram 3412 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_nopin     reason  300 tok | wall 42.74 t/s | decode 56.02 t/s | prefill   35.7 t/s | accept 187/222=0.84    | vram 3412 MiB | 'To solve this problem, we will use the formula f'
+opt1_nopin     edit    300 tok | wall 22.36 t/s | decode 59.33 t/s | prefill   45.0 t/s | accept 199/200=0.99    | vram 3412 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+    [opt1_nopin] Rss: 12666724 kB Anonymous: 12480948 kB AnonHugePages: 6651904 kB 
+opt1_nopin     long    300 tok | wall  5.49 t/s | decode 46.65 t/s | prefill   45.3 t/s | accept 173/252=0.69    | vram 3412 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt1_nopin]: GPU util avg  87% max  95% | power avg  54W max  85W /100W | PCIe->GPU avg  2.41 max  6.50 GB/s (~13 cap) | CPU busy  251% of 1200% | DRAM read avg   6.8 max  13.6 GB/s (~38 cap)
+    1.31.288.430 I moe-cache: steps 1792 | hit rate 47.5% | uploads 33057 (35897.8 MiB, 20.03 MiB/step) | evictions 32017 | warm-up uploads 7426
+    1.31.687.283 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    446    446, #gen drafts =    446, #acc drafts =   400, #gen tokens =    892, #acc tokens =   
+    1.32.305.633 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+##### opt1_base_b | env: none | extra: 
+    preflight: governor=performance thp=[always] mem_avail=14660MiB swap_used=590MiB gpu=17MiB,57,P0
+opt1_base_b    code    300 tok | wall 48.12 t/s | decode 59.55 t/s | prefill   35.6 t/s | accept 190/218=0.87    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_base_b    reason  300 tok | wall 45.21 t/s | decode 58.69 t/s | prefill   39.0 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt1_base_b    edit    300 tok | wall 23.69 t/s | decode 61.31 t/s | prefill   48.4 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt1_base_b    long    300 tok | wall  5.89 t/s | decode 49.25 t/s | prefill   48.6 t/s | accept 173/251=0.69    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt1_base_b]: GPU util avg  91% max 100% | power avg  56W max  93W /100W | PCIe->GPU avg  2.27 max 11.80 GB/s (~13 cap) | CPU busy  248% of 1200% | DRAM read avg   5.0 max  12.4 GB/s (~38 cap)
+    [opt1_base_b] Rss: 743212 kB Anonymous: 576568 kB AnonHugePages: 221184 kB 
+    1.28.665.385 I moe-cache: steps 1792 | hit rate 48.9% | uploads 32946 (35777.3 MiB, 19.97 MiB/step) | evictions 31906 | warm-up uploads 7434
+    1.29.006.168 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    445    445, #gen drafts =    445, #acc drafts =   403, #gen tokens =    889, #acc tokens =   
+    1.29.643.189 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+##### opt1_mtp3 | env: none | extra: --spec-draft-n-max 3
+    preflight: governor=performance thp=[always] mem_avail=14708MiB swap_used=591MiB gpu=17MiB,57,P0
+opt1_mtp3      code    300 tok | wall 47.72 t/s | decode 59.52 t/s | prefill   34.9 t/s | accept 216/246=0.88    | vram 3496 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_mtp3      reason  300 tok | wall 43.24 t/s | decode 55.84 t/s | prefill   38.4 t/s | accept 213/256=0.83    | vram 3496 MiB | 'To solve this problem, we will use the formula:\n'
+opt1_mtp3      edit    300 tok | wall 23.94 t/s | decode 64.55 t/s | prefill   48.2 t/s | accept 223/226=0.99    | vram 3496 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+    [opt1_mtp3] Rss: 12254732 kB Anonymous: 473676 kB AnonHugePages: 59392 kB 
+opt1_mtp3      long    300 tok | wall  5.78 t/s | decode 43.92 t/s | prefill   48.5 t/s | accept 187/333=0.56    | vram 3496 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt1_mtp3]: GPU util avg  90% max 100% | power avg  55W max  92W /100W | PCIe->GPU avg  2.48 max  5.71 GB/s (~13 cap) | CPU busy  247% of 1200% | DRAM read avg   4.9 max  12.7 GB/s (~38 cap)
+    1.31.673.001 I moe-cache: steps 1792 | hit rate 48.6% | uploads 31016 (33681.4 MiB, 18.80 MiB/step) | evictions 29976 | warm-up uploads 7417
+    1.32.009.175 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    355    355, #gen drafts =    355, #acc drafts =   318, #gen tokens =   1061, #acc tokens =   
+    1.32.646.212 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+##### opt1_ub256 | env: none | extra: -ub 256 -b 512
+    preflight: governor=performance thp=[always] mem_avail=14697MiB swap_used=595MiB gpu=17MiB,57,P0
+opt1_ub256     code    300 tok | wall 47.83 t/s | decode 59.36 t/s | prefill   34.8 t/s | accept 190/218=0.87    | vram 3480 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_ub256     reason  300 tok | wall 43.26 t/s | decode 55.63 t/s | prefill   38.7 t/s | accept 189/218=0.87    | vram 3480 MiB | 'To solve this problem, we will use the formula:\n'
+opt1_ub256     edit    300 tok | wall 26.93 t/s | decode 59.88 t/s | prefill   61.8 t/s | accept 198/201=0.99    | vram 3480 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt1_ub256     long    300 tok | wall  8.25 t/s | decode 47.54 t/s | prefill   72.8 t/s | accept 173/251=0.69    | vram 3480 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt1_ub256]: GPU util avg  88% max 100% | power avg  59W max  89W /100W | PCIe->GPU avg  2.47 max  8.60 GB/s (~13 cap) | CPU busy  300% of 1200% | DRAM read avg   5.5 max  11.9 GB/s (~38 cap)
+    1.12.706.964 I moe-cache: steps 1792 | hit rate 48.7% | uploads 31361 (34056.1 MiB, 19.00 MiB/step) | evictions 30321 | warm-up uploads 5747
+    1.12.927.004 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    445    445, #gen drafts =    445, #acc drafts =   399, #gen tokens =    888, #acc tokens =   
+    1.13.559.532 W ~llama_context:      CUDA0 compute buffer size of 148.1495 MiB, does not match expectation of 148.0089 MiB
+##### opt1_base_c | env: none | extra: 
+    preflight: governor=performance thp=[always] mem_avail=14730MiB swap_used=594MiB gpu=17MiB,53,P8
+opt1_base_c    code    300 tok | wall 44.24 t/s | decode 53.74 t/s | prefill   35.2 t/s | accept 187/223=0.84    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt1_base_c    reason  300 tok | wall 44.11 t/s | decode 57.07 t/s | prefill   38.5 t/s | accept 189/220=0.86    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt1_base_c    edit    300 tok | wall 23.56 t/s | decode 60.83 t/s | prefill   48.2 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+    [opt1_base_c] Rss: 12627124 kB Anonymous: 578036 kB AnonHugePages: 92160 kB 
+opt1_base_c    long    300 tok | wall  5.81 t/s | decode 44.49 t/s | prefill   48.6 t/s | accept 166/264=0.63    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt1_base_c]: GPU util avg  90% max 100% | power avg  56W max  91W /100W | PCIe->GPU avg  2.53 max  6.50 GB/s (~13 cap) | CPU busy  271% of 1200% | DRAM read avg   5.0 max  12.1 GB/s (~38 cap)
+    1.29.449.257 I moe-cache: steps 1792 | hit rate 48.7% | uploads 33068 (35909.8 MiB, 20.04 MiB/step) | evictions 32028 | warm-up uploads 7420
+    1.30.375.863 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    455    455, #gen drafts =    455, #acc drafts =   394, #gen tokens =    909, #acc tokens =   
+    1.31.013.024 W ~llama_context:      CUDA0 compute buffer size of 129.0748 MiB, does not match expectation of 129.0045 MiB
+##### opt1_turns (multi-turn prefix reuse, thinking on)
+/ai/bench/opt1.sh: line 48: 350803 Aborted                 (core dumped) GGML_OP_OFFLOAD_MIN_BATCH=32 $BUILD/bin/llama-server -m $K2 -ngl 999 -fa on -c 16384 -t 6 --load-mode none --jinja --parallel 1 --port 8099 --cache-ram 0 $ARGS > server_opt1_turns.log 2>&1
+    Traceback (most recent call last):
+      File "/usr/lib/python3.12/urllib/request.py", line 1344, in do_open
+        h.request(req.get_method(), req.selector, req.data, headers,
+      File "/usr/lib/python3.12/http/client.py", line 1365, in request
+        self._send_request(method, url, body, headers, encode_chunked)
+      File "/usr/lib/python3.12/http/client.py", line 1411, in _send_request
+        self.endheaders(body, encode_chunked=encode_chunked)
+      File "/usr/lib/python3.12/http/client.py", line 1360, in endheaders
+        self._send_output(message_body, encode_chunked=encode_chunked)
+      File "/usr/lib/python3.12/http/client.py", line 1120, in _send_output
+        self.send(msg)
+      File "/usr/lib/python3.12/http/client.py", line 1064, in send
+        self.connect()
+      File "/usr/lib/python3.12/http/client.py", line 1030, in connect
+        self.sock = self._create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/socket.py", line 852, in create_connection
+        raise exceptions[0]
+      File "/usr/lib/python3.12/socket.py", line 837, in create_connection
+        sock.connect(sa)
+    ConnectionRefusedError: [Errno 111] Connection refused
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/ai/bench/turns.py", line 29, in <module>
+        d, wall = post(msgs)
+                  ^^^^^^^^^^
+      File "/ai/bench/turns.py", line 23, in post
+        t0 = time.time(); d = json.load(urllib.request.urlopen(req, timeout=1800)); return d, time.time() - t0
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+        return opener.open(url, data, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/urllib/request.py", line 515, in open
+        response = self._open(req, data)
+                   ^^^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/urllib/request.py", line 532, in _open
+        result = self._call_chain(self.handle_open, protocol, protocol +
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+        result = func(*args)
+                 ^^^^^^^^^^^
+      File "/usr/lib/python3.12/urllib/request.py", line 1373, in http_open
+        return self.do_open(http.client.HTTPConnection, req)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/urllib/request.py", line 1347, in do_open
+        raise URLError(err)
+    urllib.error.URLError: <urlopen error [Errno 111] Connection refused>
+/ai/bench/opt1.sh: line 51: kill: (350803) - No such process
+--- READ (decode t/s, 4-prompt mean vs the 3 bases; prefill t/s for the long prompt)
+  base      mean decode  55.69 (spread 4.07) | long prefill   48.6
+  opt1_t5   mean decode  52.22 ( -6.2%) | code -7.9% reason -3.6% edit -0.7% long -14.3% | long prefill   48.5 (-0%) | no
+  opt1_pin  mean decode  51.10 ( -8.2%) | code -4.2% reason -11.5% edit -9.5% long -7.7% | long prefill   48.5 (-0%) | no
+  opt1_nopin mean decode  54.77 ( -1.7%) | code -0.5% reason -2.9% edit -1.0% long -2.4% | long prefill   45.3 (-7%) | no
+  opt1_mtp3 mean decode  55.96 ( +0.5%) | code +3.7% reason -3.2% edit +7.8% long -8.1% | long prefill   48.5 (-0%) | no
+  opt1_ub256 mean decode  55.60 ( -0.2%) | code +3.4% reason -3.6% edit -0.0% long -0.5% | long prefill   72.8 (+50%) | no
+OPT1_DONE

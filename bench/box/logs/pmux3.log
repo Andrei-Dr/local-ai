@@ -1,0 +1,14 @@
+    preflight: governor=performance thp=[always] mem_avail=14734MiB swap_used=596MiB gpu=17MiB,48,P8
+##### pmux3_base | served | -ub 128 -b 256
+    pmux3_base: prompt 9279 tok @ 47.6 t/s | decode 128 tok @ 47.57 t/s | wall 197.8 s
+    pmux3_base_2: prompt 4 tok @ 32.6 t/s | decode 128 tok @ 49.11 t/s | wall 2.8 s
+    peak VRAM 3524 MiB
+##### pmux3_ubp2048 | ov | -ub 128 -b 4096 -ubp 2048
+    pmux3_ubp2048: prompt 9279 tok @ 152.3 t/s | decode 128 tok @ 47.82 t/s | wall 63.7 s
+    pmux3_ubp2048_2: prompt 4 tok @ 35.0 t/s | decode 128 tok @ 49.14 t/s | wall 2.7 s
+    peak VRAM 3508 MiB
+##### pmux3_ubp4096 | ov | -ub 128 -b 4096 -ubp 4096
+    pmux3_ubp4096: prompt 9279 tok @ 167.1 t/s | decode 128 tok @ 47.86 t/s | wall 58.2 s
+    pmux3_ubp4096_2: prompt 4 tok @ 36.7 t/s | decode 128 tok @ 49.15 t/s | wall 2.7 s
+    peak VRAM 3494 MiB
+PMUX3_DONE

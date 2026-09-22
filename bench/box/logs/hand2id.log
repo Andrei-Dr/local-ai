@@ -1,0 +1,55 @@
+    preflight: governor=performance thp=[always] mem_avail=14676MiB swap_used=595MiB gpu=17MiB,45,P8
+##### hand2id_det_a | libllama.so.0 => /ai/src/llama.cpp-det/build75/bin/libllama.so.0 libggml-base.so.0 => /ai/src/llama.cpp-det/build75/bin/libggml-base.so.0 libggml-cuda.so.0 => /ai/src/llama.cpp-det/build75/bin/libggml-cuda.so.0 
+    preflight: governor=performance thp=[always] mem_avail=14679MiB swap_used=595MiB gpu=17MiB,45,P8
+hand2id_det_a  code    277 tok | wall 37.99 t/s | decode 45.93 t/s | prefill   33.6 t/s | accept 174/206=0.84    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+hand2id_det_a  reason  300 tok | wall 38.68 t/s | decode 48.70 t/s | prefill   37.2 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+hand2id_det_a  edit    300 tok | wall 22.22 t/s | decode 52.26 t/s | prefill   48.5 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+hand2id_det_a  long    300 tok | wall  5.75 t/s | decode 39.75 t/s | prefill   48.8 t/s | accept 175/248=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[hand2id_det_a]: GPU util avg  88% max 100% | power avg  52W max  77W /100W | PCIe->GPU avg  2.47 max 11.49 GB/s (~13 cap) | CPU busy  276% of 1200% | DRAM read avg   4.8 max  10.9 GB/s (~38 cap)
+    1.31.579.226 I moe-cache: steps 1536 | hit rate 49.3% | uploads 29195 (31703.9 MiB, 20.64 MiB/step) | evictions 28155 | warm-up uploads 7414
+    1.35.316.626 I moe-cache: steps 1792 | hit rate 48.9% | uploads 33171 (36021.6 MiB, 20.10 MiB/step) | evictions 32131 | warm-up uploads 7414
+##### hand2id_ov_a | libllama.so.0 => /ai/src/llama.cpp-ov/build75/bin/libllama.so.0 libggml-base.so.0 => /ai/src/llama.cpp-ov/build75/bin/libggml-base.so.0 libggml-cuda.so.0 => /ai/src/llama.cpp-ov/build75/bin/libggml-cuda.so.0 
+    preflight: governor=performance thp=[always] mem_avail=14650MiB swap_used=597MiB gpu=17MiB,52,P0
+hand2id_ov_a   code    277 tok | wall 39.84 t/s | decode 49.36 t/s | prefill   32.3 t/s | accept 174/206=0.84    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+hand2id_ov_a   reason  300 tok | wall 37.68 t/s | decode 47.22 t/s | prefill   37.3 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+hand2id_ov_a   edit    300 tok | wall 21.94 t/s | decode 52.13 t/s | prefill   48.0 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+hand2id_ov_a   long    300 tok | wall  5.68 t/s | decode 38.89 t/s | prefill   48.5 t/s | accept 175/248=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[hand2id_ov_a]: GPU util avg  87% max 100% | power avg  52W max  80W /100W | PCIe->GPU avg  2.97 max 11.81 GB/s (~13 cap) | CPU busy  275% of 1200% | DRAM read avg   4.7 max  10.8 GB/s (~38 cap)
+    1.33.797.637 I moe-cache: steps 1536 | hit rate 49.3% | uploads 29195 (31703.9 MiB, 20.64 MiB/step) | evictions 28155 | warm-up uploads 7414
+    1.37.785.323 I moe-cache: steps 1792 | hit rate 48.9% | uploads 33171 (36021.6 MiB, 20.10 MiB/step) | evictions 32131 | warm-up uploads 7414
+##### hand2id_det_b | libllama.so.0 => /ai/src/llama.cpp-det/build75/bin/libllama.so.0 libggml-base.so.0 => /ai/src/llama.cpp-det/build75/bin/libggml-base.so.0 libggml-cuda.so.0 => /ai/src/llama.cpp-det/build75/bin/libggml-cuda.so.0 
+    preflight: governor=performance thp=[always] mem_avail=14675MiB swap_used=599MiB gpu=17MiB,54,P0
+hand2id_det_b  code    277 tok | wall 38.01 t/s | decode 46.38 t/s | prefill   32.9 t/s | accept 174/206=0.84    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+hand2id_det_b  reason  300 tok | wall 38.05 t/s | decode 47.77 t/s | prefill   37.4 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+hand2id_det_b  edit    300 tok | wall 21.64 t/s | decode 50.30 t/s | prefill   48.1 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+hand2id_det_b  long    300 tok | wall  5.71 t/s | decode 40.71 t/s | prefill   48.5 t/s | accept 175/248=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[hand2id_det_b]: GPU util avg  87% max 100% | power avg  53W max  80W /100W | PCIe->GPU avg  2.08 max  5.50 GB/s (~13 cap) | CPU busy  258% of 1200% | DRAM read avg   4.7 max  10.6 GB/s (~38 cap)
+    1.32.196.661 I moe-cache: steps 1536 | hit rate 49.3% | uploads 29195 (31703.9 MiB, 20.64 MiB/step) | evictions 28155 | warm-up uploads 7414
+    1.35.998.969 I moe-cache: steps 1792 | hit rate 48.9% | uploads 33171 (36021.6 MiB, 20.10 MiB/step) | evictions 32131 | warm-up uploads 7414
+##### hand2id_ov_b | libllama.so.0 => /ai/src/llama.cpp-ov/build75/bin/libllama.so.0 libggml-base.so.0 => /ai/src/llama.cpp-ov/build75/bin/libggml-base.so.0 libggml-cuda.so.0 => /ai/src/llama.cpp-ov/build75/bin/libggml-cuda.so.0 
+    preflight: governor=performance thp=[always] mem_avail=14663MiB swap_used=605MiB gpu=17MiB,55,P0
+hand2id_ov_b   code    277 tok | wall 39.33 t/s | decode 48.06 t/s | prefill   33.2 t/s | accept 174/206=0.84    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+hand2id_ov_b   reason  300 tok | wall 39.57 t/s | decode 50.35 t/s | prefill   36.6 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+hand2id_ov_b   edit    300 tok | wall 22.45 t/s | decode 54.02 t/s | prefill   48.2 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+hand2id_ov_b   long    300 tok | wall  5.81 t/s | decode 44.46 t/s | prefill   48.5 t/s | accept 175/248=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[hand2id_ov_b]: GPU util avg  89% max 100% | power avg  53W max  82W /100W | PCIe->GPU avg  2.28 max 10.01 GB/s (~13 cap) | CPU busy  272% of 1200% | DRAM read avg   4.8 max  11.1 GB/s (~38 cap)
+    1.28.479.188 I moe-cache: steps 1536 | hit rate 49.3% | uploads 29195 (31703.9 MiB, 20.64 MiB/step) | evictions 28155 | warm-up uploads 7414
+    1.31.947.923 I moe-cache: steps 1792 | hit rate 48.9% | uploads 33171 (36021.6 MiB, 20.10 MiB/step) | evictions 32131 | warm-up uploads 7414
+--- IDENTITY (deterministic cache publish, temp 0, byte-exact)
+  floor det_a vs det_b:
+    code  IDENTICAL
+    edit  IDENTICAL
+    long  IDENTICAL
+    reason  IDENTICAL
+  det_a vs ov_a:
+    code  IDENTICAL
+    edit  IDENTICAL
+    long  IDENTICAL
+    reason  IDENTICAL
+  det_b vs ov_b:
+    code  IDENTICAL
+    edit  IDENTICAL
+    long  IDENTICAL
+    reason  IDENTICAL
+HAND2ID identity IDENTICAL
+HAND2ID_DONE

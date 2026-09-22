@@ -1,0 +1,22 @@
+    preflight: governor=performance thp=[always] mem_avail=14726MiB swap_used=594MiB gpu=17MiB,44,P8
+##### reference ub 128 | 02:24:14
+    8.31.016.186 I Final estimate: PPL = 6.3712 +/- 0.13753
+##### ub 2048 vs ub 128 | 02:32:46
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top
+    Mean PPL(Q)                   :   6.365230 ±   0.137332
+    Mean PPL(Q)/PPL(base)         :   0.999247 ±   0.001045
+    Mean PPL(Q)-PPL(base)         :  -0.004797 ±   0.006660
+    Mean    KLD:   0.005550 ±   0.000227
+    Maximum KLD:   2.390243
+    99.0%   KLD:   0.049044
+    Same top p: 96.913 ± 0.156 %
+##### ub 512 vs ub 128 | 02:35:08
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top
+    Mean PPL(Q)                   :   6.373499 ±   0.137583
+    Mean PPL(Q)/PPL(base)         :   1.000545 ±   0.001146
+    Mean PPL(Q)-PPL(base)         :   0.003471 ±   0.007300
+    Mean    KLD:   0.006332 ±   0.000602
+    Maximum KLD:   5.496055
+    99.0%   KLD:   0.052169
+    Same top p: 96.750 ± 0.160 %
+##### ub 128 vs ub 128 | 02:39:15
