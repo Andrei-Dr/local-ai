@@ -15,6 +15,7 @@ HAVE = all(shutil.which(x) for x in ("bash", "flock", "setsid"))
 class QueueCase(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.d, True)
         self.env = dict(os.environ, QDIR=self.d, GPU_CHECK="0", IDLE_SLEEP="0", POLL="0.2",
                         BUSY_RE="no-such-process-xyzzy", MAX_TRIES="2")
 
@@ -29,8 +30,19 @@ class QueueCase(unittest.TestCase):
         raise KeyError(jid)
 
     def start_runner(self):
-        return subprocess.Popen(["setsid", "bash", str(QUEUE), "run"], env=self.env,
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        p = subprocess.Popen(["setsid", "bash", str(QUEUE), "run"], env=self.env,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self.addCleanup(self._reap, p)                   # a failed assertion must never leave a runner polling behind
+        return p
+
+    @staticmethod
+    def _reap(p):
+        if p.poll() is None:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            p.wait(10)
 
     def wait_for(self, pred, secs=10):
         t = time.time() + secs

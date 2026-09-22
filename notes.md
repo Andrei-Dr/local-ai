@@ -1057,3 +1057,16 @@ every scheduled upload, so uploads from step N always publish at step N+1 and hi
 `hand2id` runs det (served code + 0010) vs ov (det + 0007-0009) under it, base twice as the floor. The same switch gives every
 future paired text comparison a real noise floor. Trees: /ai/src/llama.cpp-det (moe-cache-det), llama.cpp-ov (shexp-overlap-det).
 Queue: the new pause-on-stop was exercised live (PAUSE race1, tries restored to 1).
+
+### 2026-09-23 — hand2id: IDENTICAL; 0007-0010 promoted into the served build
+
+Under LLAMA_MOE_CACHE_SYNC=1 the floor is clean (det_a vs det_b identical on all 4 prompts) and det vs ov is byte-identical on all
+4 prompts in both pairs. The cache counters match exactly across all four runs (1,792 steps, hit 48.9%, 33,171 uploads, 32,131
+evictions): the sync mode is fully deterministic. (Its decode speed is not a measurement: every step waits for the uploads.)
+With hand2's +5.4% that is the pre-registered GO. `/ai/src/llama.cpp-mainline` (branch moe-cache) fast-forwarded to
+shexp-overlap-det; build75 rebuilt incrementally in 70 s (libllama, ggml-base, concat.cu). From here every queue job runs the
+faster build; texts differ from older runs only by the cache-timing noise that was always there.
+Slips, all caught: the promotion build overlapped race1's start, whose preflight refused the busy box (failed before any item,
+requeued); a `pkill -f` pattern matched its own ssh command line; and the red test_queue runs had leaked four runners polling
+deleted scratch dirs (harmless to the real queue, but CPU noise for the FOREIGN detector) — killed, and the tests now reap their
+runners in cleanup even when an assertion fails.
