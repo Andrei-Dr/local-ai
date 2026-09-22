@@ -1088,3 +1088,20 @@ prompt's routing. Only the context that owns the cache and runs the main decoder
 too). Build slip, caught: the relocated test tree had no dependency info for untouched objects, so the server library kept the
 old common_params layout and --help asserted on n_gpu_layers; every non-CUDA target was rebuilt clean (159 objects). The served
 build was never affected (built in its own tree with full dependencies).
+
+### 2026-09-23 — prefill mode works end to end (pmux1 -> pmux2); ubp 2048 = 3.19x prefill, decode -2.0%
+
+pmux1: prefill 97 / 129 / 156 t/s at ubp 512 / 1024 / 2048 (48.8 base) but the slots never came back ("could not re-allocate")
+so decode ran cache-less (-12..-20%). Two bugs, both mine: (1) suspend freed the slot buffer but left every slot tensor's data /
+buffer pointing at it, and ggml_backend_alloc_ctx_tensors_from_buft only allocates tensors whose data is NULL -> resume
+"allocated" nothing; (2) the CUDA VMM pool keeps the prefill's temporaries forever -> ggml_backend_cuda_trim_pools (proc address,
+called after the shrink). After both: released 1172.9 MiB, 1388 MiB free after the trim, restored 1172.9 MiB, every switch.
+pmux2 (served config, K2, cache 26, MTP): long prompt (2,181 tok) prefill 48.8 -> 155.3 t/s at ubp 2048 (3.19x), long wall 51.0 ->
+20.4 s; decode 4-prompt mean -2.0% (base spread 2.88) = GO; decode on the long prompt right after the switch = base (47.3 vs
+47.5 / 48.6: the prompt re-ranking works). ubp 1024 -9.2%, mostly on code / reason, whose prompts never switch (noise, inferred).
+Identity (LLAMA_MOE_CACHE_SYNC=1, served ub128 vs ubp 2048): code / reason / edit IDENTICAL (edit, 377 tok, went through prefill
+mode), long diverges at char 318 on a near-tie. Two ULP-level causes (ubatch boundaries; cache re-ranked by the whole prompt vs
+per 256-token chunk); pmux4 measures the first as a KLD. Multi-turn (thinking on, reasoning stripped from history): turn 2 reused
+55 of 99, turn 3 95 of 135 — the hybrid's checkpoints keep prefix reuse working (O6 closed).
+The 362.7 t/s Andrei saw was ctx1d's dedicated ub-4096 cache-0 prefill server on a 26.8k-token document: a 2.2k prompt caps any
+ubatch at 2.2k, so the per-ubatch expert upload (~2.5 s) cannot be spread further; pmux3 runs ~10k tokens at ubp 2048 / 4096.
