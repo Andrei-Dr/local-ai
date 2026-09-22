@@ -1,0 +1,1 @@
+- [RESUME](RESUME.md) — read first after a compact/swap: board pointer, queue state, per-job rules, Fable triggers
