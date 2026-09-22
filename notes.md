@@ -970,7 +970,7 @@ exact box error before the fix. Checked on the real files: 733 tensors, 0 elemen
 
 ### 2026-09-22 — HAND1: the "0.3 ms handoff" was the serial GPU dense phase; real handoff is 84 us per layer
 
-Source: the prof2 nsys trace (K2, cache 26, MTP n 2, short context), `bench/hand1_phases.py prof2_nsys.sqlite`. Decode runs
+Source: the prof2 nsys trace (K2, cache 26, MTP n 2, short context), `bench/box/hand1_phases.py prof2_nsys.sqlite`. Decode runs
 through CUDA graphs, so nsys 2022.4 sees no kernels there (same blind spot as prof3), but the host CUDA API trace is complete:
 per layer the main thread does D launch (async: expert-cache hits) -> CPU experts -> H2D of the host outputs -> B launch + a
 long sync (serial device work) -> D2H of hidden state + router. Over 8,153 decode layers:
