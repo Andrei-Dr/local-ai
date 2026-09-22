@@ -4,7 +4,8 @@
 # tmux deaths and systemd-oomd; the runner is ai-queue.service (system.slice, so oomd's user-slice pressure kills miss it).
 # The service is enabled at boot (resumes the queue after a poweroff) but has Restart=no, so it never respawns after a crash.
 #   systemctl start|stop|disable ai-queue   (status: queue.sh list; journal: journalctl -u ai-queue; log: queue.log)
-# A job that was running when the box went down is requeued on the next start (up to MAX_TRIES starts).
+# A clean stop / shutdown pauses the running job (back to pending, the try is not counted); a job left `running` by a crash or
+# power loss is requeued on the next start, up to MAX_TRIES crashed starts.
 #   queue.sh add ID 'CMD'     append a pending job (CMD runs under bash -c in $QDIR; rc 0 = done, else failed)
 #   queue.sh list             show the queue
 #   queue.sh retry ID | skip ID
@@ -45,10 +46,12 @@ retry) locked _set "$2" 2 pending; locked _set "$2" 3 0; log "RETRY $2" ;;
 skip)  locked _set "$2" 2 skipped; log "SKIP $2" ;;
 run)
     touch "$Q"; log "RUNNER START pid $$"
-    # systemctl stop TERMs the whole control group: the job dies with rc != 0 and used to be recorded as `failed` before the
-    # runner itself went down. bash runs this trap as soon as the killed job returns, before the row is touched, so it stays
-    # `running` and the next start requeues it as interrupted.
-    trap 'log "RUNNER STOP (signal), job left for requeue"; exit 0' TERM INT
+    # systemctl stop (and a shutdown) TERMs the whole control group: the job dies with rc != 0. bash runs this trap as soon as
+    # the killed job returns, before the row is touched. A CLEAN stop is a pause, not a failure: the job goes back to pending
+    # WITHOUT spending a try (long jobs resume per work unit and must survive any number of nightly downtimes). Only a runner
+    # that dies without this trap (crash, SIGKILL, power loss) leaves the row `running`, which the next start counts below.
+    id=""
+    trap 'if [ -n "$id" ] && [ "$(_get "$id" 2)" = running ]; then locked _set "$id" 2 pending; locked _set "$id" 3 $(( $(_get "$id" 3) - 1 )); log "PAUSE $id (runner stopped by signal; not counted as a try)"; else log "RUNNER STOP (signal)"; fi; exit 0' TERM INT
     # a job left in 'running' means the runner died under it (reboot, kill): requeue it, bounded by MAX_TRIES
     for id in $(awk -F'\t' '$2=="running"{print $1}' "$Q"); do
         if [ "$(_get "$id" 3)" -lt "$MAX_TRIES" ]; then locked _set "$id" 2 pending; log "REQUEUE $id (interrupted)"

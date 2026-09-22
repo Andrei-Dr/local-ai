@@ -1018,3 +1018,18 @@ changing them is a precision question), and CPU vs GPU are serial by data depend
 - Build: the ov tree is a `cp -a` of the served tree; after touching the old objects, make rebuilt exactly ggml-backend.cpp,
   concat.cu and test-backend-ops.cpp (checked with make -n first; the new kernel symbols are in libggml-cuda). `shov1` was replaced
   by `hand2` (unit -> identity -> nsys mechanism -> ABAB speed); a divergence gets bisected over the three commits.
+
+### 2026-09-23 — work units already resume; the queue now treats a clean stop as a pause
+
+Audit (Andrei: nightly downtime lands mid-job): `qual.py` (hq1 / race1 / bonsai1) appends a row per item and skips finished ids,
+`longctx.py` (lq1 / lq2) skips finished (depth, kind, index); proof: `hq1_stock`'s restart kept its first 15 items (96 rows, 96
+unique; an earlier "hq1.sh has no partial resume" in this log was wrong). A stop costs only the item in flight (<= ~17 min on the
+32k MATH-L5 chains). Two real gaps, fixed:
+- `queue.sh`: every clean stop used to spend a try (MAX_TRIES 3), so a long job across three nightly downtimes would be failed out.
+  The TERM trap now puts the running job back to pending and gives the try back (`PAUSE` in queue.log); a crash / power loss (no
+  trap) still counts and stays bounded. `bench/tests/test_queue.py` (runs on the box: needs flock + setsid) — 4 cases, green 3x.
+  Deployed by atomic mv (the live runner keeps the old inode; bash reads scripts incrementally); active from the next start.
+- `qx3.sh`: per-arm resume. A finished arm writes qx3_kld_LABEL.done = hash of its inputs (models by size + mtime, hot set and
+  mix tool by content, chunk count); a restart reprints the stats instead of re-running (and skips rebuilding a 36 GB mix). The X4
+  arm's key was seeded from the 09-22 19:20 measurement (same X4 file, 40 chunks).
+Not resumable by design: A/B jobs (hand2, specbench arms) — a paired comparison should not straddle a reboot; ~45 min to redo.
