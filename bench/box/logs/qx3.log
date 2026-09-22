@@ -1,0 +1,19 @@
+    preflight: governor=performance thp=[always] mem_avail=14495MiB swap_used=278MiB gpu=17MiB,47,P8
+##### quantize X4 | 18:56:51
+    19372904576 bytes | llama_model_quantize_impl: model size  = 29218.99 MiB (7.07 BPW) llama_model_quantize_impl: quant size  = 18464.96 MiB (4.47 BPW) 
+##### qx3_X4 | 19:13:24 | 19372904576 bytes
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+    Mean PPL(Q)                   :   6.429162 ±   0.152314
+    Mean ln(PPL(Q)/PPL(base))     :   0.092193 ±   0.005851
+    Mean PPL(Q)/PPL(base)         :   1.096576 ±   0.006416
+    Mean PPL(Q)-PPL(base)         :   0.566221 ±   0.038136
+    Mean    KLD:   0.137022 ±   0.002195
+    Maximum KLD:   4.800720
+    99.9%   KLD:   2.325661
+    99.0%   KLD:   1.031045
+    Median  KLD:   0.076101
+    Same top p: 83.971 ± 0.363 %
+hot set: 40 layers, 2560 expert ids total (frac 0.25)
+##### mix25 | 19:20:51 | 
+ERROR: HI/LO tensor mismatch: blk.0.ffn_down_exps.weight ([256, 2048, 288] vs [256, 2048, 220])
+QX3_FAILED: mix 25

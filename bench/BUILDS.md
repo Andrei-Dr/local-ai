@@ -10,7 +10,7 @@ building with the listed cmake flags. `dirty` builds without a diff sha are from
 - source: `/ai/src/llama.cpp-mainline` branch `moe-cache` commit `2582f5cb6523b91892e7ed828e3e7d35eb1194be`
 - cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
 - toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
-- 40 runs (39 labels): `g4_q3km_cache15_main`, `kq1g_k2_inmodel_c26`, `kq1g_k2_inmodel_c38`, `kq1g_k2_md_c26`, `kq_q36iq2m_c30_mtp2`, `kq_q36iq2m_off`, `kq_q36k2_c24_mtp3`, `kq_q36k2_c26_mtp2`, `kq_q36k2_off`, `q36_iq2m_c30mtp_r1c_b0`, `q36_iq2m_c30mtp_r1c_b05`, `q36_iq2m_c30mtp_r1c_b10`, `q36_iq2m_c48_r1b_b0`, `q36_iq2m_c48_r1b_b025`, `q36_iq2m_c48_r1b_b05`, `q36_iq2m_c48_r1b_b10`, `q36_iq2m_c48_r1b_b20`, `q36_iq2m_cache48_main`, `q36_iq2m_cache48_r1b025`, `q36_iq2m_cache48_r1b05` ...
+- 41 runs (40 labels): `g4_q3km_cache15_main`, `kq1g_k2_inmodel_c26`, `kq1g_k2_inmodel_c38`, `kq1g_k2_md_c26`, `kq_q36iq2m_c30_mtp2`, `kq_q36iq2m_off`, `kq_q36k2_c24_mtp3`, `kq_q36k2_c26_mtp2`, `kq_q36k2_off`, `q36_iq2m_c30mtp_r1c_b0`, `q36_iq2m_c30mtp_r1c_b05`, `q36_iq2m_c30mtp_r1c_b10`, `q36_iq2m_c48_r1b_b0`, `q36_iq2m_c48_r1b_b025`, `q36_iq2m_c48_r1b_b05`, `q36_iq2m_c48_r1b_b10`, `q36_iq2m_c48_r1b_b20`, `q36_iq2m_cache48_main`, `q36_iq2m_cache48_r1b025`, `q36_iq2m_cache48_r1b05` ...
 
 ## `/ai/src/llama.cpp-moecache/build75` @ prism-b10709-9a9394a-8-gf94da5a-dirty
 

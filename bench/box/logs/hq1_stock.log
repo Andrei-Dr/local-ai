@@ -1,18 +1,86 @@
-    preflight: governor=performance thp=[always] mem_avail=14136MiB swap_used=401MiB gpu=17MiB,47,P8
-    preflight: governor=performance thp=[always] mem_avail=14129MiB swap_used=401MiB gpu=17MiB,47,P8
-  math_l5/test/prealgebra/1139.json BAD 32768 tok  28.71 t/s length repeat 0.00
-  math_l5/test/intermediate_algebra/1197.json ok  28269 tok  29.96 t/s stop
-  math_l5/test/number_theory/737.json ok  7834 tok  31.26 t/s stop
-  math_l5/test/algebra/1837.json ok  13868 tok  29.71 t/s stop
-  math_l5/test/algebra/2427.json ok  6517 tok  31.99 t/s stop
-  math_l5/test/counting_and_probability/525.json BAD 32768 tok  29.98 t/s length repeat 0.01
-  math_l5/test/prealgebra/1558.json ok  6927 tok  31.38 t/s stop
-  math_l5/test/algebra/305.json ok  6018 tok  31.10 t/s stop
-  math_l5/test/number_theory/1055.json ok  21108 tok  30.19 t/s stop
-  math_l5/test/prealgebra/951.json ok  6157 tok  31.84 t/s stop
-  math_l5/test/precalculus/675.json ok  18566 tok  31.00 t/s stop
-  math_l5/test/intermediate_algebra/279.json ok  20085 tok  31.16 t/s stop
-  math_l5/test/intermediate_algebra/1849.json ok  28227 tok  29.97 t/s stop
-  math_l5/test/algebra/2700.json ok  25737 tok  30.57 t/s stop
-  math_l5/test/algebra/892.json BAD 23316 tok  29.99 t/s stop
-  math_l5/test/prealgebra/1646.json BAD 32768 tok  29.25 t/s length repeat 0.00
+    preflight: governor=performance thp=[always] mem_avail=14454MiB swap_used=0MiB gpu=17MiB,48,P8
+    preflight: governor=performance thp=[always] mem_avail=14459MiB swap_used=0MiB gpu=17MiB,48,P8
+  math_l5/test/intermediate_algebra/582.json BAD 32768 tok  29.77 t/s length repeat 0.00
+  math_l5/test/intermediate_algebra/232.json ok  15154 tok  30.58 t/s stop
+  math_l5/test/geometry/1140.json ok  22194 tok  30.24 t/s stop
+  math_l5/test/prealgebra/1297.json ok  2714 tok  31.70 t/s stop
+  math_l5/test/intermediate_algebra/2022.json ok  26643 tok  29.73 t/s stop
+  math_l5/test/counting_and_probability/159.json ok  5498 tok  32.28 t/s stop
+  math_l5/test/intermediate_algebra/1408.json ok  22516 tok  30.98 t/s stop
+  math_l5/test/intermediate_algebra/966.json ok  31453 tok  30.03 t/s stop
+  math_l5/test/intermediate_algebra/964.json BAD 32768 tok  29.26 t/s length repeat 0.03
+  math_l5/test/precalculus/986.json ok  15971 tok  31.13 t/s stop
+  math_l5/test/geometry/172.json ok  32226 tok  29.72 t/s stop
+  math_l5/test/prealgebra/1655.json ok  4292 tok  31.70 t/s stop
+  math_l5/test/algebra/2517.json ok  17450 tok  30.89 t/s stop
+  math_l5/test/counting_and_probability/181.json BAD 32768 tok  29.45 t/s length repeat 0.00
+  math_l5/test/algebra/297.json ok  24551 tok  30.29 t/s stop
+  math_l5/test/algebra/686.json ok  15661 tok  31.09 t/s stop
+  math_l5/test/algebra/733.json ok  19984 tok  30.53 t/s stop
+  math_l5/test/geometry/702.json ok  18243 tok  30.91 t/s stop
+  math_l5/test/counting_and_probability/51.json ok  2018 tok  32.09 t/s stop
+  math_l5/test/intermediate_algebra/2196.json ok  23550 tok  31.07 t/s stop
+  math_l5/test/number_theory/838.json ok  9809 tok  31.59 t/s stop
+  math_l5/test/algebra/291.json ok  7145 tok  32.03 t/s stop
+  math_l5/test/intermediate_algebra/1510.json BAD 32768 tok  29.93 t/s length repeat 0.00
+  math_l5/test/counting_and_probability/765.json ok  2882 tok  32.15 t/s stop
+  HumanEvalPlus/0              ok  8094 tok  34.16 t/s stop
+  HumanEvalPlus/4              ok  6005 tok  34.28 t/s stop
+  HumanEvalPlus/8              ok  1888 tok  35.16 t/s stop
+  HumanEvalPlus/12             ok  1907 tok  34.95 t/s stop
+  HumanEvalPlus/16             ok  1238 tok  34.61 t/s stop
+  HumanEvalPlus/20             ok  2932 tok  35.11 t/s stop
+  HumanEvalPlus/24             ok  3272 tok  34.55 t/s stop
+  HumanEvalPlus/28             ok   561 tok  35.07 t/s stop
+  HumanEvalPlus/32             BAD 4455 tok  34.76 t/s stop
+  HumanEvalPlus/36             ok  5774 tok  34.30 t/s stop
+  HumanEvalPlus/40             ok  3290 tok  34.98 t/s stop
+  HumanEvalPlus/44             ok  1828 tok  34.91 t/s stop
+  HumanEvalPlus/48             ok   740 tok  34.82 t/s stop
+  HumanEvalPlus/52             ok  1220 tok  34.22 t/s stop
+  HumanEvalPlus/56             ok  1487 tok  34.88 t/s stop
+  HumanEvalPlus/60             ok  1278 tok  35.04 t/s stop
+  HumanEvalPlus/64             ok  2537 tok  34.71 t/s stop
+  HumanEvalPlus/68             ok  5297 tok  34.46 t/s stop
+  HumanEvalPlus/72             ok  1841 tok  34.53 t/s stop
+  HumanEvalPlus/76             BAD 4486 tok  34.62 t/s stop
+  HumanEvalPlus/80             ok  1999 tok  34.67 t/s stop
+  HumanEvalPlus/84             BAD 8192 tok  34.20 t/s length repeat 0.27
+  HumanEvalPlus/88             BAD 8192 tok  33.57 t/s length repeat 0.38
+  HumanEvalPlus/92             ok  3484 tok  34.37 t/s stop
+  HumanEvalPlus/96             ok  3048 tok  34.51 t/s stop
+  HumanEvalPlus/100            BAD 8192 tok  33.96 t/s length repeat 0.09
+  HumanEvalPlus/104            BAD 8192 tok  31.08 t/s length repeat 0.24
+  HumanEvalPlus/108            ok  4432 tok  34.70 t/s stop
+  HumanEvalPlus/112            ok  2181 tok  35.04 t/s stop
+  HumanEvalPlus/116            ok  3400 tok  34.84 t/s stop
+  HumanEvalPlus/120            ok  2523 tok  34.71 t/s stop
+  HumanEvalPlus/124            BAD 8192 tok  34.47 t/s length repeat 0.00
+  HumanEvalPlus/128            ok  4232 tok  34.15 t/s stop
+  HumanEvalPlus/132            BAD 6535 tok  34.70 t/s stop
+  HumanEvalPlus/136            ok  2545 tok  34.54 t/s stop
+  HumanEvalPlus/140            ok  4005 tok  34.96 t/s stop
+  HumanEvalPlus/144            BAD 8192 tok  34.01 t/s length repeat 0.26
+  HumanEvalPlus/148            ok  2933 tok  34.69 t/s stop
+  HumanEvalPlus/152            ok  2615 tok  34.77 t/s stop
+  HumanEvalPlus/156            ok  2000 tok  35.30 t/s stop
+  HumanEvalPlus/160            ok  3469 tok  34.83 t/s stop
+  aime/2024-60                 ok  12063 tok  31.30 t/s stop
+  aime/2024-61                 BAD 40960 tok  29.40 t/s length repeat 0.00
+  aime/2024-62                 BAD 40960 tok  29.85 t/s length repeat 0.00
+  aime/2024-63                 BAD 40960 tok  28.62 t/s length repeat 0.00
+  aime/2024-64                 BAD 40960 tok  21.54 t/s length repeat 0.01
+  aime/2024-65                 ok  33715 tok  29.13 t/s stop
+  aime/2024-66                 BAD 40136 tok  28.90 t/s stop
+  aime/2024-67                 ok  29487 tok  29.82 t/s stop
+  aime/2024-68                 ok  34068 tok  29.77 t/s stop
+  aime/2024-69                 ok  12426 tok  30.74 t/s stop
+  aime/2024-70                 BAD 40960 tok  21.35 t/s length repeat 0.00
+  aime/2024-71                 ok  26171 tok  30.14 t/s stop
+  aime/2024-72                 ok  30651 tok  29.78 t/s stop
+  aime/2024-73                 BAD 40960 tok  29.20 t/s length repeat 0.01
+  aime/2024-74                 BAD 40960 tok  28.80 t/s length repeat 0.00
+QUALITY[q36_stock_iq2m_hard] think=on | math_l5  80.0% +- 6.3 (n=40) | humaneval_plus  78.0% +- 6.5 (n=41) | aime  46.7% +-12.9 (n=15) | mean 14855 tok, 32.0 t/s | truncated 20 | empty 19 | 38044s
+    telemetry[qual_q36_stock_iq2m_hard]: GPU util avg  73% max 100% | power avg  70W max  85W /100W | PCIe->GPU avg  0.86 max 11.62 GB/s (~13 cap) | CPU busy  626% of 1200% | DRAM read avg   6.5 max 419.6 GB/s (~38 cap)
+    vram: 3634 MiB
+HQ1_DONE stock
