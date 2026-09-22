@@ -1,0 +1,18 @@
+    preflight: governor=performance thp=[always] mem_avail=14136MiB swap_used=401MiB gpu=17MiB,47,P8
+    preflight: governor=performance thp=[always] mem_avail=14129MiB swap_used=401MiB gpu=17MiB,47,P8
+  math_l5/test/prealgebra/1139.json BAD 32768 tok  28.71 t/s length repeat 0.00
+  math_l5/test/intermediate_algebra/1197.json ok  28269 tok  29.96 t/s stop
+  math_l5/test/number_theory/737.json ok  7834 tok  31.26 t/s stop
+  math_l5/test/algebra/1837.json ok  13868 tok  29.71 t/s stop
+  math_l5/test/algebra/2427.json ok  6517 tok  31.99 t/s stop
+  math_l5/test/counting_and_probability/525.json BAD 32768 tok  29.98 t/s length repeat 0.01
+  math_l5/test/prealgebra/1558.json ok  6927 tok  31.38 t/s stop
+  math_l5/test/algebra/305.json ok  6018 tok  31.10 t/s stop
+  math_l5/test/number_theory/1055.json ok  21108 tok  30.19 t/s stop
+  math_l5/test/prealgebra/951.json ok  6157 tok  31.84 t/s stop
+  math_l5/test/precalculus/675.json ok  18566 tok  31.00 t/s stop
+  math_l5/test/intermediate_algebra/279.json ok  20085 tok  31.16 t/s stop
+  math_l5/test/intermediate_algebra/1849.json ok  28227 tok  29.97 t/s stop
+  math_l5/test/algebra/2700.json ok  25737 tok  30.57 t/s stop
+  math_l5/test/algebra/892.json BAD 23316 tok  29.99 t/s stop
+  math_l5/test/prealgebra/1646.json BAD 32768 tok  29.25 t/s length repeat 0.00

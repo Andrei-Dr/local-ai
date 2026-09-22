@@ -1,0 +1,1 @@
+{"label": "q36_iq2m_c30mtp_r1c_b05", "thinking": false, "sets": {"gsm8k": {"n": 50, "correct": 50, "pct": 100.0, "se_pct": 0.0, "truncated": 0, "empty": 0}, "humaneval": {"n": 41, "correct": 38, "pct": 92.7, "se_pct": 4.1, "truncated": 0, "empty": 0}}, "mean_tokens": 222.6, "mean_decode_tps": 52.62, "truncated": 0, "empty": 0, "items": 91}
