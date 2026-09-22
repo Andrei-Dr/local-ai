@@ -184,9 +184,10 @@ def mix(args, err=sys.stderr):
     lo_t = {t.name: t for t in rl.tensors}
     for name, tl in lo_t.items():
         th = hi_t.get(name)
-        if th is None or list(th.data.shape) != list(tl.data.shape):
+        # ELEMENT shapes: HI and LO may be different block types (X4 down Q4_K vs K2 down Q3_K), whose byte shapes differ
+        if th is None or elem_shape(th) != elem_shape(tl):
             raise ToolError("HI/LO tensor mismatch: %s (%s vs %s)"
-                            % (name, list(th.data.shape) if th else "ABSENT", list(tl.data.shape)))
+                            % (name, list(elem_shape(th)) if th else "ABSENT", list(elem_shape(tl))))
     if args.dry_run:
         w = None
     else:

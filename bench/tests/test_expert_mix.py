@@ -111,6 +111,32 @@ class MixCase(unittest.TestCase):
                                    hi=self.hi_badshape, err=buf), 2)
         self.assertIn("mismatch", buf.getvalue())
 
+    @unittest.skipUnless(HAS_QUANTS, "gguf.quants.quantize not available")
+    def test_hi_and_lo_in_different_block_types_mix(self):
+        """qx3 2026-09-22: HI = X4 (down Q4_K) vs LO = K2 (down Q3_K) have the same ELEMENT shape but different
+        BYTE shapes ([256, 2048, 288] vs [..., 220]); the mix dequantizes both, so only element shapes must agree."""
+        g, np = self.gguf, self.np
+        hi_q8 = os.path.join(self.d, "hi_q8.gguf")
+        w = g.GGUFWriter(hi_q8, "qwen35moe")
+        w.add_uint32("general.file_type", 7)
+        w.add_uint32("qwen35moe.block_count", 2)
+        w.add_uint32("qwen35moe.expert_count", EC)
+        w.add_tensor("token_embd.weight", np.arange(9, dtype=np.float32).reshape(3, 3))
+        for blk in (0, 1):
+            arr = np.zeros((EC, 8, 32), np.float32)
+            for e in range(EC):
+                arr[e] = self.CONST_H[e]
+            q = g.quants.quantize(arr, g.GGMLQuantizationType.Q8_0)
+            w.add_tensor("blk.%d.ffn_gate_exps.weight" % blk, q, raw_shape=q.shape,
+                         raw_dtype=g.GGMLQuantizationType.Q8_0)
+        w.write_header_to_file(); w.write_kv_data_to_file(); w.write_tensors_to_file(); w.close()
+        out = os.path.join(self.d, "mixed_q8hi.gguf")
+        self.assertEqual(self._run(self._hot({"0": [1], "1": []}), out, hi=hi_q8), 0)
+        got = self._channels(out, 0)
+        self.assertAlmostEqual(got[1], self.CONST_H[1], delta=0.1)   # hot expert took HI
+        self.assertEqual(got[0], self.CONST_L[0])                    # cold experts kept LO
+        self.assertEqual(got[2], self.CONST_L[2])
+
     def test_missing_expert_count_metadata_exit_2(self):
         import io
         nog = os.path.join(self.d, "noec.gguf")
