@@ -55,7 +55,10 @@ for b in base ov; do
   for i in $(seq 1 150); do curl -sf localhost:8099/health >/dev/null 2>&1 && break; kill -0 $NP 2>/dev/null || break; sleep 2; done
   EDIT=0 LONG=0 OUT=/tmp python3 specclient.py hand2_nsys_$b x > /dev/null 2>&1
   pkill -INT -f "llama-server .*--port 8099"; wait $NP 2>/dev/null; sleep 3
-  nsys export --type sqlite --output hand2_nsys_$b.sqlite hand2_nsys_$b.nsys-rep > /dev/null 2>&1
+  # under the queue service nsys cannot find its own importer (it lives in /usr/lib/nsight-systems/host-linux-x64, the binary in
+  # the target dir): it leaves a raw .qdstrm, which the importer turns into the report
+  [ -s hand2_nsys_$b.nsys-rep ] || /usr/lib/nsight-systems/host-linux-x64/QdstrmImporter -i hand2_nsys_$b.qdstrm > /dev/null 2>&1
+  nsys export --type sqlite -f true --output hand2_nsys_$b.sqlite hand2_nsys_$b.nsys-rep > /dev/null 2>&1
   echo "  $b:"; $PY hand1_phases.py hand2_nsys_$b.sqlite --skip-s 0 2>&1 | sed 's/^/    /'
 done
 unset LD_LIBRARY_PATH

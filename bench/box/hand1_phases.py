@@ -18,7 +18,8 @@ def main(argv=None):
     ap.add_argument("db"); ap.add_argument("--skip-s", type=float, default=3.7); ap.add_argument("--long-us", type=float, default=100)
     a = ap.parse_args(argv)
     c = sqlite3.connect(a.db)
-    t0 = c.execute("select min(start) from CUPTI_ACTIVITY_KIND_KERNEL").fetchone()[0]
+    # time origin = first CUDA API call (a trace whose kernels all ran inside CUDA graphs has no KERNEL table at all)
+    t0 = c.execute("select min(start) from CUPTI_ACTIVITY_KIND_RUNTIME").fetchone()[0]
     tid = c.execute("""select globalTid from CUPTI_ACTIVITY_KIND_RUNTIME r join StringIds s on s.id=r.nameId
         where s.value like 'cudaGraphLaunch%' group by globalTid order by count(*) desc limit 1""").fetchone()
     if not tid:

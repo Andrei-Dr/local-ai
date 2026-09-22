@@ -1033,3 +1033,27 @@ unique; an earlier "hq1.sh has no partial resume" in this log was wrong). A stop
   mix tool by content, chunk count); a restart reprints the stats instead of re-running (and skips rebuilding a 36 GB mix). The X4
   arm's key was seeded from the 09-22 19:20 measurement (same X4 file, 40 chunks).
 Not resumable by design: A/B jobs (hand2, specbench arms) — a paired comparison should not straddle a reboot; ~45 min to redo.
+
+### 2026-09-23 — hand2: the three HAND1 levers are +5.4% decode; identity needed a deterministic cache (hand2id)
+
+prof2 config (K2, cache 26, MTP n 2), ABAB, decode t/s:
+| prompt | base_a / base_b | ov_a / ov_b | gain |
+|---|---|---|---|
+| code | 52.43 / 50.82 | 56.04 / 57.67 | +10.1% |
+| reason | 53.47 / 54.06 | 55.37 / 56.59 | +4.1% |
+| edit | 57.93 / 56.83 | 59.57 / 59.22 | +3.5% |
+| long | 45.43 / 45.05 | 47.58 / 46.63 | +4.1% |
+Mean +5.4%, every prompt above base by more than the base spread; cache hit rate equal in all four arms (49.1 / 49.0 / 49.0 /
+48.6%), so the gain is work removed, not a luckier cache. Unit: test-backend-ops CONCAT 182/182 (CUDA vs CPU).
+Mechanism (nsys API trace, `hand1_phases.py`): serial GPU phase 467 -> 399 us per layer (0007 + 0008), short syncs 36.1 -> 18.6
+(0009), graph launch 26.2 -> 35.9 (the D graph is bigger); everything that is not CPU work -69 us per layer (-12.5%). OPEN: the
+CPU phase in that profiled run was 464 -> 526 us; those two servers logged no cache stats, so a lower hit rate there cannot be
+ruled out — not read as a result. (nsys under the queue service leaves a raw .qdstrm: its importer is in
+/usr/lib/nsight-systems/host-linux-x64; hand2.sh now imports it explicitly. hand1_phases.py anchors on the API table.)
+Identity: UNDECIDED — base diverged from ITSELF on code and long (both builds flip between the same two variants). Cause, from
+the source: the expert cache publishes an upload at the first step() after the PCIe copy finishes, so hit (GPU kernel) vs miss
+(CPU kernel) depends on timing and near-ties flip. Patch 0010 adds LLAMA_MOE_CACHE_SYNC=1 (off unless set): step() waits for
+every scheduled upload, so uploads from step N always publish at step N+1 and hit/miss is a function of the token history.
+`hand2id` runs det (served code + 0010) vs ov (det + 0007-0009) under it, base twice as the floor. The same switch gives every
+future paired text comparison a real noise floor. Trees: /ai/src/llama.cpp-det (moe-cache-det), llama.cpp-ov (shexp-overlap-det).
+Queue: the new pause-on-stop was exercised live (PAUSE race1, tries restored to 1).
