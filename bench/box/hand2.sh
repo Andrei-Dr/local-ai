@@ -18,7 +18,7 @@ M=/ai/models; N=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
 K2=$M/$N-K2-expQ2K-downQ3K.gguf; HEAD=$M/mtp-Qwen3.6-35B-A3B-Q4_0.gguf
 BASE=/ai/src/llama.cpp-mainline/build75; OV=/ai/src/llama.cpp-ov/build75; PY=/ai/.venv/bin/python
 for f in $K2 $HEAD $OV/bin/libllama.so.0 $OV/bin/test-backend-ops /ai/bench/hand1_phases.py /ai/bench/textdiff.py; do [ -e $f ] || { echo "HAND2_REFUSED: $f missing"; exit 1; }; done
-[ "$(git -C /ai/src/llama.cpp-ov rev-parse --abbrev-ref HEAD)" = shexp-overlap ] || { echo "HAND2_REFUSED: ov tree not on shexp-overlap"; exit 1; }
+[ "$(git -C /ai/src/llama.cpp-ov rev-parse --abbrev-ref HEAD)" = shexp-overlap-det ] || { echo "HAND2_REFUSED: ov tree not on shexp-overlap-det"; exit 1; }
 echo "--- 0. UNIT (test-backend-ops CONCAT, CUDA0 vs CPU)"
 $OV/bin/test-backend-ops -o CONCAT -b CUDA0 > hand2_unit.log 2>&1; urc=$?
 grep -E "tests passed|FAIL" hand2_unit.log | tail -3 | sed 's/^/    /'
