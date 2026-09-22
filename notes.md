@@ -1070,3 +1070,21 @@ Slips, all caught: the promotion build overlapped race1's start, whose preflight
 requeued); a `pkill -f` pattern matched its own ssh command line; and the red test_queue runs had leaked four runners polling
 deleted scratch dirs (harmless to the real queue, but CPU noise for the FOREIGN detector) — killed, and the tests now reap their
 runners in cleanup even when an assertion fails.
+
+### 2026-09-23 — opt1 (zero-code levers on the promoted build) and the prefill-mode build
+
+opt1, decode 4-prompt mean vs 3 interleaved bases (55.69 t/s, spread 4.07), long-prompt prefill vs 48.6 t/s:
+-t 5 -6.2% (dead) | OMP_PROC_BIND=close + OMP_PLACES=cores -8.2% (dead) | GGML_CUDA_NO_PINNED=1 -1.7%, prefill -7% (dead: THP
+engaged, 6.6 GB AnonHugePages, so the CPU phase is not TLB bound) | MTP n-max 3 +0.5% (parked: +3.7/+7.8 on code/edit, -3.2/-8.1
+on reason/long) | **-ub 256 at cache 26: prefill +50% (72.8 t/s), decode -0.2% = free**. Offline: non-uniform cache slots per
+layer at equal VRAM = +0.08 / -0.05 pts (dead; `research/scripts/moe-cache-sim/alloc.py`). The multi-turn probe OOMed on my own
+config (-c 16384 + cache 26 + the MTP head); it reruns in pmux1 at 8k.
+Prefill mode (Andrei: "prefill and decode don't share VRAM?" — they did not): `--ubatch-prefill N` on branch prefill-mux. A batch
+larger than -ub suspends the expert cache (drops queued uploads, waits for one in flight, frees the device slot buffers, lookups
+return nullptr so graphs build without the cache chain), re-reserves the scheduler for N (the node budget of this architecture
+grows with the ubatch past ~590 tokens, so growth-on-demand alone would overflow the hash set), and the first small batch
+re-reserves for -ub BEFORE the slots are re-allocated (all-or-nothing; failure = cache off, outputs unchanged) and re-ranked by the
+prompt's routing. Only the context that owns the cache and runs the main decoder toggles it (the MTP draft context calls decode
+too). Build slip, caught: the relocated test tree had no dependency info for untouched objects, so the server library kept the
+old common_params layout and --help asserted on n_gpu_layers; every non-CUDA target was rebuilt clean (159 objects). The served
+build was never affected (built in its own tree with full dependencies).
