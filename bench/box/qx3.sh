@@ -12,11 +12,23 @@
 # Caveat: wikitext is prose and the hot set is workload-specific (code vs prose overlap = chance); a code text is the follow-up.
 source /ai/bench/preflight.sh || exit 1
 D=/ai/src/llama.cpp-mainline; B=$D/build75; M=/ai/models; N=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
-K=/ai/bench/kld; S=/mnt/md0/qx3; T=/ai/bench/traces; PY=/ai/.venv/bin/python
+K=/ai/bench/kld; S=/ai/scratch/qx3; COLD=/mnt/md0/models-cold; T=/ai/bench/traces; PY=/ai/.venv/bin/python
 export PYTHONPATH=$D/gguf-py   # expert_mix.py needs gguf-py; the venv has numpy only
 SRC=$M/$N-Q6_K_P.gguf; K2=$M/$N-K2-expQ2K-downQ3K.gguf; IM=$M/imatrix-$N-from-IQ2_M.dat; X4=$M/$N-X4-expQ4K.gguf
 for f in $SRC $K2 $IM $K/q6.kld $T/q36_code_tok.bin $T/q36_prose_tok.bin /ai/bench/expert_mix.py; do [ -s $f ] || { echo "QX3_REFUSED: $f missing"; exit 1; }; done
-mkdir -p $S; cd $K || exit 1
+# The mix (~36 GB Q8_0) is read in full by every KLD chunk (40 chunks x ~34 GB of experts; it does not fit in 16 GB of RAM):
+# from the md0 array (108 MB/s) that is ~3.5 h per arm, from NVMe ~10 min. Room on NVMe: the Q6_K_P reference is only needed to
+# regenerate q6.kld, which exists => cold store + symlink (Andrei 2026-09-21: mv + symlink is pre-authorized), done HERE so no
+# copy ever runs beside another job.
+mkdir -p $S $COLD
+free=$(df -BG --output=avail /ai | tail -1 | tr -dc 0-9)
+if [ "$free" -lt 40 ] && [ -f $SRC ] && [ ! -L $SRC ]; then
+  s0=$(stat -c %s $SRC)
+  mv $SRC $COLD/ && [ "$(stat -c %s $COLD/$(basename $SRC))" = "$s0" ] && ln -s $COLD/$(basename $SRC) $SRC \
+    && echo "    moved to cold + symlinked: $(basename $SRC) ($s0 bytes); free on /ai now $(df -BG --output=avail /ai | tail -1 | tr -dc 0-9)G" \
+    || { echo "QX3_FAILED: cold move of $SRC"; exit 1; }
+fi
+cd $K || exit 1
 CH=${CH:-40}
 PP="$B/bin/llama-perplexity -f $K/wiki.test.raw -c 512 -b 512 -ub 512 --chunks $CH -ngl 999 -ot exps=CPU -t 6 -fa on"
 stats() { grep -E "Mean +KLD|Maximum KLD|99\.0% +KLD|99\.9% +KLD|Median +KLD|Same top p|Mean PPL\(Q\)|PPL\(Q\)/PPL\(base\)|out of memory|error" "$1" | cut -c1-160 | sed 's/^/    /'; }
@@ -49,10 +61,12 @@ for F in 25 50; do
   $PY /ai/bench/expert_mix.py hot --trace $T/q36_code_tok.bin --trace $T/q36_prose_tok.bin --frac 0.$F --out $HOT || { echo "QX3_FAILED: hot set $F"; exit 1; }
   KM=$(key $X4 $K2 $HOT $K/q6.kld CH=$CH /ai/bench/expert_mix.py)
   if arm_done mix$F $KM; then echo "##### qx3_mix$F | resumed: measured earlier on the same inputs"; stats qx3_kld_mix$F.log; continue; fi
-  echo "##### mix$F | $(date +%T) | $($PY /ai/bench/expert_mix.py --hi $X4 --lo $K2 --hot $HOT --out $MIX --dry-run 2>&1 | grep -iE "effective|bits per" | tail -1 | cut -c1-160)"
-  freeS=$(df -BG --output=avail $S | tail -1 | tr -dc 0-9); [ "$freeS" -ge 60 ] || { echo "QX3_DISK_REFUSED: ${freeS}G free on $S"; exit 1; }
+  echo "##### mix$F | $(date +%T)"   # (no --dry-run for the header: it dequantizes everything the real mix does, ~25 min per arm)
+  rm -f $MIX; freeS=$(df -BG --output=avail $S | tail -1 | tr -dc 0-9); [ "$freeS" -ge 40 ] || { echo "QX3_DISK_REFUSED: ${freeS}G free on $S (the mix needs ~36)"; exit 1; }
   $PY /ai/bench/expert_mix.py --hi $X4 --lo $K2 --hot $HOT --out $MIX > /ai/bench/qx3_mix$F.log 2>&1 || { tail -5 /ai/bench/qx3_mix$F.log; echo "QX3_FAILED: mix $F"; exit 1; }
+  echo "    mix built $(date +%T) | $(grep -iE "effective|bits per" /ai/bench/qx3_mix$F.log | tail -1 | cut -c1-140)"
   kld mix$F $MIX $KM
 done
+rm -f $S/mix.gguf   # 36 GB of scratch on the NVMe root: never leave it behind for the next job
 echo "    reference rows (kld1): IQ2_M mean KLD 0.2188 same-top 79.8% | K2 0.2181 / 79.9%"
 echo QX3_DONE
