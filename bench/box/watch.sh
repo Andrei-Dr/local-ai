@@ -48,5 +48,21 @@ job)
     if [ $(date +%s) -ge $end ]; then echo "EXIT job: TIMEOUT ${tmin}min"; tail -6 "$log"; diag; exit 4; fi
     sleep 30
   done ;;
-*) echo "usage: watch.sh queue [MIN] | watch.sh job LOG DONE_RE PROC_RE [MIN]"; exit 9 ;;
+row)
+  # wait on a QUEUE ROW, not a log: works for a job that has not started yet (a `job` waiter armed on a pending job reports
+  # PROCESS GONE after its 5-min grace). Exit 0 done | 3 failed | 7 skipped | 6 queue service stopped | 4 timeout.
+  id=$2; tmin=${3:-600}; end=$(( $(date +%s) + tmin*60 ))
+  while :; do
+    st=$(awk -F'\t' -v id="$id" '$1==id{print $2}' /ai/bench/queue.tsv)
+    case "$st" in
+      done)    echo "EXIT row: $id DONE"; exit 0 ;;
+      failed)  echo "EXIT row: $id FAILED"; diag; exit 3 ;;
+      skipped) echo "EXIT row: $id SKIPPED"; exit 7 ;;
+      "")      echo "EXIT row: no queue row $id"; exit 9 ;;
+    esac
+    systemctl is-active -q ai-queue || { echo "EXIT row: queue service stopped ($id is $st)"; exit 6; }
+    [ $(date +%s) -ge $end ] && { echo "EXIT row: TIMEOUT ${tmin}min ($id is $st)"; exit 4; }
+    sleep 30
+  done ;;
+*) echo "usage: watch.sh queue [MIN] | watch.sh job LOG DONE_RE PROC_RE [MIN] | watch.sh row ID [MIN]"; exit 9 ;;
 esac
