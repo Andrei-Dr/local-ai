@@ -938,3 +938,32 @@ llama-imatrix on the dense 27B (24 chunks, 507 s, PPL 2.34), then `bench/imx_hea
 When a chain finishes it is almost always right; the losses are chains that never finish inside the card's own budget. Whether that
 is the 2.5-bit quantization or the fine-tune is what `hq1_stock` (running since 01:24) answers. No verdict before it lands. The t/s
 in this job is not usable: model files were being copied to the array beside it.
+
+### 2026-09-22 — hq1_stock: the served fine-tune is WORSE than stock at the same quant class (paired, p 0.04)
+
+Same 96 items, same card sampler, same seeds; stock = bartowski imatrix IQ2_M of Qwen3.6-35B-A3B (12.96 GB).
+
+| set | served fine-tune IQ2_M | stock IQ2_M | paired (stock - served): wins / losses, diff, 95% CI, exact p |
+|---|---|---|---|
+| MATH-L5 (40) | 23 = 57.5%, 16 cut at 32k | 32 = 80.0%, 7 cut | 10 / 1, +22.5, [+7.8, +37.2], p 0.012 |
+| AIME (15) | 3 = 20.0%, 10 cut at 41k | 7 = 46.7%, 7 cut | 4 / 0, +26.7, [+4.3, +49.1], p 0.125 |
+| EvalPlus (41) | 35 = 85.4%, 1 cut at 8k | 32 = 78.0%, 6 cut | 1 / 4, -7.3, [-17.8, +3.1], p 0.375 |
+| ALL (96) | | | 15 / 5, +10.4, [+1.5, +19.3], p 0.041 => served file WORSE |
+
+(`paired.py q36_stock_iq2m_hard.jsonl q36_iq2m_hard.jsonl`; the table flips its sign to read as stock minus served.)
+Reading: on hard math the fine-tune's chains run longer and more of them never finish inside the card's own budget (16 vs 7 cut on
+MATH-L5); when a chain finishes, both files are almost always right (served 23 of 24, stock 32 of 33). The quant class is the same,
+so the 2.5-bit quantization is not what separates them. Caveat: the two files come from different quantizers / imatrices, so "the
+fine-tune" is the lead cause (inferred), not an isolated one. Code goes the other way and is not significant (stock cuts 6 at 8k).
+Per the pre-registered rule this feeds C2 (which file serves hard reasoning) — Andrei's decision. t/s: 32.0 stock, clean (no FOREIGN).
+
+### 2026-09-22 — qx3 failed on a tool bug, not on the model: fixed and re-queued
+
+`expert_mix.py` refused `mix25` with "HI/LO tensor mismatch: blk.0.ffn_down_exps.weight ([256, 2048, 288] vs [256, 2048, 220])".
+Those are BYTE shapes: X4's down experts are Q4_K (144-byte blocks), K2's are Q3_K (110-byte blocks); the element shape is
+(256, 2048, 512) in both. The mix dequantizes both sides into a Q8_0 container, so only element shapes must agree. The pre-check
+now compares element shapes (header-only inversion, no data read); a test with HI in a block type and LO in F16 reproduced the
+exact box error before the fix. Checked on the real files: 733 tensors, 0 element-shape mismatches, 120 byte-shape differences
+(= 40 layers x 3 expert tensors in different types). The X4 arm already ran before the failure: mean KLD 0.1370 vs K2 0.2181
+(-37%), same top token 84.0% vs 79.9%, 99% KLD 1.03 — the all-Q4_K ceiling is well below K2, so QX3 is alive; the mixes decide GO.
+`hand1` finished (sqlite exports of prof2 / prof4 present) => B1 is unblocked.

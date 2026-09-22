@@ -33,16 +33,14 @@ runs beside a job). Per-job decision rules: `research/HANDOFF-2026-09-21-queue-w
 
 | # | box job | work ID | question it answers | decision it feeds |
 |---|---|---|---|---|
-| running | `hq1_stock` (~14 h, since 09-22 01:24) | HQ1 | same items / sampler / seeds on STOCK weights: are the unfinished chains the 2.5-bit quant or the fine-tune | stock also cut => quantization => QX3 is the priority. Stock finishes => the fine-tune => which file we serve on hard reasoning (C2) |
-| 1 | `hand1` (~1 min) | HAND1 | exports the prof2 / prof4 nsys timelines to sqlite | unblocks B1 |
-| 2 | `qx3` (~4 h) | QX | KLD of all-Q4_K experts and of hot-25% / hot-50% mixes vs K2 0.218 | GO (mix25 >= 25% lower mean KLD) => B2 |
-| 3 | `lq1` | LQ1 | retrieval at depth per KV type (f16 / q8 / q4 / q4 no-rot) | the shipped long-context KV type (C3) |
-| 4 | `lq2` | FA4 | retrieval at depth, K-walk kernel `GGML_CUDA_FA_VEC_KROW` 0 vs 1, to 131k | pass => KROW becomes the code default (B5) |
-| 5 | `hq1_k2` (~14 h) | HQ1 | K2 quant on the hard sets, paired vs IQ2_M | K2 as default (C1) |
-| 6-7 | `bonsai1_easy`, `bonsai1_hard` | BON1 | ternary Bonsai accuracy | record |
-| 2b | `race1` (<= ~10 h, queued after `qx3`) | RACE1 | the 16 MATH-L5 chains that hit 32k, rerun with seed salts 1 and 2: is a cut chain a property of the problem or of the seed (`bench/qual/race.py`, verdict rule in `race1.sh`) | `seed` => B4 (serving form, then AIME's 10 cut chains); `problem` => dead, budget / quant is the lever |
+| running | `race1` (since 09-22 19:22) | RACE1 | the 16 MATH-L5 chains that hit 32k, rerun with seed salts 1 and 2: is a cut chain a property of the problem or of the seed (`bench/qual/race.py`, verdict rule in `race1.sh`) | `seed` => B4 (serving form, then AIME's 10 cut chains); `problem` => dead, budget / quant is the lever. Weight drops if C2 serves stock |
+| 1 | `qx3` (re-queued; X4 already built) | QX | KLD of hot-25% / hot-50% mixes vs K2 0.218 (X4 ceiling DONE: 0.137, -37%) | GO (mix25 >= 25% lower mean KLD) => B2 |
+| 2 | `lq1` | LQ1 | retrieval at depth per KV type (f16 / q8 / q4 / q4 no-rot) | the shipped long-context KV type (C3) |
+| 3 | `lq2` | FA4 | retrieval at depth, K-walk kernel `GGML_CUDA_FA_VEC_KROW` 0 vs 1, to 131k | pass => KROW becomes the code default (B5) |
+| 4 | `hq1_k2` (~14 h) | HQ1 | K2 quant on the hard sets, paired vs IQ2_M | K2 as default (C1) |
+| 5-6 | `bonsai1_easy`, `bonsai1_hard` | BON1 | ternary Bonsai accuracy | record |
 
-Done 2026-09-21/22 (numbers in `notes.md`): `whittle1` KILLED (GSM8K 81.5 / MMLU-Pro 43.6 vs 96.0 / 71.4, 34.8 t/s; judges that
+Done 2026-09-21/22 (numbers in `notes.md`): `hq1_stock` => served fine-tune WORSE than stock IQ2_M on hard reasoning (paired ALL +10.4 for stock, CI [+1.5, +19.3]; MATH-L5 80.0 vs 57.5, p 0.012) => C2 is ready for Andrei; `hand1` done => B1 unblocked; `qx3` first run failed on an `expert_mix.py` byte-vs-element shape check (fixed, re-queued). `whittle1` KILLED (GSM8K 81.5 / MMLU-Pro 43.6 vs 96.0 / 71.4, 34.8 t/s; judges that
 checkpoint, not the approach); `cpu1bench` + `cpu1bench2` (CPU miss phase memory bound at 6 threads, CONFIRMED by the control; CPU1
 dead); `hq1_iq2m` final (MATH-L5 57.5 / EvalPlus 85.4 / AIME 20.0; finished chains 23 of 24, 35 of 40, 3 of 5 correct; 16 + 10
 chains cut at the budget, 0 looping); `dl_stock`; `dense1` = FLAT (DM1 static split closed); `fa4` (KROW +17-22% at depth, opt-in).
@@ -51,7 +49,7 @@ chains cut at the budget, 0 looping); `dl_stock`; `dense1` = FLAT (DM1 static sp
 
 | # | item | owner | state | trigger / next step |
 |---|---|---|---|---|
-| B1 | **HAND1**: where do the ~0.3 ms per layer go between the bare expert ops (0.49 ms) and the server (0.78 ms) = up to ~12 ms of a 58 ms round. Timeline analysis (memcpy / sync / graph splits), then C++ in the expert-cache path if the slack is real | Fable | blocked on `hand1` (A1) | pull the sqlite files, analyze on the Mac; a patch = build + unit gate + A/B as front-of-queue jobs |
+| B1 | **HAND1**: where do the ~0.3 ms per layer go between the bare expert ops (0.49 ms) and the server (0.78 ms) = up to ~12 ms of a 58 ms round. Timeline analysis (memcpy / sync / graph splits), then C++ in the expert-cache path if the slack is real | Fable | UNBLOCKED (`hand1` done 09-22) | pull the sqlite files, analyze on the Mac; a patch = build + unit gate + A/B as front-of-queue jobs |
 | B2 | **Runtime hot / cold expert precision split** (hot experts Q4_K resident, cold stay K2): C++ in the loader + cache | Fable | blocked on `qx3` | only on GO. Speed price is bytes-proportional on the miss path (cpu1bench2); measure it in the same A/B |
 | B3 | ~~RACE1 tooling~~ **done 2026-09-22**: Qwen brief 27 reviewed (salt 0 request bodies proven byte-identical to the old code, 199 tests, analyzer smoke-run on the real rows), cherry-picked, deployed; `bench/box/race1.sh` written and queued | - | closed | - |
 | B4 | RACE1 follow-through: if `RACE_VERDICT seed`, decide the serving form (sequential retry-on-cut vs parallel slots; parallel costs KV VRAM x N and splits the expert cache, so retry first) | Fable | after `race1` | `problem` verdict => dead, the budget / quant is the lever |
@@ -65,7 +63,7 @@ chains cut at the budget, 0 looping); `dl_stock`; `dense1` = FLAT (DM1 static sp
 | # | decision | needs |
 |---|---|---|
 | C1 | K2 as the default Qwen quant; in-model MTP head as the shipped head | `hq1_k2` + kld1 (have) + his spot-check |
-| C2 | which file serves hard reasoning (uncensored fine-tune vs stock) | `hq1_stock` |
+| C2 | which file serves hard reasoning (uncensored fine-tune vs stock) | READY: `hq1_stock` says stock (paired WORSE for the fine-tune, notes 09-22) |
 | C3 | the shipped long-context config (KV type, KROW) | `lq1`, `lq2` |
 | C4 | Gemma default; `ollama.service` on the box; anything public (upstream PRs, fork) | his call, no data pending |
 | C5 | **second to last: Dave's box for a better distillation than Whittle's (T5)** | T0 (1 h ROCm throughput spike) prices it; only after everything above |
