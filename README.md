@@ -58,3 +58,7 @@ At `-c 12288`: `--moe-expert-cache 18 -b 4096` instead of `--moe-expert-cache 21
 - `research/` — scout reports, upstream diffs and the patch series (`research/patches/README.md` explains every patch in plain language). `patches/mainline-series/` is the expert cache on mainline;
   `patches/box-series/` is the earlier work on the PrismML fork (prism@9a9394a), kept for history — that fork is now used only
   to run the ternary Bonsai model, which mainline cannot load.
+
+## License
+
+MIT (`LICENSE`). Third-party code and benchmark data keep their own licenses: `THIRD_PARTY.md`.
