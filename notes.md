@@ -1287,3 +1287,15 @@ LM head facts (pf3 trace): output.weight q5_K ~349 MB read at ~196 GB/s (rooflin
 on the MTP draft head (grid 124160) -> lead B (FR-Spec draft vocab) = the only lever there.
 Spectrum pass (leads A-E, ranked by effect on the CRITICAL path, research/design-harmony-ledger.md): A window prefetch, B draft
 vocab reduction, C threads (dead), D A+FA tile harmony, E overlap re-framed (address-dependent fusion verdicts -> KLD class).
+
+### 2026-09-23 10:48 — pf4 (leads A + D): window prefetch NOT PROVEN; FA tile's long-context +3% is the part of D that survives
+t2 @ 880f74b (window mode: L+2 on a copy stream, issued at L's tail, waited at L+1's tail). Specbench, 2 rounds, mean decode:
+off 56.33 (spread 1.09) | w2 55.77 (-1.0%) | w4 54.72 (-2.9%) | NO_MMA 56.19 (-0.2%) | w4+NO_MMA 55.73 (-1.1%) -> A NOT PROVEN,
+D NOT PROVEN (short). 9,279-token prompt decode: off 49.27 / 49.77 | w4 47.65 / 48.54 | w4+NO_MMA 50.82 / 51.14 (+3.0%) = the
+FA tile kernel's own long-context gain (att1 +3.2%). nsys w4 (9.3k decode): the mechanism half-worked — H2D inside the CPU-bound
+gaps 94% (step) -> 36% (off 43%), idle 6.32 -> 5.97 ms/token — but GPU busy 14.92 -> 15.98 ms/token (+1.06: norm/rope/elementwise
+2.6 -> 3.7 us per launch, more cache-chain work): the moved bytes cost the device about what they save the host. Hit rate 48 ->
+57 / 63%. Verdict: on this box (PCIe = 1/3 of DDR4, DMA shares VRAM with the kernels) moving expert bytes to the GPU does not pay;
+the pre-gating predictor stays an asset, prefetch parked (branch pregate-prefetch, review fixes 0b7a2ba). Follow-up for D:
+fakv1 = GGML_CUDA_FA_MMA_MAX_KV threshold sweep (tile only above N KV), queued after fr1.
+Leads status: A not proven (parked) | B fr1 queued | C dead (thr1) | D -> fakv1 | E ovl12 queued (fusion verdicts, KLD, speed).
