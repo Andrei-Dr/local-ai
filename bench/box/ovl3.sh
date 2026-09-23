@@ -11,8 +11,8 @@
 #   off_z vs plan_z           IDENTICAL => stale expert bytes ARE the mechanism; DIVERGES => look elsewhere (another stale read)
 #   off_z vs off_n            DIVERGES => a kernel reads experts the router did not select (fill 0x00 vs 0xFF = NaN scales)
 #   off_plain vs off_z        DIVERGES => the served baseline's output already depends on those bytes
-# Step 2 (localization, runs whatever step 1 says): llama-eval-callback dumps every tensor of ONE prefill of a ~200-token prompt
-# (one prefill-mode ubatch, 1.6k routed ids < 8 x 256 -> the used-experts upload path), off vs plan and off vs off, serving flags.
+# Step 2 (localization, runs whatever step 1 says): llama-eval-callback dumps every tensor of ONE prefill of specbench's reason prompt
+# (ChatML-wrapped, ~60 tokens: >= 32 -> GPU MUL_MAT_ID, < 256 -> the used-experts upload path; it diverged at char 78), serving flags.
 # dumpdiff.py names the first tensor that differs (off vs off must be IDENTICAL; if off vs plan is too, the divergence needs decode).
 source /ai/bench/preflight.sh || exit 1
 cd /ai/bench
