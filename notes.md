@@ -1217,3 +1217,27 @@ optimization work may push race1).
 longpf runs now land in the ledger (kind longpf; 34 backfilled), every run records its GGML_*/LLAMA_* env, SCOREBOARD.md has prefill
 2.2k / 9.3k columns and a per-build section (best + median). K2, STABLE vs LEGACY, medians, identity runs excluded: decode code -0.5%,
 reason +2.2%, edit +1.3%, long -0.4%; prefill 2.2k 8.13x, 9.3k 8.52x.
+
+### 2026-09-23 09:44 — att1: FA tile is 1.9x faster at 9.3k KV but the time becomes GPU idle; the critical path is the CPU miss phase
+nsys decode after the 9,279-token prompt (MTP n=2, graphs off), STABLE: MMA flash_attn_ext_f16 630 us/launch (2.98 ms/token) vs
+NO_MMA flash_attn_tile 334 us/launch (1.63 ms/token) — but GPU idle 5.93 -> 7.04 ms/token, total 22.04 -> 22.08 ms/token. Timing
+(graphs on, 2 rounds): 9.3k decode served 47.54 / 50.43, NO_MMA 51.08 / 50.06 (+3.2%, spread 2.89); 2.3k served 46.16 / 50.97,
+NO_MMA 51.97 / 54.52 (+9.6%, spread 4.81). No-draft decode after 9.3k: 39.81 t/s. The GPU already waits on the CPU experts
+(DDR4 miss phase, cpu1bench: memory bound at 6 threads) -> GPU-only speedups turn into idle. Candidate patch GGML_CUDA_FA_MMA_MAX_KV
+(fa-kv 3ea44a4, experimental/fa-mma-max-kv.patch) stays a secondary item. H2D placement (h2dov.py): 40% of the cache fills
+(~10 MB/token) land inside the CPU-bound idle windows (DDR4 contention). Ledger + ranked moves: research/design-harmony-ledger.md.
+
+### 2026-09-23 09:43 — mt1: multi-turn prefix reuse works on STABLE (no re-prefill); checkpoints cost RAM + ~0.2 s TTFT
+3 turns (9,279-token doc, then two short follow-ups), serving config. default: turn 2 processed 26 tok / reused 9,406, TTFT 0.51 s;
+turn 3 29 / 9,493, 0.53 s. --ctx-checkpoints 0: same reuse (26 / 9,406), TTFT 0.33 / 0.37 s — an appending conversation continues
+from the slot's own state; checkpoints only matter when a prompt diverges (edit / regenerate). Each checkpoint 81.6 MiB of host RAM
+(8 created = ~650 MiB on a box with ~3 GiB free). Decode per turn 48.0 -> 41.8 -> 39.2 (default), 48.7 -> 43.6 -> 41.1 (nocp): MTP
+acceptance 0.88 -> 0.67 -> 0.63 on list-style answers, content not overhead. Serving note: cap -ctxcp (2-4) when STABLE is deployed.
+
+### 2026-09-23 09:45 — ovl6-ovl9: the overlap divergence is NOT CUDA graphs, NOT asynchrony; the cache warm-up observer differs
+ovl6: GGML_CUDA_DISABLE_GRAPHS=1 both arms still DIVERGE. ovl7: eval-callback's earlier dumps had 0 planned pairs (void); planning
+one target type alone keeps code/reason IDENTICAL, only the full chain breaks them. ovl8: GGML_SCHED_DIAG_SYNC=1 (drain after every
+split) still DIVERGES -> layout, not timing; dump with 240 planned pairs IDENTICAL for the prompt ubatch. ovl9: planned prompt ubatch
++ decode-chain ubatch both IDENTICAL in callback mode (no CUDA op fusion there). Server: first prompt's warm-up 1016 (off) vs 1017
+(plan) uploads, hit rate 51.2 vs 52.4% -> different cached experts -> different GPU/CPU expert split -> different rounding.
+ovl10: warm-up off + an id-checksum trace of the observer.
