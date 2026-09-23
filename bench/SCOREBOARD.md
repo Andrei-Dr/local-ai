@@ -27,7 +27,7 @@ prefill 2.2k = best specbench long-prompt prefill, prefill 9.3k = best longpf (9
 | Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_c30mtp_r1c_b10` | 92.0 | 90.2 | - | 65.4 | 95.4 | - |
 | Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_hard` | - | - | - | 65.4 | 95.4 | - |
 | Qwen3.6-35B-A3B-IQ2_M | `q36_iq2m_hard_s1` | - | - | - | 65.4 | 95.4 | - |
-| Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | `q36_k2_cache26` | 95.5 | 92.7 | 73.6! (<=81.1) | 64.5 | 410.2 | 456.1 |
+| Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | `q36_k2_cache26` | 95.5 | 92.7 | 73.6! (<=81.1) | 65.2 | 415.6 | 494.0 |
 | Qwen3.6-35B-A3B-stock-bartowski-IQ2_M | `q36_stock_iq2m_hard` | - | - | - | ~32.0 | - | - |
 | Qwen3.8-35B-A3B-Distill-IQ2_M | `distill_iq2m` | 92.0 | 82.9 | 72.9! (<=80.0) | 39.1 | - | - |
 | Whittle-Qwen-3.8-35B-A3B.i1-Q2_K | `whittle_q2k` | 81.5 | - | 43.6! (<=56.8) | 34.9 | 58.9 | - |
@@ -93,11 +93,12 @@ MEDIANS, and the authoritative comparison is the paired A/B of the promotion job
 
 | build | decode code | decode reason | decode edit | decode long | prefill 2.2k | prefill 9.3k | decode after 9.3k | runs |
 |---|---|---|---|---|---|---|---|---|
-| STABLE | 57.1 (`promo1_new_a`) · med 55.0 n=2 | 57.2 (`promo1_new_b`) · med 57.2 n=2 | 61.2 (`promo1_new_a`) · med 61.2 n=2 | 47.0 (`promo1_new_b`) · med 46.1 n=2 | 395.9 (`promo1_new_a`) · med 395.1 n=2 | 403.2 (`promo1_pf_new`) | 49.8 (`promo1_pf_new`) | 3 |
-| LEGACY | 59.9 (`opt2_n2p05`) · med 55.3 n=32 | 59.5 (`pmux1_base_b`) · med 55.9 n=32 | 64.5 (`opt1_mtp3`) · med 60.4 n=32 | 49.6 (`opt1_base_a`) · med 46.3 n=32 | 104.8 (`kq_q36k2_off`) · med 48.6 n=32 | 47.6 (`pmux3_base`) · med 47.3 n=3 | 49.1 (`pmux3_base_2`) · med 47.6 n=3 | 35 |
-| TEST llama.cpp-ov | 59.9 (`tu2_D_b`) · med 57.0 n=55 | 60.6 (`dec3_P_a`) · med 57.2 n=55 | 62.4 (`dec3_P_c`) · med 59.6 n=55 | 49.3 (`tu2_S_b`) · med 47.1 n=55 | 397.2 (`dec2_T_a`) · med 392.3 n=55 | 456.1 (`tu1_ubp4096_all`) · med 401.8 n=30 | 52.4 (`tu1_ubp4096_fa`) · med 49.1 n=30 | 85 |
+| STABLE | 63.4 (`promo4_kv_a`) · med 58.0 n=30 | 63.2 (`promo4_kv_b`) · med 58.5 n=30 | 65.2 (`promo4_kv_b`) · med 61.7 n=30 | 51.0 (`final3_STABLE1_a`) · med 48.2 n=30 | 397.9 (`thr1_t6_a`) · med 393.1 n=30 | 425.0 (`att1_nodraft`) · med 403.5 n=30 | 56.1 (`final3_pf_STABLE1_a`) · med 50.1 n=30 | 60 |
+| LEGACY | 59.9 (`opt2_n2p05`) · med 55.7 n=34 | 59.5 (`pmux1_base_b`) · med 56.2 n=34 | 64.5 (`opt1_mtp3`) · med 60.5 n=34 | 49.6 (`opt1_base_a`) · med 46.7 n=34 | 104.8 (`kq_q36k2_off`) · med 48.6 n=34 | 47.6 (`final3_pf_LEGACY_a`) · med 47.4 n=5 | 49.1 (`pmux3_base_2`) · med 47.6 n=5 | 39 |
+| TEST llama.cpp-ov | 59.9 (`tu2_D_b`) · med 57.0 n=57 | 60.6 (`dec3_P_a`) · med 57.2 n=57 | 62.4 (`dec3_P_c`) · med 59.6 n=57 | 49.3 (`tu2_S_b`) · med 46.9 n=57 | 397.2 (`dec2_T_a`) · med 392.5 n=57 | 456.1 (`tu1_ubp4096_all`) · med 401.8 n=30 | 52.4 (`tu1_ubp4096_fa`) · med 49.1 n=30 | 87 |
+| TEST llama.cpp-t2 | 63.5 (`fr1_16384_a`) · med 57.3 n=74 | 62.0 (`fr2_65536_b`) · med 56.6 n=74 | 65.2 (`fr2_49152_a`) · med 60.1 n=74 | 51.2 (`fr1_32768_b`) · med 47.2 n=74 | 415.6 (`ovl16_gated_a`) · med 393.8 n=74 | 494.0 (`ovl12_u4096_on_b`) · med 404.1 n=35 | 54.0 (`fakv1_pf_kv8192_b`) · med 49.3 n=35 | 109 |
 
-**STABLE vs LEGACY (median vs median):** decode code -0.5%, decode reason +2.2%, decode edit +1.3%, decode long -0.4%, prefill 2.2k 8.13x, prefill 9.3k 8.52x
+**STABLE vs LEGACY (median vs median):** decode code +4.0%, decode reason +4.1%, decode edit +1.9%, decode long +3.2%, prefill 2.2k 8.09x, prefill 9.3k 8.52x
 
 ### Qwen3.8-27B-i1-IQ3_M
 
@@ -161,9 +162,9 @@ MEDIANS, and the authoritative comparison is the paired A/B of the promotion job
 |---|---|---|---|---|
 | 1 | `r1_g4q2k_b10` | Gemma4-26B-A4B-Q2_K_P | 67.7 (mean 61.5 over 3 prompts) | slots 15, MTP n=2, VRAM 3308 MiB, commit 2582f5cb6523 |
 | 2 | `r1_q36_b20` | Qwen3.6-35B-A3B-IQ2_M | 65.4 (mean 61.4 over 3 prompts) | slots 30, MTP n=2, VRAM 3444 MiB, commit 2582f5cb6523 |
-| 3 | `opt1_mtp3` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 64.5 (mean 56.0 over 4 prompts) | slots 26, MTP n=2, VRAM 3496 MiB, commit 21ef88a05bf7 |
-| 4 | `r1_g4q2k_b05` | Gemma4-26B-A4B-Q2_K_P | 64.3 (mean 58.4 over 3 prompts) | slots 15, MTP n=2, VRAM 3308 MiB, commit 2582f5cb6523 |
-| 5 | `r1_q36_b10` | Qwen3.6-35B-A3B-IQ2_M | 63.0 (mean 59.6 over 3 prompts) | slots 30, MTP n=2, VRAM 3444 MiB, commit 2582f5cb6523 |
+| 3 | `promo4_kv_b` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 65.2 (mean 60.5 over 4 prompts) | slots 26, MTP n=2, VRAM 3490 MiB, commit c75018be7791 |
+| 4 | `final3_STABLE1_b` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 65.2 (mean 60.1 over 4 prompts) | slots 26, MTP n=2, VRAM 3490 MiB, commit c75018be7791 |
+| 5 | `fr2_49152_a` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 65.2 (mean 60.0 over 4 prompts) | slots 26, MTP n=2, VRAM 3490 MiB, commit 854cbce434f4 |
 
 ## Fastest config per model file
 
@@ -171,7 +172,7 @@ MEDIANS, and the authoritative comparison is the paired A/B of the promotion job
 |---|---|---|---|---|
 | 1 | `r1_g4q2k_b10` | Gemma4-26B-A4B-Q2_K_P | 67.7 (mean 61.5 over 3 prompts) | slots 15, MTP n=2, VRAM 3308 MiB, commit 2582f5cb6523 |
 | 2 | `r1_q36_b20` | Qwen3.6-35B-A3B-IQ2_M | 65.4 (mean 61.4 over 3 prompts) | slots 30, MTP n=2, VRAM 3444 MiB, commit 2582f5cb6523 |
-| 3 | `opt1_mtp3` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 64.5 (mean 56.0 over 4 prompts) | slots 26, MTP n=2, VRAM 3496 MiB, commit 21ef88a05bf7 |
+| 3 | `promo4_kv_b` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 65.2 (mean 60.5 over 4 prompts) | slots 26, MTP n=2, VRAM 3490 MiB, commit c75018be7791 |
 | 4 | `kq1g_k2_inmodel_c38` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K-MTP | 60.1 (mean 54.9 over 4 prompts) | slots 38, MTP n=2, VRAM 3446 MiB, commit 2582f5cb6523 |
 | 5 | `mtp1_q36_inmodel_c46` | Qwen3.6-35B-A3B-IQ2_M-MTP | 53.8 (mean 49.3 over 4 prompts) | slots 46, MTP n=2, VRAM 3570 MiB, commit 498696c3c0de |
 | 6 | `distill_c48` | Qwen3.8-35B-A3B-Distill-IQ2_M | 39.1 (mean 38.7 over 2 prompts) | slots 48, no spec, VRAM 3304 MiB, commit f94da5a |
@@ -195,4 +196,4 @@ Closest misses
 | 2 | `q36_iq2m` | 65.4 | knowledge contaminated (cut-off band wider than 1 SE) |
 | 3 | `q36_iq2m_cache48` | 65.4 | knowledge contaminated (cut-off band wider than 1 SE) |
 | 4 | `q36_iq2m_cache48_main` | 65.4 | knowledge contaminated (cut-off band wider than 1 SE) |
-| 5 | `q36_k2_cache26` | 64.5 | knowledge contaminated (cut-off band wider than 1 SE) |
+| 5 | `q36_k2_cache26` | 65.2 | knowledge contaminated (cut-off band wider than 1 SE) |
