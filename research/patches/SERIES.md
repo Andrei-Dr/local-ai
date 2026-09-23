@@ -1,4 +1,4 @@
-# llama.cpp patch series — the single source of truth (updated 2026-09-23 06:45)
+# llama.cpp patch series — the single source of truth (updated 2026-09-23 07:00)
 
 One linear chain on mainline, regenerated with `git format-patch 0af8ea3^..tu116-kernels` from the local clone
 `~/dev/llama.cpp-mainline` (branches: moe-cache -> moe-cache-det -> prefill-mux -> tu116-kernels). Apply in order; each patch
@@ -20,18 +20,18 @@ Status: **SERVED** = in the served build (/ai/src/llama.cpp-mainline) · **TEST*
 | 0008 | 0007 | shared expert inside the cache split (overlaps host experts) | SERVED | always | HAND1: part of +5.4% decode, byte-identical | — |
 | 0009 | 0008 | CUDA concat flat kernel (delta-net conv state) | SERVED | always | same | — |
 | 0010 | 0009 | sched enqueues host->device split copies async | SERVED | always | same | — |
-| 0011 | — | **prefill mode** `--ubatch-prefill N`: cache slots released for a big prefill ubatch | TEST | CLI, off unless `-ubp` | pmux1/3: prefill 3.2x (2.2k tok), 3.5x (9.3k); decode -2.0% (noise); identity 3/4 (long: near-tie) | **pmux5** KLD ub2048 vs ub128 |
+| 0011 | — | **prefill mode** `--ubatch-prefill N`: cache slots released for a big prefill ubatch | TEST | CLI, off unless `-ubp` | pmux1/3: prefill 3.2x (2.2k tok), 3.5x (9.3k); decode -2.0% (noise); identity 3/4 (long: near-tie) | ✅ pmux5 PASS (KLD 0.200063 vs 0.200676) |
 | 0012 | — | prefill mode trims CUDA pools before slots return (fix) | TEST | with 0011 | needed for resume | with 0011 |
 | 0013 | — | cache suspend detaches slot tensors (fix) | TEST | with 0011 | needed for resume | with 0011 |
-| 0014 | — | **dp4a MMQ** on tensor-core-less Turing | TEST (local `#define`) | CMake `-DGGML_CUDA_MMQ_NO_MMA=ON` | mmqdp1: long prefill 48.5 -> 372.4 t/s with 0011; decode flat; unit 929/929 + 1297/1297 | **pmux5** KLD dp4a arm |
+| 0014 | — | **dp4a MMQ** on tensor-core-less Turing | TEST (local `#define`) | CMake `-DGGML_CUDA_MMQ_NO_MMA=ON` | mmqdp1: long prefill 48.5 -> 372.4 t/s with 0011; decode flat; unit 929/929 + 1297/1297 | ✅ pmux5 PASS (KLD 0.199973) |
 | 0015 | tu116/0011 | FA never selects the MMA kernel | TEST | `GGML_CUDA_FA_NO_MMA=1`, off | tu1: prefill +29%, decode -3.9% -> use 0019 instead | — (superseded by 0019 for serving) |
-| 0016 | tu116/0012 | MoE MMQ tile width per expert | TEST | `GGML_CUDA_MMQ_MOE_EXPERT_COLS=1`, off | tu1: ub128 prefill +8.8%; nothing at ubp 4096 | **pmux5** KLD; likely stays off once 0011 serves |
+| 0016 | tu116/0012 | MoE MMQ tile width per expert | TEST | `GGML_CUDA_MMQ_MOE_EXPERT_COLS=1`, off | tu1: ub128 prefill +8.8%; nothing at ubp 4096 | ✅ pmux5: bit-identical output (exact) |
 | 0017 | tu116/0013 | whole-tensor expert upload, no router readback (>= 8 tok/expert) | TEST | ON; `GGML_SCHED_MOE_READBACK=1` = old | tu1: exact (IDENTICAL x4), prefill neutral | ships with the set (groundwork for upload overlap) |
 | 0018 | tu116/0014 | no host sync before stream-ordered split input copies | TEST | ON; `GGML_SCHED_SYNC_BEFORE_COPY=1` = old | tu1: exact (IDENTICAL x4), decode +3.4% on a contaminated run | **tu2** clean 3-round decode |
-| 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | TEST | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | **pmux5** KLD (fatile arm) + **tu2** |
+| 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | TEST | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | ✅ pmux5 PASS (FA tile KLD 0.199801) + **tu2** decode |
 
-## Promotion plan (when pmux5 + tu2 pass)
-1. Clean full build of the served tree at tu116-kernels with `-DGGML_CUDA_MMQ_NO_MMA=ON` (drop the ov tree's local define).
+## Promotion plan (pmux5 passed 06:58; waiting on tu2)
+1. Clean full build at tu116-kernels in a NEW build dir (build75 stays for the queued accuracy jobs: race1 is pinned to it; hq1 / lq1 / opt2 use it) with `-DGGML_CUDA_MMQ_NO_MMA=ON` (drop the ov tree's local define).
 2. Identity smoke (LLAMA_MOE_CACHE_SYNC=1) vs the ov build, one specbench round.
 3. Serving config: `-ub 128 -b 2048 -ubp 2048` (or 4096 by fit), env `GGML_CUDA_FA_TILE_MIN_BATCH=32`.
 4. Update this table (TEST -> SERVED), SPEC, notes.
