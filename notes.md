@@ -1414,3 +1414,9 @@ serving env (FA_MMA_MAX_KV 4096 + 49k draft vocab): specbench with the overlap o
 (1,024 ids) was planned too (compute buffer 129 -> 290 MiB kept through decode), so the cache could not return after prefill mode.
 Fix d0fd493: plan only graphs that reach the whole-tensor threshold (8 x n_expert ids; prefetch never engages below it). promo5b.
 STABLE stays at 2f02192 meanwhile (overlap off by default = today's behavior).
+
+### 2026-09-23 13:59 — promo5b: lead E PROMOTED — STABLE = d0fd493 (upload/compute overlap), serve with GGML_SCHED_MOE_PREFETCH=1
+Identity unset vs promo5's post-build baseline: IDENTICAL x4. No OOM, no slot re-allocation failure. Full serving env, overlap on vs
+unset: specbench decode +1.2 / +1.6 / +1.9 / -0.7%; prefill long 2.2k 393.8 -> 468.4 (+19%); 9,279-token prompt at ubp 2048: prefill
+404.1 / 403.4 -> 498.0 / 498.8 (+23.4%), decode after 54.63 / 55.05 -> 54.91 / 55.27, wall 25.3 -> 21.0 s; ubp 4096: 510.5 / 508.6
+prefill, decode after 51.89 / 55.99 (noisy) -> serve at ubp 2048. Series 0024-0030.

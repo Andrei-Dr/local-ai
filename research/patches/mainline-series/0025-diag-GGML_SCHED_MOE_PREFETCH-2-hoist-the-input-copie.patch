@@ -1,0 +1,55 @@
+From c994595e6e481c65d9fd6a91335c719081ecab00 Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 08:24:26 +0300
+Subject: [PATCH 25/30] =?UTF-8?q?diag:=20GGML=5FSCHED=5FMOE=5FPREFETCH=3D2?=
+ =?UTF-8?q?=20=E2=80=94=20hoist=20the=20input=20copies=20but=20upload=20in?=
+ =?UTF-8?q?=20stream=20order=20(isolates=20the=20second=20stream=20from=20?=
+ =?UTF-8?q?the=20layout=20change)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit dfbdf1400cf51ea432f495cc6be7cea5d0c174de)
+---
+ ggml/src/ggml-backend.cpp | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index 669506a..bcdda1d 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -864,13 +864,17 @@ static bool ggml_backend_sched_moe_readback_forced(void) {
+     return forced;
+ }
+ 
+-// GGML_SCHED_MOE_PREFETCH=1: overlap the whole-tensor upload of host expert weights with the previous split's compute
+-static bool ggml_backend_sched_moe_prefetch_enabled(void) {
+-    static const bool enabled = [] {
++// GGML_SCHED_MOE_PREFETCH=1: overlap the whole-tensor upload of host expert weights with the previous split's compute.
++// =2 (diagnostic): plan and hoist the input copies, but upload them in stream order like the default path (no second stream).
++static int ggml_backend_sched_moe_prefetch_mode(void) {
++    static const int mode = [] {
+         const char * env = getenv("GGML_SCHED_MOE_PREFETCH");
+-        return env != nullptr && atoi(env) != 0;
++        return env != nullptr ? atoi(env) : 0;
+     }();
+-    return enabled;
++    return mode;
++}
++static bool ggml_backend_sched_moe_prefetch_enabled(void) {
++    return ggml_backend_sched_moe_prefetch_mode() != 0;
+ }
+ #define tensor_backend_id(tensor) sched->hv_tensor_backend_ids[hash_id(tensor)]
+ #define tensor_id_copy(id, backend_id, copy_id) sched->hv_tensor_copies[(id) * sched->n_backends * sched->n_copies + (backend_id) * sched->n_copies + (copy_id)]
+@@ -1955,7 +1959,7 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+         const int b = splits[i_split].backend_id;
+         ggml_backend_t backend = sched->backends[b];
+         ggml_backend_dev_t dev = ggml_backend_get_device(backend);
+-        if (sched->prefetch_off[b] || dev == NULL) {
++        if (sched->prefetch_off[b] || dev == NULL || ggml_backend_sched_moe_prefetch_mode() == 2) {
+             return;
+         }
+         const struct ggml_backend_sched_split * target = &splits[target_id];
+-- 
+2.55.0
+

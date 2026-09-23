@@ -1,4 +1,4 @@
-# llama.cpp patch series — the single source of truth (updated 2026-09-23 12:55)
+# llama.cpp patch series — the single source of truth (updated 2026-09-23 14:00)
 
 One linear chain on mainline, regenerated with `git format-patch 0af8ea3^..tu116-served` from the local clone
 `~/dev/llama.cpp-mainline` (branches: moe-cache -> moe-cache-det -> prefill-mux -> tu116-kernels). Apply in order; each patch
@@ -33,12 +33,16 @@ Status: **STABLE** = in the stable build (/ai/src/llama.cpp-v2, promo1 07:47) ·
 | 0021 | — | FA MMA kernel only below a KV length (tile above) | STABLE | `GGML_CUDA_FA_MMA_MAX_KV=4096` for serving (unset = off) | att1: tile 1.9x per launch at 9.3k KV; fakv1: 9.3k decode +6.2 / +6.8 / +7.4% (MAX_KV 2048 / 4096 / 8192, spread 0.29), specbench within spread | ✅ promo3: IDENTICAL x4 with the env unset; 9.3k decode +6.0%; tile kernel KLD non-inferior (pmux5) |
 | 0022 | — | **FR-Spec draft vocabulary** for the Qwen3.5/3.6 MTP head | STABLE | `LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin` for serving (unset = full head) | pf3: the draft head reads ~0.81 ms/token at VRAM roofline; fr2: 49k list (model's own eval answers + prompts + code) +6.0% decode, acceptance 0.837 vs 0.832 | ✅ promo4: IDENTICAL x4 unset; specbench +9.9 / +4.9 / +6.0 / +8.6%, 9.3k decode +3.7%; target verifies the full vocabulary |
 | 0023 | — | FR-Spec head skips graphs built over unallocated weights (fix) | STABLE | with 0022 | fr1b: the memory-fit dry run asserted | with 0022 |
+| 0024 | — | **upload/compute overlap for prefill** (hoisted host-weight copies, second stream) | STABLE | `GGML_SCHED_MOE_PREFETCH=1` for serving (unset = off) | ovl12/ovl20: 9.3k prefill +18..24%, prefill KLD identical to 6 decimals | ✅ promo5b: IDENTICAL x4 unset; 9.3k prefill 403.8 -> 498.4, 2.2k 393.8 -> 468.4, decode unchanged |
+| 0025-0028 | — | overlap diagnostics (mode 2 = plan only, _LOG / _MIN_IDS, _ONLY, _SKIPLOOP) | STABLE | env, off | ovl2-ovl19 bisection tools | inert unless set |
+| 0029 | — | overlap plan: op test first, per-backend CUDA verdict cached (fix) | STABLE | with 0024 | ovl19/20: the per-split device queries cost ~7% of decode whenever the mode was on | with 0024 |
+| 0030 | — | overlap plan only for graphs >= the whole-tensor threshold (fix) | STABLE | with 0024 | promo5: the planned reserve graph kept 290 MiB through decode, the cache could not re-allocate (-20%) | ✅ promo5b |
 
 ## Promotion DONE 07:47 — promo1 (bench/box/promo1.sh), branch tu116-served 1c54372
 Result: unit 929 / 1297 / 3979 pass; IDENTICAL x4 vs the ov build; specbench old served config -> STABLE serving config:
 decode code +0.9 / reason +0.2 / edit -0.8 / long -6.1% (open item, see notes), prefill 1.55x / 1.91x / 2.99x / 8.13x;
 9,279-token prompt 47.3 -> 403.2 t/s (8.5x), wall 198.8 -> 25.6 s, decode after it 47.3 -> 49.8.
-**STABLE serving command (from promo4, 12:55, commit c75018b):** `GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_OP_OFFLOAD_MIN_BATCH=32 /ai/src/llama.cpp-v2/build75/bin/llama-server -m <K2> -ngl 999 -fa on -t 6 -ot exps=CPU --moe-expert-cache 26 -md <mtp head> --spec-type draft-mtp --spec-draft-n-max 2 -ub 128 -b 2048 -ubp 2048` (-c 4096; at -c 12288 use cache 22).
+**STABLE serving command (from promo5b, 13:59, commit d0fd493):** `GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 /ai/src/llama.cpp-v2/build75/bin/llama-server -m <K2> -ngl 999 -fa on -t 6 -ot exps=CPU --moe-expert-cache 26 -md <mtp head> --spec-type draft-mtp --spec-draft-n-max 2 -ub 128 -b 2048 -ubp 2048` (-c 4096; at -c 12288 use cache 22).
 Original plan:
 1. Clean full build at tu116-kernels in a NEW build dir (build75 stays for the queued accuracy jobs: race1 is pinned to it; hq1 / lq1 / opt2 use it) with `-DGGML_CUDA_MMQ_NO_MMA=ON` (drop the ov tree's local define).
 2. Identity smoke (LLAMA_MOE_CACHE_SYNC=1) vs the ov build, one specbench round.

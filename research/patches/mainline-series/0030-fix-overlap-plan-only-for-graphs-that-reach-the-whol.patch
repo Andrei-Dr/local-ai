@@ -1,0 +1,34 @@
+From d0fd493f61e93c6c7f526b92b08320eac23ea79b Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 13:49:25 +0300
+Subject: [PATCH 30/30] fix: overlap plan only for graphs that reach the
+ whole-tensor upload threshold
+
+promo5: with the overlap on, the ubatch-sized reserve graph (1,024 routed ids) was planned too, so the decode-mode compute buffer
+stayed at 290 MiB instead of 129 MiB; after a prefill the expert cache could not re-allocate its slots and decode ran uncached
+(-20%). Below 8 routed tokens per expert prefetch_begin never engages anyway, so those graphs are no longer planned.
+---
+ ggml/src/ggml-backend.cpp | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index ae0a000..d0952de 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -1580,7 +1580,12 @@ void ggml_backend_sched_split_graph(ggml_backend_sched_t sched, struct ggml_cgra
+                 const char * env = getenv("GGML_SCHED_MOE_PREFETCH_ONLY");
+                 return std::string(env != nullptr ? env : "");
+             }();
+-            if (mask != 0 && node->src[2] != NULL && ggml_nelements(node->src[2]) < diag_min_ids) {
++            // plan only graphs whose router output reaches the whole-tensor upload threshold (>= 8 routed tokens per expert on
++            // average): below it prefetch_begin never engages, so hoisting would only reserve VRAM — for the ubatch-sized reserve
++            // graph that is +161 MiB kept for the whole decode (promo5: the expert cache could not re-allocate its slots after a
++            // prefill). GGML_SCHED_MOE_PREFETCH_MIN_IDS overrides the threshold (diagnostic).
++            const int64_t min_ids = diag_min_ids > 0 ? diag_min_ids : 8*node->src[0]->ne[2];
++            if (mask != 0 && node->src[2] != NULL && ggml_nelements(node->src[2]) < min_ids) {
+                 mask = 0;
+             }
+             if (mask != 0 && !diag_only.empty() && strstr(node->name, diag_only.c_str()) == NULL) {
+-- 
+2.55.0
+

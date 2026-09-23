@@ -1,0 +1,41 @@
+From 4e1586e5fbaebe69c309cab76777b48f33893858 Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 09:20:08 +0300
+Subject: [PATCH 27/30] =?UTF-8?q?diag:=20GGML=5FSCHED=5FMOE=5FPREFETCH=5FO?=
+ =?UTF-8?q?NLY=20=E2=80=94=20plan=20only=20targets=20whose=20first=20node?=
+ =?UTF-8?q?=20name=20contains=20a=20substring?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit b699951ec7e55506ca1be2ee7d1e9c73a1ad081d)
+---
+ ggml/src/ggml-backend.cpp | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index fc1d3c6..740a7e6 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -1561,9 +1561,18 @@ void ggml_backend_sched_split_graph(ggml_backend_sched_t sched, struct ggml_cgra
+                 const char * env = getenv("GGML_SCHED_MOE_PREFETCH_LOG");
+                 return env != nullptr && atoi(env) != 0;
+             }();
++            // GGML_SCHED_MOE_PREFETCH_ONLY=<substring>: plan only targets whose first node's name contains it (e.g. "ffn_moe_up",
++            // "ffn_moe_down-7"); diagnostic bisection
++            static const std::string diag_only = [] {
++                const char * env = getenv("GGML_SCHED_MOE_PREFETCH_ONLY");
++                return std::string(env != nullptr ? env : "");
++            }();
+             if (mask != 0 && node->src[2] != NULL && ggml_nelements(node->src[2]) < diag_min_ids) {
+                 mask = 0;
+             }
++            if (mask != 0 && !diag_only.empty() && strstr(node->name, diag_only.c_str()) == NULL) {
++                mask = 0;
++            }
+             if (mask != 0) {
+                 split->prefetch_mask = mask;
+                 sched->splits[p].prefetch_split = i;
+-- 
+2.55.0
+
