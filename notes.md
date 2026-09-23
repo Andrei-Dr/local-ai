@@ -1363,3 +1363,15 @@ another path; -otd is ignored for draft-mtp). Specbench mean decode: base (cache
 Nothing planned in any arm; order U Z N N Z U. 4-prompt mean decode: U (unset) 56.34 / 55.80 | Z (=0) 55.70 / 57.00 (+0.5%, SAME)
 | N (=1, MIN_IDS=inf) 52.87 / 51.27 (-7.1%, DIFFERENT); code prefill U 56.8 / Z 55.8 / N 48.0, edit 144.1 / 143.9 / 120.2. The
 only mode-dependent site is the plan block in split_graph (cheap on paper) -> ovl18: perf record U vs N.
+
+### 2026-09-23 12:34 — fr2 (lead B): FR-Spec draft vocabulary WINS — 49k list +6.0% decode, acceptance unchanged
+combo 854cbce; vocab from the model family's own eval answers (qual/results texts) + eval prompts + prose/wiki + llama.cpp/bench
+code + Python stdlib (~49.2k distinct tokens). Specbench, 2 rounds, mean decode (acceptance): full 56.35 (spread 1.43, 0.832) |
+32k 58.62 (+4.0%, 0.823) | 49k 59.73 (+6.0%, 0.837) | "64k" (= 49.2k) 58.84 (+4.4%, 0.833). Per prompt at 49k: code +7.1%, reason
++6.9%, edit +6.4%, long +3.1%. The target verifies every draft against its full vocabulary (output distribution unchanged).
+-> PROMOTE (promo4: STABLE c75018b = 1be3f5f + FR-Spec + dry-run fix; artifact /ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin).
+
+### 2026-09-23 12:37 — ovl18: perf shows no host hotspot for the overlap's cost (profiles identical; NVIDIA RM calls only in N)
+U (unset) vs N (=1, never plans): same self-symbol profile (~48% unresolved spin, q2_K 19.7%, q3_K 13.4-13.7% dots); N adds kernel-
+driver time (_nv049601rm 0.8%) -> the cost is waiting / driver work, not host compute. Overlap stays parked (prefill +18% unusable
+until the per-graph cost is found); open question recorded.
