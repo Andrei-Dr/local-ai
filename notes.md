@@ -1105,3 +1105,11 @@ per 256-token chunk); pmux4 measures the first as a KLD. Multi-turn (thinking on
 55 of 99, turn 3 95 of 135 — the hybrid's checkpoints keep prefix reuse working (O6 closed).
 The 362.7 t/s Andrei saw was ctx1d's dedicated ub-4096 cache-0 prefill server on a 26.8k-token document: a 2.2k prompt caps any
 ubatch at 2.2k, so the per-ubatch expert upload (~2.5 s) cannot be spread further; pmux3 runs ~10k tokens at ubp 2048 / 4096.
+
+### 2026-09-23 05:57 — pfprof1: dp4a MMQ doubles prefill; FlashAttention is now the co-bottleneck
+9,279-token prompt, prefill mode ubp 4096, cache 22, MTP head, dp4a MMQ build (llama.cpp-ov), nsys with graphs off: **348.4 t/s**
+prefill (pmux3 MMA build: 167.1) and 43.0 t/s decode after it. Window 29.4 s: kernels 25.0 s, H2D 3.4 s (43.6 GB) of which only
+0.2 s hidden under compute, GPU idle 1.2 s. By class: MMQ 9.9 s (39.7%), **FlashAttention 9.4 s (37.5%)**, delta-net 2.5 s,
+mmvq 1.3 s (the 128 decode tokens), elementwise 1.0 s. MMQ now runs ~5.6 TOPS (~30% of dp4a peak); FA at ~1 TFLOPS on the MMA
+kernel = the same tensor-core-on-TU116 defect as MMQ had -> tu1's GGML_CUDA_FA_NO_MMA arm is the next lever, then upload overlap
+(3.2 s serialized = ~11% of the window, now worth building).
