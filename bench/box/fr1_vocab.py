@@ -8,7 +8,7 @@ tok_bin, model, out = sys.argv[1], sys.argv[2], sys.argv[3]
 def tokenize(text, special=False):
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
         f.write(text); path = f.name
-    args = [tok_bin, "-m", model, "-f", path, "--ids", "--log-disable"] + (["--parse-special"] if special else ["--no-parse-special"])
+    args = [tok_bin, "-m", model, "-f", path, "--ids", "--log-disable"] + ([] if special else ["--no-parse-special"])
     r = subprocess.run(args, capture_output=True, text=True, timeout=1800)
     os.unlink(path)
     m = re.search(r"\[([\d,\s]*)\]\s*$", r.stdout.strip())
