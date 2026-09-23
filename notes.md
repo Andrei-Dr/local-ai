@@ -1465,3 +1465,14 @@ CUDA0 model buffer 976.6 -> 1179.2 MiB (+203 MiB).
   expert-cache slots (-4.4 pts hit rate -> more CPU misses on the critical link). Same harmony lesson: VRAM is the shared currency.
 - Open (accuracy, not speed; model file = Andrei's call): a K2d whose dense roles come from the Q6 source instead of K2 would likely
   LOWER KLD at decode parity and +2.8% prefill. File moved to /mnt/md0/models-cold (symlinked).
+
+### 2026-09-24 00:17 — k2q6: Q6-sourced dense Q4_K spliced into K2 -> KLD 0.2039 -> 0.1146 (-44%), same-top 81.97 -> 86.76%
+K2q6 = K2 with 310 dense tensors (attn_gate / attn_q / attn_k / attn_output / ssm_out / ssm_alpha / ssm_beta / shared expert)
+taken from Q6_K_P quantized to Q4_K (down_shexp Q6_K x20); experts + everything else byte-identical to K2 (gguf_splice.py,
+self-test on the MTP head = byte-identical round trip). Role/type table identical to k2d -> same speed class.
+- KLD vs Q6 (c 2048, 6 chunks): 0.114607 +- 0.0036 vs K2 0.203860 +- 0.0047; same-top 86.76 vs 81.97%. My estimate (0.17-0.19) was
+  wrong: the IQ2_S dense tensors carried ~44% of K2's divergence (X4, experts at Q4_K, is 0.076 -> dense + experts both matter).
+- Speed (K2 c26 vs K2q6 c22, specbench n3): pass a code/reason/edit 66.4 / 67.5 / 71.4 vs 64.7 / 63.2 / 70.0, then OOM on the long
+  prompt (prefill mode compute buffer at the c22 edge; k2d c22 passed both passes = marginal); pass b 65.3 / 63.9 / 71.5 / 49.2 vs
+  62.9 / 61.7 / 70.4 / 51.3. Pre-registered verdict NO only because of the OOM -> k2q6b re-measures at c20/c21 (+ 9.3k at c18/c20)
+  and tests a Q6_K token_embd (host RAM only, 0 VRAM). lq2 paused (clean stop) to run k2q6b first.
