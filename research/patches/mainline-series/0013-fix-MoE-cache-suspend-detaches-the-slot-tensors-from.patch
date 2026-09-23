@@ -1,0 +1,30 @@
+From 8147a222e8387ab7b2feff45f464ebdf82beaf56 Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 02:04:59 +0300
+Subject: [PATCH 13/19] fix: MoE cache suspend detaches the slot tensors from
+ the freed buffer so resume re-allocates them
+
+---
+ src/llama-moecache.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/llama-moecache.cpp b/src/llama-moecache.cpp
+index 07d9b8b..7005987 100644
+--- a/src/llama-moecache.cpp
++++ b/src/llama-moecache.cpp
+@@ -473,6 +473,12 @@ size_t llama_moe_cache_suspend() {
+         freed += ggml_backend_buffer_get_size(mc->bufs[i]);
+         ggml_backend_buffer_free(mc->bufs[i]);
+         mc->bufs[i] = nullptr;
++        // detach the tensors from the freed buffer: ggml_backend_alloc_ctx_tensors_from_buft only allocates tensors whose data
++        // is NULL, so a stale pointer would make resume() "allocate" nothing and fail
++        for (ggml_tensor * t = ggml_get_first_tensor(mc->ctxs[i]); t; t = ggml_get_next_tensor(mc->ctxs[i], t)) {
++            t->data   = nullptr;
++            t->buffer = nullptr;
++        }
+     }
+     mc->suspended = true;
+     LLAMA_LOG_INFO("moe-cache: prefill mode: released %.1f MiB of device slots\n", freed/1024.0/1024.0);
+-- 
+2.55.0
+

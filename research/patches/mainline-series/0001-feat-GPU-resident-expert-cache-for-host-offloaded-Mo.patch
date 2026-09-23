@@ -1,7 +1,7 @@
 From 0af8ea3cdb00c9eab7062269be1b227260c846fb Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Sat, 19 Sep 2026 21:38:53 +0300
-Subject: [PATCH 1/6] feat: GPU-resident expert cache for host-offloaded MoE
+Subject: [PATCH 01/19] feat: GPU-resident expert cache for host-offloaded MoE
  weights
 
 Rebase of the moe-cache series (PrismML fork, 8c8650b..e29d5bd) onto mainline:

@@ -1,7 +1,7 @@
 From ef54c314a11b0581ba392a282cf39900edcd6aa0 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 04:46:47 +0300
-Subject: [PATCH 13/13] perf: sched uploads the whole MoE weight tensor without
+Subject: [PATCH 17/19] perf: sched uploads the whole MoE weight tensor without
  the router readback when every expert is expected in use
 
 ---

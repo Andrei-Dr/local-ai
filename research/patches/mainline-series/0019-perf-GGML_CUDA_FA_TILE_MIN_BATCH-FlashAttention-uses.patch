@@ -1,9 +1,9 @@
 From bfade2493f1dba87f29af6661376ae6679e3e1a9 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 06:18:30 +0300
-Subject: [PATCH] =?UTF-8?q?perf:=20GGML=5FCUDA=5FFA=5FTILE=5FMIN=5FBATCH?=
- =?UTF-8?q?=20=E2=80=94=20FlashAttention=20uses=20the=20tile=20kernel=20on?=
- =?UTF-8?q?ly=20for=20batches=20of=20N+=20query=20tokens?=
+Subject: [PATCH 19/19] =?UTF-8?q?perf:=20GGML=5FCUDA=5FFA=5FTILE=5FMIN=5FB?=
+ =?UTF-8?q?ATCH=20=E2=80=94=20FlashAttention=20uses=20the=20tile=20kernel?=
+ =?UTF-8?q?=20only=20for=20batches=20of=20N+=20query=20tokens?=
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

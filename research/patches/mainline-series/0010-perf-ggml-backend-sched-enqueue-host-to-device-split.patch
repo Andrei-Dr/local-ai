@@ -1,7 +1,7 @@
-From 712803a2829332042af92c212ec354ac2b162145 Mon Sep 17 00:00:00 2001
+From 21ef88a05bf790ca59ad8d728e60b441c2ebe289 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 00:07:29 +0300
-Subject: [PATCH 9/9] perf: ggml-backend sched, enqueue host-to-device split
+Subject: [PATCH 10/19] perf: ggml-backend sched, enqueue host-to-device split
  input copies on the split backend's stream
 
 ---

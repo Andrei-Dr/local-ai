@@ -1,8 +1,8 @@
 From 963ec38067e1305736252e4558a849ce1b90da9d Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 05:31:13 +0300
-Subject: [PATCH] perf: sched skips the host sync before an input copy that
- runs in the split backend's own stream order
+Subject: [PATCH 18/19] perf: sched skips the host sync before an input copy
+ that runs in the split backend's own stream order
 
 ---
  ggml/src/ggml-backend.cpp | 19 +++++++++++++++++--
