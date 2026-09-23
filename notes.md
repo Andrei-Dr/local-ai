@@ -1353,3 +1353,13 @@ Reserve graph unplanned (compute buffer 129 MiB = off), short prompts and decode
 1.28) -> gated 52.59 (-6.4%), code prefill 56.7 -> 48.4; 9.3k prefill +18.2% kept (402.8 / 403.3 -> 475.2 / 477.6) and the
 decode after it 49.4 -> 45.0. Only one env reader exists and the plan block is cheap; temperatures 58-66 C (no throttle) ->
 ovl17: ABBA A/A/B where NOTHING can be planned (unset | =0 | =1 with MIN_IDS=inf) to test the measurement itself.
+
+### 2026-09-23 12:26 — vram1 (lead F) NOT PROVEN: the draft's token_embd did not move; cache 30 alone +2.2% (inside spread)
+-ot exps=CPU,token_embd=CPU left the MTP draft's CUDA0 buffer at 727.68 MiB (the draft's embedding stays on the device through
+another path; -otd is ignored for draft-mtp). Specbench mean decode: base (cache 26) 56.75 (spread 2.27) | te (26) 55.32 | te30
+(cache 30, fits without any reclaim, hit 49.1 -> 52.5%) 58.01 (+2.2%, inside spread). te32 and the 9.3k cache-28 arm: CUDA OOM.
+
+### 2026-09-23 12:26 — ovl17: the overlap's host cost is REAL code, independent of any plan (ABBA)
+Nothing planned in any arm; order U Z N N Z U. 4-prompt mean decode: U (unset) 56.34 / 55.80 | Z (=0) 55.70 / 57.00 (+0.5%, SAME)
+| N (=1, MIN_IDS=inf) 52.87 / 51.27 (-7.1%, DIFFERENT); code prefill U 56.8 / Z 55.8 / N 48.0, edit 144.1 / 143.9 / 120.2. The
+only mode-dependent site is the plan block in split_graph (cheap on paper) -> ovl18: perf record U vs N.
