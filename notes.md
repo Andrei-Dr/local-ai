@@ -1241,3 +1241,14 @@ split) still DIVERGES -> layout, not timing; dump with 240 planned pairs IDENTIC
 + decode-chain ubatch both IDENTICAL in callback mode (no CUDA op fusion there). Server: first prompt's warm-up 1016 (off) vs 1017
 (plan) uploads, hit rate 51.2 vs 52.4% -> different cached experts -> different GPU/CPU expert split -> different rounding.
 ovl10: warm-up off + an id-checksum trace of the observer.
+
+### 2026-09-23 09:50 — pg1: PRE-GATING WORKS here — layer L's MoE input predicts layer L+1's experts at 90.9% (top-16)
+ov + pregate-diag (LLAMA_MOE_PREGATE_DIAG=1), serving config, MTP n=2, decode batches only, 256 steps: recall of the actual top-8 by
+layer L+1's router applied to layer L's MoE input: top-8 74.8% (L1-9 67.6, 10-19 77.4, 20-29 79.3, 30-39 74.1), top-16 90.9%;
+two layers ahead top-16 83.2%. P2's TOKEN-based predictors (68% / 49%) were the wrong predictor, not a dead idea. This is the
+enabling fact for the harmony design (research/design-harmony-ledger.md move 1): upload predicted misses of L+1 during layer L,
+compute them on the idle GPU, take the bytes off the CPU/DDR4 critical path. Next: recall restricted to MISSES (experts not cached).
+
+### 2026-09-23 09:48 — ovl10: not the warm-up; the prompt pass's routing itself differs from layer 8 on (server only)
+warm-up off (--moe-expert-cache-warm 0): off vs plan still DIVERGES. Observer id-checksum trace: layers 0-7 identical, 8+ differ in
+the first prompt pass (n = 304 ids), no out-of-range ids. Callback mode (no CUDA fusion) was identical -> ovl11: fusion disabled.
