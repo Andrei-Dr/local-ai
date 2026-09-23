@@ -29,6 +29,32 @@ for a in off plan; do
   [ -s $l.nsys-rep ] || $IMP -i $l.qdstrm > /dev/null 2>&1
   nsys export --type sqlite -f true --output $l.sqlite $l.nsys-rep > /dev/null 2>&1
   $PY hand1_phases.py $l.sqlite --skip-s 0 2>&1 | head -24 | sed 's/^/    /'
+  $PY - $l.sqlite <<'PY'
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+q = """select s.value, count(*), sum(r.end - r.start) from CUPTI_ACTIVITY_KIND_RUNTIME r join StringIds s on s.id = r.nameId
+       where s.value like '%alloc%' or s.value like '%Free%' or s.value like 'cuMem%' or s.value like '%Synchronize%' group by s.value order by 3 desc"""
+for name, n, t in c.execute(q):
+    print(f"    api {name[:40]:40s} {n:8d} calls {t / 1e6:9.1f} ms")
+PY
   rm -f $l.qdstrm
 done
+echo "--- VRAM-pressure test: specbench off vs plan at cache 22 (2 rounds) | $(date +%T)"
+export EDIT=1 LONG=1 GEN=300 MODEL=$K2 OFFLOAD=32 BUILD=$NEW
+for r in a b; do for a in off plan; do
+  l=ovl15_c22_${a}_$r; E=""; [ $a = plan ] && E="GGML_SCHED_MOE_PREFETCH=2"
+  sync; echo 1 > /proc/sys/vm/compact_memory; sleep 2
+  env -u LD_LIBRARY_PATH $E GGML_CUDA_FA_TILE_MIN_BATCH=32 ./specbench.sh 999 $l -ot exps=CPU --moe-expert-cache 22 -md $HEAD \
+    --spec-type draft-mtp --spec-draft-n-max 2 -ub 128 -b 2048 -ubp 2048 2>&1 | grep -E "^$l" | cut -c1-100 | sed 's/^/    /'
+done; done
+$PY - <<'PY'
+import json
+L = lambda l: {r["prompt"]: r for r in json.load(open(f"/ai/bench/runs/{l}.client.json"))["rows"]}
+S = {a: [L(f"ovl15_c22_{a}_{r}") for r in "ab"] for a in ("off", "plan")}
+kinds = list(S["off"][0]); m = lambda a, k, f="decode_tps": sum(x[k][f] for x in S[a]) / 2
+M = {a: sum(m(a, k) for k in kinds) / len(kinds) for a in S}
+sp = sum(abs(S["off"][0][k]["decode_tps"] - S["off"][1][k]["decode_tps"]) for k in kinds) / len(kinds)
+print(f"  cache 22: MEAN decode off {M['off']:.2f} (spread {sp:.2f}) | plan {M['plan']:.2f} ({100 * (M['plan'] / M['off'] - 1):+.1f}%)  [cache 26: ovl14 plan -6.8%]")
+print("  prefill " + " | ".join(f"{k} off {m('off', k, 'prefill_tps'):.1f} plan {m('plan', k, 'prefill_tps'):.1f}" for k in kinds))
+PY
 echo OVL15_DONE
