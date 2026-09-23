@@ -12,3 +12,21 @@ CLAUDE.md
 CLAUDE.local.md
 .claude/
 .mcp.json
+# environments and secrets
+.venv/
+venv/
+.env
+.env.*
+# tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+# editors
+.vscode/
+.idea/
+*.swp
+# large binaries that live on the box, never in git
+*.gguf
+*.kld
+*.bundle
+*.safetensors
