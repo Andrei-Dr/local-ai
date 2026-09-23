@@ -11,3 +11,4 @@ bench/box/imx/
 CLAUDE.md
 CLAUDE.local.md
 .claude/
+.mcp.json
