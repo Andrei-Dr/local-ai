@@ -1309,3 +1309,16 @@ verdicts. 9,279-token prompt: prefill ubp 2048 off 402.1 / 403.1 -> on 475.0 / 4
 nothing (open). Not promotable until the decode cost is explained -> ovl13 (nsys decode off/on in the same build + specbench).
 pfkld (A's gate): pf3 arm KLD == cache arm to 6 decimals -> prefetch most likely never engaged inside llama-perplexity; moot (A
 parked). Q6 truth logits now in /ai/bench/pfkld_q6.kld (c 2048, 6 chunks) for E/G.
+
+### 2026-09-23 11:31 — fakv1 (lead D): FA MMA only below a KV length WINS at long context: +6..7% decode after 9.3k
+t2 combo c27ac9e (fa-kv 3ea44a4 cherry-picked). 9,279-token prompt, decode: MMA 49.73 / 50.02 (spread 0.29) -> MAX_KV 2048 52.82 /
+53.11 (+6.2%), 4096 52.79 / 53.74 (+6.8%), 8192 53.07 / 54.04 (+7.4%) — all WIN (pre-registered). Specbench (short / 2.2k prompts):
+MMA 56.49 (spread 1.99), MAX_KV 4096 55.84 (-1.2%, inside spread), NO_MMA 57.39 (+1.6%) -> no short-context cost. Numerics: tile
+kernel KLD non-inferior (pmux5 0.199801 vs MMA 0.200676). -> PROMOTE: GGML_CUDA_FA_MMA_MAX_KV=4096 in the serving env + the fa-kv
+commit on tu116-served (promo3: identity with the env unset = today's STABLE, speed row with it set).
+
+### 2026-09-23 11:34 — ovl13: the overlap's decode cost is HOST time on every graph, not kernels
+Same build, decode after 9.3k, nsys: kernels busy off 15.00 / on 14.94 ms/token; host idle 5.98 -> 7.31 ms/token (max gap 16.8 ->
+64.6 ms); warm-up (880 uploads) and restored slots (999.1 MiB) identical. Specbench (overlap never engages on short prompts):
+decode -3.4 / -5.8 / -2.5 / -5.1%, short-prompt prefill 54.9 -> 49.2 (code), 143.5 -> 119.0 (edit), long 393.8 -> 413.6. ->
+ovl14: plan-only (mode 2) vs on vs off isolates layout/realloc from the second backend instance.
