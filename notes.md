@@ -1340,3 +1340,16 @@ hand1_phases (graphs on, code prompt + 300 decode): period 914.6 -> 962.8 us/lay
 431.1; malloc/free/cuMem and sync counts identical; cache 22 (frees ~180 MiB): plan still -6.1%. Short-prompt prefill 54.8 ->
 46.6. Root cause open. ovl16: gate the plan to batches >= 256 tokens (MIN_IDS=2048) — the reserve graph, short prompts and decode
 stay unplanned; pass = decode within spread AND 9.3k prefill still up.
+
+### 2026-09-23 12:04 — fr1c (lead B): FR-Spec draft vocab +5.4% decode at 31k tokens, but acceptance -2.3 pts -> NOT PROVEN (by 0.3)
+combo 854cbce. Vocab lists from token frequencies over prose (0.4 MB) + wiki (1.3 MB) + code (4.1 MB): ~31k distinct tokens seen
+(16k covers 98.4%). Specbench, 2 rounds, mean decode (acceptance): full 55.73 (spread 0.50, acc 0.831) | 8k 54.02 (-3.1%, 0.700)
+| 16k 57.52 (+3.2%, 0.763) | 31k 58.75 (+5.4%, 0.808). Per prompt at 31k: code +4.7% (0.804), reason +3.7% (0.768 vs 0.837),
+edit +6.0% (0.980 = full), long +7.6% (0.679). Rule (acc drop <= 2 pts) missed by 0.3 -> fr2: larger, more varied corpus (eval
+sets: math / code / knowledge + more code) and 48k / 64k lists, same rule.
+
+### 2026-09-23 12:12 — ovl16: gating the plan to >= 256-token batches does NOT remove the cost (decode -6.4%, short prefill -15%)
+Reserve graph unplanned (compute buffer 129 MiB = off), short prompts and decode unplanned, yet specbench decode off 56.21 (spread
+1.28) -> gated 52.59 (-6.4%), code prefill 56.7 -> 48.4; 9.3k prefill +18.2% kept (402.8 / 403.3 -> 475.2 / 477.6) and the
+decode after it 49.4 -> 45.0. Only one env reader exists and the plan block is cheap; temperatures 58-66 C (no throttle) ->
+ovl17: ABBA A/A/B where NOTHING can be planned (unset | =0 | =1 with MIN_IDS=inf) to test the measurement itself.
