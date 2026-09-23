@@ -27,6 +27,8 @@ cmake --build build -j --target llama-server
 <!-- END GENERATED: build -->
 
 ## 3. Get the model files into ./models
+Full provenance, recipes and sha256 hashes: [stable/MODELS.md](stable/MODELS.md).
+
 | file | what | where from |
 |---|---|---|
 | `mtp-Qwen3.6-35B-A3B-Q4_0.gguf` | the draft (MTP) head for speculative decoding | public: Hugging Face `ggml-org/Qwen3.6-35B-A3B-GGUF` |

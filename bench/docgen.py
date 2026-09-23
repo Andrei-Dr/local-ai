@@ -119,6 +119,13 @@ def build_block(env):
                       "`stable/build.sh` does exactly this and verifies the patched source tree against `LLAMA_CPP_STABLE_TREE`."])
 
 
+def hashes_block(env):
+    o = ["| file | sha256 |", "|---|---|"]
+    for k in ("MODEL", "MTP_HEAD", "MTP_VOCAB"):
+        o.append(f"| `{env[k]}` | `{env[k + '_SHA256']}` |")
+    return "\n".join(o)
+
+
 def arc_block():
     sys.path.insert(0, str(ROOT / "bench"))
     import ledger2md
@@ -142,6 +149,7 @@ def render():
         ROOT / "QUICKSTART.md": {"serving": serving, "build": build_block(env)},
         PATCHES / "SERIES.md": {"serving": serving, "series-table": series_table(entries)},
         PATCHES / "README.md": {"patch-guide": patch_guide(entries, data["themes"])},
+        ROOT / "stable" / "MODELS.md": {"model-hashes": hashes_block(env)},
     }
     return blocks, errs
 

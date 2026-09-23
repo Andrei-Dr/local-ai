@@ -3,7 +3,7 @@
 # research/patches/series.toml disagree. Enable once per clone: git config core.hooksPath .githooks
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-GEN="README.md QUICKSTART.md research/patches/SERIES.md research/patches/README.md"
+GEN="README.md QUICKSTART.md research/patches/SERIES.md research/patches/README.md stable/MODELS.md"
 # shellcheck disable=SC2086  # GEN is a path list
 dirty=$(git diff --name-only -- $GEN)
 out=$("${DOCGEN_PY:-python3}" bench/docgen.py) || { echo "$out"; echo "pre-commit: fix the sources listed above"; exit 1; }
