@@ -37,6 +37,7 @@ As of the last `bench/closeout.py` sync (latest queue event 2026-09-24 00:35).
 | state | job | started | what it measures (first line of its script) |
 |---|---|---|---|
 | running | `lq2` | 2026-09-24 00:35 | LQ2: is the FA4 row-owning K walk (GGML_CUDA_FA_VEC_KROW=1, +17-22% decode at depth) NON-INFERIOR where it matters — retrieval at |
+| pending | `stable1` | - | STABLE1: end-to-end check of the STABLE-mode harness (bench/box/stable.sh, specbench.sh STABLE=1) against stable/stable.env. |
 | pending | `hq1_k2q6` | - | HQ1: the HARD quality sets, thinking ON — the first measurement that can see a reasoning collapse. Scouts (2026-09-20) report |
 | pending | `hq1_k2` | - | HQ1: the HARD quality sets, thinking ON — the first measurement that can see a reasoning collapse. Scouts (2026-09-20) report |
 | pending | `bonsai1_easy` | - | BONSAI1: the accuracy run we dropped. On 2026-09-19 Ternary-Bonsai-2-27B (PrismML QAT ternary of Qwen3.8-27B, PQ2_0 2.13 bpw) |
