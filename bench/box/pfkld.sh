@@ -1,5 +1,5 @@
 #!/bin/bash
-# PFKLD: decode-path quality gate for pre-gated prefetch (pregate-prefetch bb65a4d, t2). Prefetch changes only WHICH experts are
+# PFKLD: decode-path quality gate for pre-gated prefetch (pregate-prefetch f43cd33, t2). Prefetch changes only WHICH experts are
 # cache hits (device vs host rounding), so the rule is non-inferiority vs the same build without prefetch, measured on the decode
 # path: llama-perplexity with -b 4 -ub 4 (every ubatch <= 4 tokens -> the expert-cache chain and the prefetch run on every step),
 # KLD vs Q6_K_P truth logits, 6 chunks of wikitext at -c 2048. Arms: nocache (--moe-expert-cache 0, all experts on the CPU),
@@ -10,7 +10,7 @@ cd /ai/bench
 T2=/ai/src/llama.cpp-t2; NEW=$T2/build75; V2=/ai/src/llama.cpp-v2/build75
 M=/ai/models; N=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
 K2=$M/$N-K2-expQ2K-downQ3K.gguf; Q6=$M/$N-Q6_K_P.gguf; PY=/ai/.venv/bin/python
-[ "$(git -C $T2 rev-parse --short=7 HEAD)" = "bb65a4d" ] || { echo "PFKLD_REFUSED: $T2 not at bb65a4d"; exit 1; }
+[ "$(git -C $T2 rev-parse --short=7 HEAD)" = "f43cd33" ] || { echo "PFKLD_REFUSED: $T2 not at f43cd33"; exit 1; }
 cmake --build $NEW -j6 --target llama-perplexity > pfkld_build.log 2>&1 || { grep error pfkld_build.log | head; echo "PFKLD_FAILED: build"; exit 1; }
 COMMON="-f /ai/bench/kld/wiki.test.raw -c 2048 --chunks 6 -ngl 999 -ot exps=CPU -t 6 -fa on"
 stats() { grep -E "Mean +KLD|99\.0% +KLD|Same top p|Mean PPL\(Q\)" "$1" | cut -c1-110 | sed 's/^/    /'; }
