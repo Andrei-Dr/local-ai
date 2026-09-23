@@ -34,7 +34,7 @@ analyze `/ai/bench/prof2_nsys.nsys-rep` memcpy / sync timeline first, then C++ i
 - **whittle1 is mid-run**: both speed rows are in (decode 29.5 t/s cache 0, 34.8 t/s cache 16, no MTP), about 340 quality items done
   (gsm8k finished, mmlu_pro in progress). A background waiter in the Claude session is armed on it. When it ends, apply the whittle1
   rule above, record it, push. The speed rows are CLEAN: see the notes entry "foreign CPU beside whittle1".
-- **Foreign CPU.** Andrei's GitHub Actions runner (`ci-runner@1/2`) ran vite builds beside whittle1's quality section. He keeps the
+- **Foreign CPU.** A CI runner ran web builds beside whittle1's quality section. He keeps the
   runners off himself during the queue; do NOT touch those services. `mon.py` now prints `FOREIGN CPU [label]` above a telemetry line
   when non-benchmark processes average over half a core in that window, and sets `foreign_cpu_flag` in `runs/<label>.mon.json`.
   **Rule:** a speed row with that flag is void. Rerun that job (`queue.sh retry`) after confirming the box is quiet; never record
