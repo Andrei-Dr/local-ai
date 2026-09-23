@@ -1389,3 +1389,14 @@ KLD (-c 2048, 6 chunks vs Q6): f16 0.203860 / top 81.965 | q8 0.202041 / 81.818 
 The q8 FA path is slower than f16 + tile at long KV; the 3 extra slots do not pay it back.
 Lead scoreboard: A parked (not proven) | B PROMOTED (+5..10% decode) | C dead | D PROMOTED (+6% decode at 9.3k) | E overlap parked
 (+18% prefill, -6% decode from a plan-independent per-graph cost) | F not proven | G not proven.
+
+### 2026-09-23 13:21 — mtpn1 (lead H): --spec-draft-n-max 3 WINS now that draft steps are cheap (+4.1% specbench)
+STABLE c75018b, full serving env (FA_MMA_MAX_KV 4096 + 49k draft vocab). Specbench mean decode: n2 60.06 (spread 0.76) | n3 62.51
+(+4.1%: code 68.0 / 65.6, edit 70.6 / 70.4, reason 59.5 / 67.1, long 51.0 / 47.9); 9.3k decode n2 53.13 / 55.02 (spread 1.89) | n3
+51.75 / 53.28 (-2.9%, inside spread) -> WIN per the pre-registered rule. n4: CUDA OOM (larger verify buffers at cache 26). The
+harmony effect: B made a draft step ~5x cheaper, which moved the draft-length break-even (opt1 on the full head: n2 served).
+Config only (exact spec decoding); long-context usage should keep n2 until a longer-context A/B (9.3k: -2.9%, noise-level).
+
+### 2026-09-23 13:27 — ovl19: the overlap's per-graph cost IS the plan loop body (skip it -> unset speed)
+ABBA U S N N S U on combo 438aecb: U 56.06 / 56.10 | S (mode on, loop skipped) 55.49 / 55.69 (-0.9%) | N (loop runs, never plans)
+51.47 / 52.54 (-7.3%); code prefill 57.9 / 56.4 / 47.4. -> a9bd82c: op test first + per-backend CUDA verdict cached once; ovl20.
