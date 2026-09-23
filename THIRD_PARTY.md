@@ -22,7 +22,7 @@ of llama.cpp pull requests, kept for reference.
 | MMLU-Pro | `mmlu_pro.jsonl` | HF `TIGER-Lab/MMLU-Pro` (Wang et al., 2024) | MIT |
 | HumanEval+ | `humaneval_plus.jsonl` | HF `evalplus/humanevalplus` (Liu et al., 2023) | Apache-2.0 |
 | XSTest | `overrefusal.jsonl` (`xstest/*` items) | HF `Paul/XSTest` (Röttger et al., 2024) | CC BY 4.0 |
-| OR-Bench | `overrefusal.jsonl` (`or-bench/*` items) | HF `bench-llm/or-bench` (Cui et al., 2024) | CC BY 4.0 |
+| OR-Bench | `overrefusal.jsonl` (`orbench/*` items) | HF `bench-llm/or-bench` (Cui et al., 2024) | CC BY 4.0 |
 | MATH-500 | `math_l5.jsonl` | HF `HuggingFaceH4/MATH-500`, a subset of MATH (Hendrycks et al., 2021; MIT) chosen by OpenAI's PRM800K work (MIT) | the subset's card declares no license; the underlying MATH set is MIT |
 | AIME 2024 / 2025 | `aime.jsonl` | HF `HuggingFaceH4/aime_2024`, `yentinglin/aime_2025` | the cards declare no license; the problems are from the American Invitational Mathematics Examination (Mathematical Association of America), included here for non-commercial benchmarking |
 
