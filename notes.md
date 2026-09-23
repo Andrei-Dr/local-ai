@@ -1121,3 +1121,13 @@ interleaved rounds): code -1.0% (spread 1.68), reason +0.9% (1.16), edit -0.7% (
 the served config -> dp4a+prefill mode: long 48.5 -> 372.4 t/s (7.7x), edit 48.2 -> 141.8, reason 38.6 -> 73.5, code 34.8 -> 55.6;
 long-prompt wall t/s 5.8 -> 23.8 (4.1x). pmux4 floor row (ub 128 vs ub 128): KLD 0.000000, same top 100% — the run is
 deterministic, so ub 2048's 0.0055 / 96.9% is a real ubatch effect; pmux5 judges it against the Q6 truth.
+
+### 2026-09-23 06:18 — tu1: FA without tensor cores +29% prefill; 0014 decode +3.4% (contaminated run), exact
+Unit: FLASH_ATTN_EXT 3979/3979 under GGML_CUDA_FA_NO_MMA=1, MUL_MAT_ID 929/929 under EXPERT_COLS. Long prompt (9,279 tok, ubp
+4096): old sched path 352.6, readback only 350.1, 0013+0014 default 347.5 (prefill: no effect, noise), **FA tile 448.9 (+29%)**,
+FA tile + expert cols 456.1. ub 128 without prefill mode: 110.2 -> 119.9 with expert cols (+8.8%). Decode (2 rounds, every arm
+flagged FOREIGN CPU kcompactd0): 0014 vs sync-before-copy +3.4% mean (code +3.9, reason +6.2, edit +3.4, long -0.4; sync spread
+up to 5.5); FA tile -3.9% decode (reason -6.5) -> 0015 GGML_CUDA_FA_TILE_MIN_BATCH (tile only for big batches). Identity
+0013+0014 vs old path under LLAMA_MOE_CACHE_SYNC=1: IDENTICAL x4. tu2 re-runs decode clean (3 rounds, memory compacted per arm).
+LFU question (Andrei): lfu_variants.py — pure LFU 30-33% hit, global LFU 45-54%, TinyLFU-gated 46-54% (frozen hot set) vs
+gate-lru 58.8%; O11 stays dead.
