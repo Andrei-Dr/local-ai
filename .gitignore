@@ -7,3 +7,7 @@ bench/traces/*.bin
 /src/
 bench/box/traces/
 bench/box/imx/
+# local agent instructions (not published)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
