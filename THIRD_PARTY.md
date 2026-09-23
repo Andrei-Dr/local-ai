@@ -23,13 +23,18 @@ of llama.cpp pull requests, kept for reference.
 | HumanEval+ | `humaneval_plus.jsonl` | HF `evalplus/humanevalplus` (Liu et al., 2023) | Apache-2.0 |
 | XSTest | `overrefusal.jsonl` (`xstest/*` items) | HF `Paul/XSTest` (Röttger et al., 2024) | CC BY 4.0 |
 | OR-Bench | `overrefusal.jsonl` (`orbench/*` items) | HF `bench-llm/or-bench` (Cui et al., 2024) | CC BY 4.0 |
-| MATH-500 | `math_l5.jsonl` | HF `HuggingFaceH4/MATH-500`, a subset of MATH (Hendrycks et al., 2021; MIT) chosen by OpenAI's PRM800K work (MIT) | the subset's card declares no license; the underlying MATH set is MIT |
-| AIME 2024 / 2025 | `aime.jsonl` | HF `HuggingFaceH4/aime_2024`, `yentinglin/aime_2025` | the cards declare no license; the problems are from the American Invitational Mathematics Examination (Mathematical Association of America), included here for non-commercial benchmarking |
+
 
 The model answers in `bench/qual/results/` quote these items (and the models' responses to them); the same terms apply to the
 quoted items. CC BY 4.0 items are attributed above; no changes were made to the item text.
 
 ## Used but not included
+- AIME 2024 / 2025 problems (HF `HuggingFaceH4/aime_2024`, `yentinglin/aime_2025`): (c) Mathematical Association of America.
+  MAA's contest notice permits electronic copies for educational use only if not distributed for profit and bearing MAA's
+  copyright notice, which an MIT-licensed repository cannot promise. `bench/qual/fetch.py --hard` downloads them at run time.
+- MATH-500 level-5 items (HF `HuggingFaceH4/MATH-500`): a subset of the MATH dataset, which Art of Problem Solving had removed
+  from Hugging Face by a DMCA notice on 2025-01-02 (huggingface-legal/takedown-notices, 2025/2025-01-02-AoPS.md). Fetched at run
+  time by `bench/qual/fetch.py --hard`, never stored here.
 - wikitext-2 (`wiki.test.raw`, Merity et al., 2016; CC BY-SA 3.0): the text behind our KL-divergence measurements and part of the
   imatrix calibration text; fetched on the benchmark box, not redistributed here.
 - Model weights (Qwen3.6-35B-A3B and the HauhauCS fine-tune, the ggml-org MTP head): not in this repository; see

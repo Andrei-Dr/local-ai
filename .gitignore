@@ -35,3 +35,6 @@ research/RESUME.md
 # agent briefs and prompts (local only)
 research/qwen-queue/
 research/prompts/
+# AIME (c) MAA and MATH-500 (MATH, AoPS DMCA 2025-01-02): not redistributed; rebuild with bench/qual/fetch.py --hard
+bench/qual/data_hard/aime.jsonl
+bench/qual/data_hard/math_l5.jsonl
