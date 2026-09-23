@@ -4,7 +4,7 @@ long prefill = what the next turn sees). Writes OUT/LABEL.longpf.json."""
 import json, os, sys, time, urllib.request
 label, chars = sys.argv[1], int(sys.argv[2])
 OUT = os.environ.get("OUT", "/ai/bench/runs")
-doc = open("/ai/bench/corpus/prose_big.txt", encoding="utf-8").read()[:chars]
+doc = open(os.environ.get("CORPUS", "/ai/bench/corpus/prose_big.txt"), encoding="utf-8").read()[:chars]
 body = json.dumps({"messages": [{"role": "user", "content": "Summarize the following text in five bullet points.\n\n" + doc}],
                    "temperature": 0, "max_tokens": 128, "chat_template_kwargs": {"enable_thinking": False}}).encode()
 t0 = time.time()
