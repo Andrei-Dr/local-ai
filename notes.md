@@ -1182,3 +1182,11 @@ long 47.24 (0.95) / 45.79 (4.54) -3.1% -> 4-prompt mean P 55.27, T 53.94 (-2.4%,
 Contamination: kcompactd0 averaged 54-75% of a core in 4 of 10 specbench arms (T_b, T_c, T_d, P_d) -> 3 of 4 flags on T, the
 short-prompt comparison is biased against T. Not evidence either way; warm-tail stays OFF. Root cause and fix: c52fa30 (unmovable CUDA
 pinned host memory + proactive compaction + watermark boost; preflight now sets both sysctls to 0). dec3 = same job, clean box.
+
+### 2026-09-23 08:42 — ovl2: the upload-overlap divergence is the LAYOUT, not the second stream (ovl3 tests stale expert bytes)
+t2 at dfbdf14, specbench identity (LLAMA_MOE_CACHE_SYNC=1, serving config). off_a == off_b and on_a == on_b (IDENTICAL x4 each:
+deterministic, no race). off vs on, off vs plan (GGML_SCHED_MOE_PREFETCH=2: hoisted input copies, uploads in stream order, no second
+stream) and off vs on_block (CUDA_LAUNCH_BLOCKING=1) all DIVERGE at the same chars (code 221, long 96, reason 78; edit IDENTICAL).
+=> moving the device copy of the host expert tensor changes the output by itself. Hypothesis: below 8 routed tokens/expert only the used
+experts are uploaded; the rest of the copy is whatever the region held (layout-dependent); something reads it. Diag switch
+GGML_SCHED_MOE_DIAG_FILL (1ea8e04, upload-overlap) + ovl3 (off vs plan with the copy zero-filled; fill 0x00 vs 0xFF). Overlap stays OFF.
