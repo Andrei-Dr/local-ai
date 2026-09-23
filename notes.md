@@ -1131,3 +1131,11 @@ up to 5.5); FA tile -3.9% decode (reason -6.5) -> 0015 GGML_CUDA_FA_TILE_MIN_BAT
 0013+0014 vs old path under LLAMA_MOE_CACHE_SYNC=1: IDENTICAL x4. tu2 re-runs decode clean (3 rounds, memory compacted per arm).
 LFU question (Andrei): lfu_variants.py — pure LFU 30-33% hit, global LFU 45-54%, TinyLFU-gated 46-54% (frozen hot set) vs
 gate-lru 58.8%; O11 stays dead.
+
+### 2026-09-23 06:58 — pmux5: prefill mode, dp4a MMQ and FA tile are NON-INFERIOR vs the Q6 truth
+K2 vs Q6_K_P reference (wikitext, c 2048, 12 chunks, cache off). Mean KLD / same top: ub128 MMA (today) 0.200676 / 80.78% |
+ub2048 MMA (prefill mode) 0.200063 / 80.89 | ub2048 dp4a 0.199973 / 80.85 | ub2048 dp4a + FA tile 0.199801 / 80.91 | ub128 dp4a
+0.200507 / 80.69 | ub128 dp4a + MoE expert cols **bit-identical** to ub128 dp4a (0016 is exact; tu1 +8.8% at ub128). Gate
+(+-2% KLD, +-0.5 pt same top vs ub128 MMA): all PASS, every arm within 0.5% KLD. Left before promotion: tu2 (clean decode for
+0018, 0019 split FA). Promotion goes to a NEW build dir so queued accuracy jobs (race1 pinned; hq1/qx3/lq keep build75) stay
+comparable with their earlier rows.

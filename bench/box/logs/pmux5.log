@@ -1,0 +1,51 @@
+    preflight: governor=performance thp=[always] mem_avail=14573MiB swap_used=277MiB gpu=17MiB,48,P8
+##### Q6_K_P reference logits (c 2048, ub 512) | 06:18:32
+##### k2_ub128_mma | env: none | 06:37:19
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS          
+    Mean PPL(Q)                   :   6.371224 ±   0.137530
+    Mean PPL(Q)/PPL(base)         :   1.153158 ±   0.007307
+    Mean PPL(Q)-PPL(base)         :   0.846203 ±   0.042240
+    Mean    KLD:   0.200676 ±   0.003101
+    99.0%   KLD:   1.615535
+    Same top p: 80.784 ± 0.356 %
+##### k2_ub2048_mma | env: none | 06:45:47
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS          
+    Mean PPL(Q)                   :   6.365230 ±   0.137332
+    Mean PPL(Q)/PPL(base)         :   1.152074 ±   0.007317
+    Mean PPL(Q)-PPL(base)         :   0.840210 ±   0.042214
+    Mean    KLD:   0.200063 ±   0.003089
+    99.0%   KLD:   1.593219
+    Same top p: 80.890 ± 0.355 %
+##### k2_ub2048_dp4a | env: none | 06:48:07
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS          
+    Mean PPL(Q)                   :   6.369648 ±   0.137525
+    Mean PPL(Q)/PPL(base)         :   1.152873 ±   0.007263
+    Mean PPL(Q)-PPL(base)         :   0.844628 ±   0.042043
+    Mean    KLD:   0.199973 ±   0.003066
+    99.0%   KLD:   1.631018
+    Same top p: 80.849 ± 0.355 %
+##### k2_ub2048_dp4a_fatile | env: GGML_CUDA_FA_NO_MMA=1 | 06:49:21
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS          
+    Mean PPL(Q)                   :   6.367212 ±   0.137404
+    Mean PPL(Q)/PPL(base)         :   1.152432 ±   0.007272
+    Mean PPL(Q)-PPL(base)         :   0.842192 ±   0.042036
+    Mean    KLD:   0.199801 ±   0.003079
+    99.0%   KLD:   1.611917
+    Same top p: 80.906 ± 0.355 %
+##### k2_ub128_dp4a | env: none | 06:50:26
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS          
+    Mean PPL(Q)                   :   6.364242 ±   0.137266
+    Mean PPL(Q)/PPL(base)         :   1.151895 ±   0.007281
+    Mean PPL(Q)-PPL(base)         :   0.839221 ±   0.042023
+    Mean    KLD:   0.200507 ±   0.003083
+    99.0%   KLD:   1.588744
+    Same top p: 80.694 ± 0.356 %
+##### k2_ub128_dp4a_expcols | env: GGML_CUDA_MMQ_MOE_EXPERT_COLS=1 | 06:54:23
+    chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS          
+    Mean PPL(Q)                   :   6.364242 ±   0.137266
+    Mean PPL(Q)/PPL(base)         :   1.151895 ±   0.007281
+    Mean PPL(Q)-PPL(base)         :   0.839221 ±   0.042023
+    Mean    KLD:   0.200507 ±   0.003083
+    99.0%   KLD:   1.588744
+    Same top p: 80.694 ± 0.356 %
+PMUX5_DONE

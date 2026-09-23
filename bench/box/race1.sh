@@ -13,6 +13,8 @@ M=/ai/models; N=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive; F=$M/$N-IQ2_M.gg
 BASE=/ai/bench/qual/results/q36_iq2m_hard.jsonl
 [ -f "$F" ] && [ -s "$BASE" ] || { echo "RACE1_REFUSED: model or base results missing"; exit 1; }
 grep -q -- "--seed-salt" /ai/bench/qual/qual.py && [ -f /ai/bench/qual/race.py ] || { echo "RACE1_REFUSED: deploy qual.py + race.py first"; exit 1; }
+# PINNED (09-23): the served tree is about to be promoted to dp4a MMQ + prefill mode; seed 1 and the first seed-2 items ran on
+# this build, so the rest stays on it (a build change would add a second perturbation to a seed experiment).
 export BUILD=/ai/src/llama.cpp-mainline/build75
 for s in 1 2; do
   export QARGS="--data data_hard --sets math_l5 --think --seed-salt $s --ids-from $BASE --ids-filter cut"
