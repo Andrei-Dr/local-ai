@@ -1322,3 +1322,10 @@ Same build, decode after 9.3k, nsys: kernels busy off 15.00 / on 14.94 ms/token;
 64.6 ms); warm-up (880 uploads) and restored slots (999.1 MiB) identical. Specbench (overlap never engages on short prompts):
 decode -3.4 / -5.8 / -2.5 / -5.1%, short-prompt prefill 54.9 -> 49.2 (code), 143.5 -> 119.0 (edit), long 393.8 -> 413.6. ->
 ovl14: plan-only (mode 2) vs on vs off isolates layout/realloc from the second backend instance.
+
+### 2026-09-23 11:42 — ovl14: the overlap's decode/short-prefill cost comes from the hoisted LAYOUT, not the second stream
+Specbench, 2 rounds: mean decode off 56.51 (spread 0.96) | plan-only (mode 2) 52.69 (-6.8%) | on 53.02 (-6.2%); short-prompt
+prefill code 59.0 -> 49.9 / 50.3, edit 143.9 -> 119.8 / 119.3, long 393.2 -> 356.0 (plan) / 414.9 (on). Hit rates slightly HIGHER
+with the plan (52.7 -> 54.2% at 256 steps); main CUDA0 compute buffer 129 -> 290 MiB (reserve at bs=128). -> ovl15: CUDA-API
+host timeline (hand1_phases.py, graphs on) off vs plan. fr1b was void (draft server asserted: the FR-Spec head init ran during the
+memory-fit dry run over unallocated weights; fixed in combo 854cbce -> fr1c).
