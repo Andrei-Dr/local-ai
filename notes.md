@@ -1275,3 +1275,15 @@ on CPU thread 0 under the cache lock (critical path) -> f43cd33 moves issue to a
 async vs inline); (2) DDR4: a prefetch MOVES an expert read from the CPU to the DMA engine inside the same critical window
 (+ ~32% useless uploads) — only a win if the CPU phase is not bus-bound. Review (pf-review agent): 1 critical / 2 high / 3
 medium closed in 8bdf719 (MTP-draft backend takeover, pageable sources, multi-GPU asserts, ...); 4 lows left for the next commit.
+
+### 2026-09-23 10:35 — pf2/pf3: same-step prefetch is dead on this box (PCIe too slow, DMA inside the DDR4 window); thr1: C dead
+pf2 (f43cd33): helper-thread issue cut the head op 19.5 -> 2.3 us/layer and changed nothing (b4 async -13.3%, inline -13.1%;
+b2 -5.3%; off spread 1.60). pf3 nsys (9.3k decode): b4 H2D 28 -> 75 MB/token (6.19 ms/token busy), 94% inside the CPU-bound idle
+gaps (off 43%), idle gaps 6.32 -> 8.36 ms/token (median gap 39 -> 157 us): budget 4 = ~5 MB/layer/pass = ~410 us at 12.4 GB/s =
+the whole host window, on the compute stream and reading the same DDR4. => lead A (window mode 880f74b: L+2 on a copy stream,
+issued at L's tail = the DDR4-idle window, waited at L+1's tail) in pf4.
+thr1 (lead C): -t 6 57.11 (spread 0.71), -t 8 57.21 (+0.2%), -t 12 52.23 (-8.5%) -> no winner; SMT competes, -t 6 stays.
+LM head facts (pf3 trace): output.weight q5_K ~349 MB read at ~196 GB/s (roofline) 1.29 ms/token on the target + 0.81 ms/token
+on the MTP draft head (grid 124160) -> lead B (FR-Spec draft vocab) = the only lever there.
+Spectrum pass (leads A-E, ranked by effect on the CRITICAL path, research/design-harmony-ledger.md): A window prefetch, B draft
+vocab reduction, C threads (dead), D A+FA tile harmony, E overlap re-framed (address-dependent fusion verdicts -> KLD class).
