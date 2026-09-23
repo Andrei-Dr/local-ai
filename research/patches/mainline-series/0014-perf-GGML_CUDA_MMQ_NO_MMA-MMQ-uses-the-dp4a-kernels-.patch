@@ -1,7 +1,7 @@
 From 5179d525411db592990aad75ed0f753419752d55 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 02:33:53 +0300
-Subject: [PATCH 14/19] =?UTF-8?q?perf:=20GGML=5FCUDA=5FMMQ=5FNO=5FMMA=20?=
+Subject: [PATCH 14/20] =?UTF-8?q?perf:=20GGML=5FCUDA=5FMMQ=5FNO=5FMMA=20?=
  =?UTF-8?q?=E2=80=94=20MMQ=20uses=20the=20dp4a=20kernels=20and=20tile=20co?=
  =?UTF-8?q?nfigs=20on=20Turing=20without=20tensor=20cores=20(GTX=2016xx)?=
 MIME-Version: 1.0

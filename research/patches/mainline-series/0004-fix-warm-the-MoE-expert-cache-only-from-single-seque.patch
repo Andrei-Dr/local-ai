@@ -1,7 +1,7 @@
 From 498696c3c0de0ea649eb8b540cf0fa4524fff3b6 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Sun, 20 Sep 2026 01:48:25 +0300
-Subject: [PATCH 04/19] fix: warm the MoE expert cache only from
+Subject: [PATCH 04/20] fix: warm the MoE expert cache only from
  single-sequence batches
 
 ---

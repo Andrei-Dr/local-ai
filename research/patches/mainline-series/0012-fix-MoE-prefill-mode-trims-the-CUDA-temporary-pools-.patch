@@ -1,7 +1,7 @@
 From 69e7aadc3392769333e523bfbaf5eca2de4dfa9e Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 01:59:01 +0300
-Subject: [PATCH 12/19] fix: MoE prefill mode trims the CUDA temporary pools
+Subject: [PATCH 12/20] fix: MoE prefill mode trims the CUDA temporary pools
  before the cache slots come back (ggml_backend_cuda_trim_pools)
 
 ---

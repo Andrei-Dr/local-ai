@@ -1,6 +1,6 @@
-# llama.cpp patch series — the single source of truth (updated 2026-09-23 07:50)
+# llama.cpp patch series — the single source of truth (updated 2026-09-23 07:58)
 
-One linear chain on mainline, regenerated with `git format-patch 0af8ea3^..tu116-kernels` from the local clone
+One linear chain on mainline, regenerated with `git format-patch 0af8ea3^..tu116-served` from the local clone
 `~/dev/llama.cpp-mainline` (branches: moe-cache -> moe-cache-det -> prefill-mux -> tu116-kernels). Apply in order; each patch
 applies on the one before. Older docs (notes.md, SPEC.md, opt-hunt) use the pre-09-23 numbering — the "was" column maps it.
 The box keeps an operational copy of 0015-0019 in `/ai/bench/patches/tu116/` (tu1 / tu2 apply them to the ov tree).
@@ -27,7 +27,8 @@ Status: **STABLE** = in the stable build (/ai/src/llama.cpp-v2, promo1 07:47) ·
 | 0015 | tu116/0011 | FA never selects the MMA kernel | STABLE (off) | `GGML_CUDA_FA_NO_MMA=1`, off | tu1: prefill +29%, decode -3.9% -> use 0019 instead | — (superseded by 0019 for serving) |
 | 0016 | tu116/0012 | MoE MMQ tile width per expert | STABLE (off) | `GGML_CUDA_MMQ_MOE_EXPERT_COLS=1`, off | tu1: ub128 prefill +8.8%; nothing at ubp 4096 | ✅ pmux5: bit-identical output (exact) |
 | 0017 | tu116/0013 | whole-tensor expert upload, no router readback (>= 8 tok/expert) | STABLE | ON; `GGML_SCHED_MOE_READBACK=1` = old | tu1: exact (IDENTICAL x4), prefill neutral | ships with the set (groundwork for upload overlap) |
-| 0018 | tu116/0014 | can skip the host sync before stream-ordered split input copies | STABLE (off) | **opt-in** `GGML_SCHED_NO_COPY_SYNC=1` | exact (IDENTICAL x4); tu1 +3.4% (contaminated), tu2 clean -2.0% +- noise with 2x wider spread -> not proven | parked (measure per-layer phases with nsys before revisiting) |
+| 0018 | tu116/0014 | can skip the host sync before stream-ordered split input copies | STABLE (on via 0020) | see 0020 | exact (IDENTICAL x4); tu1 +3.4% (contaminated), tu2 -2.0% +- noise | superseded by 0020 |
+| 0020 | — | 0018 default-on (`GGML_SCHED_COPY_SYNC=1` restores the wait) | STABLE | ON | prof18 nsys: host overhead per MoE layer 89.5 / 79.4 -> 62.7 / 71.0 us, syncs per launch 5.2 -> 4.6, device phase unchanged (~1.8% of a round, under specbench noise) | **promo2** identity |
 | 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | STABLE | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | ✅ pmux5 PASS (FA tile KLD 0.199801) + ✅ tu2 (prefill 446.9 t/s, decode -0.4% = same) |
 
 ## Promotion DONE 07:47 — promo1 (bench/box/promo1.sh), branch tu116-served 1c54372
@@ -49,7 +50,7 @@ Original plan:
 - A change moves TEST -> STABLE when it is (a) exact (IDENTICAL under LLAMA_MOE_CACHE_SYNC=1) or non-inferior by KLD vs the Q6
   truth, AND (b) faster beyond the run-to-run spread, with the mechanism understood. Opt-in switches (0016, 0018) flip to
   default-on in STABLE only after that; each promotion = new commit on `tu116-served` + series refresh + identity + speed row.
-- Next candidates: 0018 (prof18 mechanism, then a clean speed row), 0016 (only if a serving path runs ub 128 prefill).
+- Next candidates: 0016 (only if a serving path runs ub 128 prefill).
 
 ## Not in the series (dead or parked; see research/opt-hunt-2026-09-23.md)
 Router F32 (lossy), state-gather skip (MTP rollback), per-layer slot allocation, alternative cache policies (incl. pure/global

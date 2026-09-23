@@ -1,7 +1,7 @@
 From a3961f616ddb48382f9fa24617a6d2f0acda7f68 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 04:46:03 +0300
-Subject: [PATCH 16/19] =?UTF-8?q?perf:=20GGML=5FCUDA=5FMMQ=5FMOE=5FEXPERT?=
+Subject: [PATCH 16/20] =?UTF-8?q?perf:=20GGML=5FCUDA=5FMMQ=5FMOE=5FEXPERT?=
  =?UTF-8?q?=5FCOLS=20=E2=80=94=20size=20MoE=20MMQ=20tiles=20against=20the?=
  =?UTF-8?q?=20per-expert=20token=20count=20on=20any=20GPU?=
 MIME-Version: 1.0

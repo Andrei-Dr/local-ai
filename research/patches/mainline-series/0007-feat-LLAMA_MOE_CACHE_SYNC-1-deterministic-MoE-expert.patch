@@ -1,7 +1,7 @@
 From 73dd97125db0fcdd895507451f1a412d4a4eb671 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 00:49:02 +0300
-Subject: [PATCH 07/19] feat: LLAMA_MOE_CACHE_SYNC=1, deterministic MoE expert
+Subject: [PATCH 07/20] feat: LLAMA_MOE_CACHE_SYNC=1, deterministic MoE expert
  cache publish (uploads land at the next step)
 
 ---

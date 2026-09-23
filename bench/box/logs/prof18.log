@@ -1,0 +1,62 @@
+    preflight: governor=performance thp=[always] mem_avail=14498MiB swap_used=281MiB gpu=17MiB,46,P8
+    [sync_a] prof18_sync_a  code    200 tok | wall 43.78 t/s | decode 52.71 t/s | prefill   55.4 t/s | accept 123/150=0.82    | vram 
+  sync_a phases:
+    layers 5472 | period us: mean 983.4 p10 705.9 p50 894.1 p90 1295.1
+      [CPU experts: gap after D launch]        475.4 us/layer
+      [device phase: sync after B launch]      414.2 us/layer
+      cudaGraphLaunch                           35.9 us/layer
+      cudaStreamSynchronize                     21.0 us/layer
+      [host gaps between calls]                 16.7 us/layer
+      cudaMemcpyAsync                           15.9 us/layer
+    graph thread: 12198 graph launches
+    cudaStreamSynchronize    calls   63504 ( 5.21 per launch) | total    4724.3 ms | mean    74.4 us
+    cudaDeviceSynchronize    calls       4 ( 0.00 per launch) | total       0.0 ms | mean     4.7 us
+    cudaStreamWaitEvent      calls       0 ( 0.00 per launch) | total       0.0 ms | mean     0.0 us
+    cudaEventSynchronize     calls    2173 ( 0.18 per launch) | total       4.2 ms | mean     2.0 us
+    cudaMemcpyAsync          calls   58634 ( 4.81 per launch) | total     231.2 ms | mean     3.9 us
+    [nosync_a] prof18_nosync_a code    200 tok | wall 46.91 t/s | decode 57.12 t/s | prefill   55.8 t/s | accept 125/148=0.84    | vram
+  nosync_a phases:
+    layers 5814 | period us: mean 908.8 p10 696.1 p50 821.7 p90 1153.9
+      [CPU experts: gap after D launch]        424.6 us/layer
+      [device phase: sync after B launch]      418.4 us/layer
+      cudaGraphLaunch                           28.5 us/layer
+      cudaMemcpyAsync                           13.3 us/layer
+      cudaStreamSynchronize                     12.4 us/layer
+      [host gaps between calls]                  8.5 us/layer
+    graph thread: 12528 graph launches
+    cudaStreamSynchronize    calls   57346 ( 4.58 per launch) | total    4811.8 ms | mean    83.9 us
+    cudaDeviceSynchronize    calls       4 ( 0.00 per launch) | total       0.0 ms | mean     4.9 us
+    cudaStreamWaitEvent      calls       0 ( 0.00 per launch) | total       0.0 ms | mean     0.0 us
+    cudaEventSynchronize     calls    2173 ( 0.17 per launch) | total       3.9 ms | mean     1.8 us
+    cudaMemcpyAsync          calls   59515 ( 4.75 per launch) | total     219.2 ms | mean     3.7 us
+    [sync_b] prof18_sync_b  code    200 tok | wall 44.06 t/s | decode 53.71 t/s | prefill   54.4 t/s | accept 123/150=0.82    | vram 
+  sync_b phases:
+    layers 5485 | period us: mean 966.1 p10 704.8 p50 874.6 p90 1255.7
+      [CPU experts: gap after D launch]        463.4 us/layer
+      [device phase: sync after B launch]      419.8 us/layer
+      cudaGraphLaunch                           30.1 us/layer
+      cudaStreamSynchronize                     20.5 us/layer
+      [host gaps between calls]                 15.3 us/layer
+      cudaMemcpyAsync                           13.5 us/layer
+    graph thread: 12200 graph launches
+    cudaStreamSynchronize    calls   63850 ( 5.23 per launch) | total    4760.5 ms | mean    74.6 us
+    cudaDeviceSynchronize    calls       4 ( 0.00 per launch) | total       0.0 ms | mean     4.8 us
+    cudaStreamWaitEvent      calls       0 ( 0.00 per launch) | total       0.0 ms | mean     0.0 us
+    cudaEventSynchronize     calls    2173 ( 0.18 per launch) | total       4.5 ms | mean     2.1 us
+    cudaMemcpyAsync          calls   58864 ( 4.82 per launch) | total     226.7 ms | mean     3.9 us
+    [nosync_b] prof18_nosync_b code    200 tok | wall 42.89 t/s | decode 52.56 t/s | prefill   51.6 t/s | accept 123/150=0.82    | vram
+  nosync_b phases:
+    layers 5713 | period us: mean 940.7 p10 701.3 p50 862.8 p90 1207.9
+      [CPU experts: gap after D launch]        461.2 us/layer
+      [device phase: sync after B launch]      404.2 us/layer
+      cudaGraphLaunch                           32.4 us/layer
+      cudaMemcpyAsync                           16.4 us/layer
+      cudaStreamSynchronize                     12.4 us/layer
+      [host gaps between calls]                  9.8 us/layer
+    graph thread: 12284 graph launches
+    cudaStreamSynchronize    calls   56909 ( 4.63 per launch) | total    4737.7 ms | mean    83.3 us
+    cudaDeviceSynchronize    calls       4 ( 0.00 per launch) | total       0.0 ms | mean     4.9 us
+    cudaStreamWaitEvent      calls       0 ( 0.00 per launch) | total       0.0 ms | mean     0.0 us
+    cudaEventSynchronize     calls    2173 ( 0.18 per launch) | total       5.0 ms | mean     2.3 us
+    cudaMemcpyAsync          calls   59173 ( 4.82 per launch) | total     262.0 ms | mean     4.4 us
+PROF18_DONE

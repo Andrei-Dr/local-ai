@@ -1,7 +1,7 @@
 From fe375366c3a7de13f7be8fe406c7106973a09a89 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 00:07:29 +0300
-Subject: [PATCH 09/19] perf: CUDA concat, flat one-thread-per-element kernel
+Subject: [PATCH 09/20] perf: CUDA concat, flat one-thread-per-element kernel
  for narrow non-contiguous rows (delta-net conv state)
 
 ---

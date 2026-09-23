@@ -1156,3 +1156,11 @@ config (-b 2048 -ubp 2048, FA_TILE_MIN_BATCH=32), 2 interleaved rounds: decode c
 warm cache; the 9,279-token run shows the opposite, 47.3 -> 49.8), prefill 1.55x / 1.91x / 2.99x / 8.13x. 9,279-token prompt:
 47.3 -> 403.2 t/s, wall 198.8 -> 25.6 s. LEGACY build75 stays for race1 (pinned) and the accuracy series. opt2 (confidence-gated
 MTP drafting): no arm beats the n-max-2 base beyond its spread (best n3 p0.6 +2.6% vs spread 3.05; n4 -12..-14%) -> dead.
+
+### 2026-09-23 07:55 — prof18: 0018's mechanism is real (-18 us host overhead per MoE layer) -> default-on in STABLE (0020)
+nsys, STABLE build, serving config, 300-token decode, 2 captures per arm. Host overhead per layer (graph launch + stream syncs +
+copy calls + host gaps): sync 89.5 / 79.4 us, no-sync 62.7 / 71.0 us (mean -17.6 us, larger than the a/b gaps of 8-10 us); stream
+syncs per graph launch 5.21 / 5.23 -> 4.58 / 4.63; device phase 414 / 420 vs 418 / 404 us (unchanged); total time in syncs
+unchanged (the remaining syncs wait longer), round 975 -> 925 us mean but the CPU expert phase alone swings +-25 us between
+captures — the gain (~1.8%) sits below specbench's noise, which is why tu1 / tu2 read +3.4 / -2.0%. Exact by construction ->
+promotion rule met at the mechanism level: 0020 flips it on (GGML_SCHED_COPY_SYNC=1 = old), promo2 checks identity before race1.

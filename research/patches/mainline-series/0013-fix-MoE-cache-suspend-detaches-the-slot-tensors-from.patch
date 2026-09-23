@@ -1,7 +1,7 @@
 From 8147a222e8387ab7b2feff45f464ebdf82beaf56 Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Wed, 23 Sep 2026 02:04:59 +0300
-Subject: [PATCH 13/19] fix: MoE cache suspend detaches the slot tensors from
+Subject: [PATCH 13/20] fix: MoE cache suspend detaches the slot tensors from
  the freed buffer so resume re-allocates them
 
 ---

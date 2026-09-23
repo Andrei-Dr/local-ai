@@ -1,7 +1,7 @@
 From 2582f5cb6523b91892e7ed828e3e7d35eb1194be Mon Sep 17 00:00:00 2001
 From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
 Date: Sun, 20 Sep 2026 02:32:28 +0300
-Subject: [PATCH 06/19] fix: cache-aware routing only scales plain non-negative
+Subject: [PATCH 06/20] fix: cache-aware routing only scales plain non-negative
  router probabilities
 
 ---
