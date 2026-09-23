@@ -1432,3 +1432,12 @@ prefill, decode after 51.89 / 55.99 (noisy) -> serve at ubp 2048. Series 0024-00
 - Lead 2 (mat-vec roofline): dense weights are mostly IQ2_S (attn_gate, attn_q, ssm_out, shexp) + Q4_K (attn_qkv, attn_v); the
   4096-row mat-vec moves ~2.6 MB in 82.7 us (~32 GB/s), 1024-row ~17 GB/s, vs 192 GB/s; dense mat-vecs ~3.6 ms/token vs ~1.3 ms
   at bandwidth -> mv1 measures GB/s per weight type (ALU-bound dequant?).
+
+### 2026-09-23 18:40 — mv1 (lead 2): the IQ quants are ALU-bound on TU116; lead 3 closed as below-noise
+test-backend-ops perf MUL_MAT, m=4096 k=14336, achieved GB/s (n=1 / n=3): IQ2_S 57 / 46 (322.7 / 398.1 us), IQ3_S 80 / 63, Q2_K 103 / 70,
+Q3_K 97 / 71, Q4_K 172 / 140 (192.5 / 235.1 us), Q4_0 173 / 145, Q8_0 176 / 173. IQ2_S reads 44% fewer bytes than Q4_K and takes 1.7x
+longer at n=3 -> the dense IQ2_S / IQ3_S decode mat-vecs (~2.5 ms/token) are dequant-bound (grid-table lookups: an 8 KB global
+table with data-dependent indices; staging it in shared memory per block costs more L2 than the weights) -> k2d: K2 with only the
+dense roles at Q4_K (experts byte-identical), KLD + speed at cache sizes that fit the ~+200 MB.
+Lead 3 closed: reusing the activation quantization across mat-vecs that share an input saves <= ~0.17 ms/token (< 1%, below the
+run-to-run spread; unprovable by the pre-registered rule) and needs cross-node pool-buffer lifetimes inside captured CUDA graphs.
