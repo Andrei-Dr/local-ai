@@ -1452,3 +1452,16 @@ Serving env (promo5b), STABLE d0fd493, interleaved a/b.
   prefill ~500 in all. n3 >= n2 - spread -> the rule says n3 is OK at long context = n3 can be the single default, but it is not
   faster there (-1.8%, noise). n3 c24 OOM at 9.3k (both passes) -> c22 stays the long-context ceiling.
 - Net: VRAM is fully spent; the next cache slots have to come from smaller dense weights or a smaller compute buffer, not from -cache.
+
+### 2026-09-23 18:46 — k2d (lead 2): dense at Q4_K = decode parity (VRAM trades 1:1 against cache slots); KLD FAIL from requant
+K2d = K2 with attn_gate / attn_q / ssm_out / shared expert re-quantized IQ2_S -> Q4_K (source = K2, experts byte-identical);
+CUDA0 model buffer 976.6 -> 1179.2 MiB (+203 MiB).
+- KLD vs Q6 (c 2048, 6 chunks): K2 0.2039 / top 81.97%, K2d 0.2157 / top 81.59% -> +5.8% -> FAIL. Cause (inferred, flagged in the
+  script beforehand): IQ2_S -> Q4_K requantization adds a second rounding on top of the IQ2_S error; it cannot recover precision.
+- Speed: specbench n3 K2 c26 62.11 vs K2d c22 61.96 (-0.2%, K2 spread 1.53); K2d c24 OOM both passes. Hit rate 48.3 -> 43.9%.
+  9.3k n2: K2 c22 55.1 / 56.0, K2d c18 53.4 / 55.9, K2d c20 57.1 / 54.0 -> parity. Prefill 9.3k 497.6 -> 511.7 (+2.8%, 4/4 runs
+  510-512 vs 496-499; not a pre-registered criterion).
+- Verdict: FAIL on both pre-registered rules. Mechanism: the ~1 ms/token saved on the ALU-bound dense mat-vecs is paid back by 4 fewer
+  expert-cache slots (-4.4 pts hit rate -> more CPU misses on the critical link). Same harmony lesson: VRAM is the shared currency.
+- Open (accuracy, not speed; model file = Andrei's call): a K2d whose dense roles come from the Q6 source instead of K2 would likely
+  LOWER KLD at decode parity and +2.8% prefill. File moved to /mnt/md0/models-cold (symlinked).
