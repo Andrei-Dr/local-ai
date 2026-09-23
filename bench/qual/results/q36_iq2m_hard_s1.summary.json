@@ -1,0 +1,1 @@
+{"label": "q36_iq2m_hard_s1", "thinking": true, "sets": {"math_l5": {"n": 16, "correct": 6, "pct": 37.5, "se_pct": 12.1, "truncated": 9, "empty": 9, "looping": 0}}, "mean_tokens": 28766.2, "mean_decode_tps": 29.4, "truncated": 9, "empty": 9, "items": 16}
