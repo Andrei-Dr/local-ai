@@ -1,0 +1,21 @@
+    preflight: governor=performance thp=[always] mem_avail=14573MiB swap_used=283MiB gpu=17MiB,49,P8
+--- 0. WORKTREE + BUILD | 08:12:18
+    built a6bd2dbc5 | 08:20:49
+--- 1. IDENTITY (LLAMA_MOE_CACHE_SYNC=1): prefetch off vs on | 08:20:49
+    preflight: governor=performance thp=[always] mem_avail=14426MiB swap_used=281MiB gpu=17MiB,34,P8
+ovl1_id_off    code    277 tok | wall 44.18 t/s | decode 50.84 t/s | prefill   52.0 t/s | accept 175/204=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+ovl1_id_off    reason  300 tok | wall 47.18 t/s | decode 54.52 t/s | prefill   68.8 t/s | accept 191/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+ovl1_id_off    edit    300 tok | wall 37.14 t/s | decode 55.46 t/s | prefill  140.4 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+ovl1_id_off    long    300 tok | wall 23.75 t/s | decode 42.58 t/s | prefill  389.3 t/s | accept 169/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[ovl1_id_off]: GPU util avg  78% max 100% | power avg  67W max  82W /100W | PCIe->GPU avg  2.09 max  7.08 GB/s (~13 cap) | CPU busy  448% of 1200% | DRAM read avg   8.5 max  11.3 GB/s (~38 cap)
+    preflight: governor=performance thp=[always] mem_avail=14495MiB swap_used=281MiB gpu=17MiB,42,P0
+ovl1_id_on     code    300 tok | wall 42.14 t/s | decode 49.23 t/s | prefill   42.7 t/s | accept 190/216=0.88    | vram 3596 MiB | '```python\nfrom collections import OrderedDict\nfr'
+ovl1_id_on     reason  300 tok | wall 43.00 t/s | decode 50.20 t/s | prefill   60.1 t/s | accept 191/216=0.88    | vram 3596 MiB | 'To determine when the second train catches the f'
+ovl1_id_on     edit    300 tok | wall 30.84 t/s | decode 46.98 t/s | prefill  115.3 t/s | accept 198/201=0.99    | vram 3596 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+ovl1_id_on     long    300 tok | wall 22.29 t/s | decode 38.96 t/s | prefill  404.9 t/s | accept 164/268=0.61    | vram 3596 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[ovl1_id_on]: GPU util avg  69% max 100% | power avg  66W max  98W /100W | PCIe->GPU avg  2.07 max  9.14 GB/s (~13 cap) | CPU busy  447% of 1200% | DRAM read avg   7.9 max  11.0 GB/s (~38 cap)
+    code  DIVERGES at char 221: ' -> None:\n        ""' vs ':\n        """\n      '
+    edit  IDENTICAL
+    long  DIVERGES at char 96: 'that is valid only f' vs 'for verify batch siz'
+    reason  DIVERGES at char 78: '$$ \\text{Distance} =' vs '\n$$ \\text{Distance} '
+OVL1_FAILED: prefetch changes the output
