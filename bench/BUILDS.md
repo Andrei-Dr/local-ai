@@ -10,7 +10,14 @@ building with the listed cmake flags. `dirty` builds without a diff sha are from
 - source: `/ai/src/llama.cpp-t2` branch `upload-overlap` commit `1ea8e04ce2af6b8686fd3ef65efa2f0c11bbc53a`
 - cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
 - toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
-- 4 runs (4 labels): `ovl3_off_n`, `ovl3_off_plain`, `ovl3_off_z`, `ovl3_plan_z`
+- 9 runs (9 labels): `ovl3_off_n`, `ovl3_off_plain`, `ovl3_off_z`, `ovl3_plan_z`, `ovl4_gpud_off`, `ovl4_gpud_plan`, `ovl4_nomtp_off`, `ovl4_nomtp_off_b`, `ovl4_nomtp_plan`
+
+## `/ai/src/llama.cpp-mainline/build75` @ b11056-10-g21ef88a05
+
+- source: `/ai/src/llama.cpp-mainline` branch `moe-cache` commit `21ef88a05bf790ca59ad8d728e60b441c2ebe289`
+- cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
+- toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
+- 30 runs (27 labels): `mmqdp1_base_a`, `mmqdp1_base_b`, `opt1_base_a`, `opt1_base_b`, `opt1_base_c`, `opt1_mtp3`, `opt1_nopin`, `opt1_pin`, `opt1_t5`, `opt1_ub256`, `opt2_base_a`, `opt2_base_b`, `opt2_base_c`, `opt2_n2p05`, `opt2_n3p06`, `opt2_n3p08`, `opt2_n4p07`, `opt2_n4p085`, `pmux1_base_a`, `pmux1_base_b` ...
 
 ## `/ai/src/llama.cpp-ov/build75` @ b11056-14-g5179d5254-dirty
 
@@ -33,13 +40,6 @@ building with the listed cmake flags. `dirty` builds without a diff sha are from
 - cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
 - toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
 - 2 runs (2 labels): `ovl1_id_off`, `ovl1_id_on`
-
-## `/ai/src/llama.cpp-mainline/build75` @ b11056-10-g21ef88a05
-
-- source: `/ai/src/llama.cpp-mainline` branch `moe-cache` commit `21ef88a05bf790ca59ad8d728e60b441c2ebe289`
-- cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
-- toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
-- 29 runs (27 labels): `mmqdp1_base_a`, `mmqdp1_base_b`, `opt1_base_a`, `opt1_base_b`, `opt1_base_c`, `opt1_mtp3`, `opt1_nopin`, `opt1_pin`, `opt1_t5`, `opt1_ub256`, `opt2_base_a`, `opt2_base_b`, `opt2_base_c`, `opt2_n2p05`, `opt2_n3p06`, `opt2_n3p08`, `opt2_n4p07`, `opt2_n4p085`, `pmux1_base_a`, `pmux1_base_b` ...
 
 ## `/ai/src/llama.cpp-v2/build75` @ b11056-20-g8dca9aff4
 

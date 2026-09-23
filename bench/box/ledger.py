@@ -1,5 +1,7 @@
-"""ledger.py LABEL -- append one record for a finished specbench run to /ai/bench/ledger.jsonl.
+"""ledger.py LABEL [--quality | --longpf] -- append one record for a finished run to /ai/bench/ledger.jsonl.
 Reads env MODEL, BUILD, OFFLOAD, LEDGER_ARGS (set by specbench.sh), runs/LABEL.{client,mon}.json and the server log.
+--longpf: a long-prompt prefill run; reads runs/LABEL.longpf.json, env LEDGER_ENV (the server's GGML_*/LLAMA_* variables);
+longpf.py sets MODEL / BUILD / OFFLOAD / LEDGER_ARGS / LEDGER_ENV from the live server process on :8099.
 
 Build provenance is captured so ANY row is recreatable: full commit, git describe, the build's cmake flags
 (CUDA arch, build type), the toolchain (c++/nvcc versions), and -- when the tree is dirty -- the full diff is
@@ -67,12 +69,15 @@ if en:
     st = last(r"moe-cache: steps (\d+) \| hit rate ([\d.]+)% \| uploads (\d+) \(([\d.]+) MiB, ([\d.]+) MiB/step\) \| evictions (\d+)")
     cache = {"layers": int(en[0]), "slots": int(en[1]), "inserts": int(en[2]), "admit": int(en[3] or 1), "window": int(en[4] or 0), "vram_mib": float(en[5])}
     if st: cache.update({"steps": int(st[0]), "hit_rate_pct": float(st[1]), "uploads": int(st[2]), "upload_mib": float(st[3]), "upload_mib_per_step": float(st[4]), "evictions": int(st[5])})
-client = load(f"{B}/runs/{label}.client.json") or {}
+LONGPF = "--longpf" in sys.argv
+client = {} if LONGPF else (load(f"{B}/runs/{label}.client.json") or {})
+longpf = load(f"{B}/runs/{label}.longpf.json") if LONGPF else None
 quality = load(f"{B}/qual/results/{label}.summary.json") if "--quality" in sys.argv else None
 if quality is not None or "--quality" in sys.argv:
     log = open(f"{B}/server_qual_{label}.log", errors="replace").read() if os.path.exists(f"{B}/server_qual_{label}.log") else ""
 rec = {
-    "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "label": label, "kind": "quality" if "--quality" in sys.argv else "specbench", "source": "harness",
+    "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "label": label,
+    "kind": "quality" if "--quality" in sys.argv else "longpf" if LONGPF else "specbench", "source": "harness",
     "model": os.path.basename(model), "model_bytes": os.path.getsize(model) if os.path.exists(model) else None,
     "build": build, "git": build_provenance(src, build),
     "args": os.environ.get("LEDGER_ARGS", ""), "offload_min_batch": int(os.environ.get("OFFLOAD", "2")),
@@ -85,6 +90,13 @@ rec = {
     "prompts": [{k: v for k, v in r.items() if k != "text"} for r in client.get("rows") or []] or None,
     "telemetry": load(f"{B}/runs/{label}.mon.json"), "moe_cache": cache, "quality": quality, "completed": bool(client.get("rows")) or bool(quality),
 }
+# the switches this run was measured under (GGML_* / LLAMA_*; e.g. LLAMA_MOE_CACHE_SYNC=1 = identity mode, not a speed row)
+rec["env"] = " ".join(sorted(f"{k}={v}" for k, v in os.environ.items() if k.startswith(("GGML_", "LLAMA_")) and k != "GGML_OP_OFFLOAD_MIN_BATCH")) or None
+if LONGPF:
+    rec["fixed"] = "-fa on -t 6 --load-mode none --jinja --parallel 1 --cache-ram 0; longpf.py: 9,279-token prose prompt (40,000 chars), 128 tok decode, temp 0, thinking off"
+    rec["longpf"] = longpf
+    rec["env"] = os.environ.get("LEDGER_ENV") or None  # the server's environment, read from /proc by longpf.py
+    rec["completed"] = bool(longpf and longpf.get("prefill_tps"))
 if "--quality" in sys.argv:
     rec["fixed"] = "-fa on -c 4096 -t 6 --load-mode none --jinja --parallel 1 --cache-ram 0 -lv 4; GSM8K 50 + HumanEval 41 + MMLU-Pro 70, temp 0, thinking off"
 if not rec["completed"]:
