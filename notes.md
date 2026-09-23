@@ -1441,3 +1441,14 @@ table with data-dependent indices; staging it in shared memory per block costs m
 dense roles at Q4_K (experts byte-identical), KLD + speed at cache sizes that fit the ~+200 MB.
 Lead 3 closed: reusing the activation quantization across mat-vecs that share an input saves <= ~0.17 ms/token (< 1%, below the
 run-to-run spread; unprovable by the pre-registered rule) and needs cross-node pool-buffer lifetimes inside captured CUDA graphs.
+
+### 2026-09-23 18:35 — tune1 (leads 1 + 4): cache 28/30 OOM at -c 4096; n3 at 9.3k = parity with n2 (no gain)
+Serving env (promo5b), STABLE d0fd493, interleaved a/b.
+- Lead 4, cache size (specbench n3, -c 4096): c26 decode code/reason/edit/long a 64.2 / 64.5 / 71.5 / 50.7, b 61.9 / 58.0 / 68.3 / 49.7
+  (hit 48.4 / 48.9%). c28 finished code + reason only (60.4 / 61.8 and 62.4 / 65.4, hit 53-54%), then OOM on the next prompt, both
+  passes; c30 OOM at load, both passes. Verdict: c28/c30 FAIL the pre-registered rule (OOM). c26 is the ceiling at -c 4096; the +5 pt
+  hit rate at c28 did not show in the two finished rows (inside the spread).
+- Lead 1, n3 at long context (9,279-token prompt, c22): decode after n2 54.93 / 53.83 (median 54.4), n3 52.08 / 54.67 (median 53.4);
+  prefill ~500 in all. n3 >= n2 - spread -> the rule says n3 is OK at long context = n3 can be the single default, but it is not
+  faster there (-1.8%, noise). n3 c24 OOM at 9.3k (both passes) -> c22 stays the long-context ceiling.
+- Net: VRAM is fully spent; the next cache slots have to come from smaller dense weights or a smaller compute buffer, not from -cache.
