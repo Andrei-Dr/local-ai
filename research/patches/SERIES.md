@@ -36,6 +36,16 @@ Status: **SERVED** = in the served build (/ai/src/llama.cpp-mainline) · **TEST*
 3. Serving config: `-ub 128 -b 2048 -ubp 2048` (or 4096 by fit), env `GGML_CUDA_FA_TILE_MIN_BATCH=32`.
 4. Update this table (TEST -> SERVED), SPEC, notes.
 
+## Builds and the promotion rule
+- **STABLE** = what we serve and benchmark new work on: from promo1 on, `/ai/src/llama.cpp-v2/build75` (branch `tu116-served`).
+- **LEGACY** = `/ai/src/llama.cpp-mainline/build75` (patches 0001-0010): kept for the accuracy series that started on it (race1
+  pinned; hq1 / lq1 / opt2 rows) and as the instant rollback.
+- **TEST** = `/ai/src/llama.cpp-ov` (experiments; env switches A/B'd in one build).
+- A change moves TEST -> STABLE when it is (a) exact (IDENTICAL under LLAMA_MOE_CACHE_SYNC=1) or non-inferior by KLD vs the Q6
+  truth, AND (b) faster beyond the run-to-run spread, with the mechanism understood. Opt-in switches (0016, 0018) flip to
+  default-on in STABLE only after that; each promotion = new commit on `tu116-served` + series refresh + identity + speed row.
+- Next candidates: 0018 (prof18 mechanism, then a clean speed row), 0016 (only if a serving path runs ub 128 prefill).
+
 ## Not in the series (dead or parked; see research/opt-hunt-2026-09-23.md)
 Router F32 (lossy), state-gather skip (MTP rollback), per-layer slot allocation, alternative cache policies (incl. pure/global
 LFU, lfu_variants.py), -t 5, OMP pinning, experts on huge pages.
