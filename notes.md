@@ -1400,3 +1400,9 @@ Config only (exact spec decoding); long-context usage should keep n2 until a lon
 ### 2026-09-23 13:27 — ovl19: the overlap's per-graph cost IS the plan loop body (skip it -> unset speed)
 ABBA U S N N S U on combo 438aecb: U 56.06 / 56.10 | S (mode on, loop skipped) 55.49 / 55.69 (-0.9%) | N (loop runs, never plans)
 51.47 / 52.54 (-7.3%); code prefill 57.9 / 56.4 / 47.4. -> a9bd82c: op test first + per-backend CUDA verdict cached once; ovl20.
+
+### 2026-09-23 13:38 — ovl20: the plan-loop fix removes the overlap's decode cost -> lead E PASSES (+23.9% prefill at 9.3k)
+combo a9bd82c (op test first, per-backend CUDA verdict cached). ABBA U N O O N U: U 57.11 / 56.26 (spread 0.85) | N (never
+plans) 55.02 / 56.58 (-1.6%) | O (overlap on) 56.48 / 56.83 (-0.1%). Prefill: code 57.6 / 56.6 / 57.7, long 2.2k 394.8 / 393.4 /
+468.2 (+18.6%). 9,279-token prompt: prefill U 402.7 / 402.9 -> O 498.7 / 499.5 (+23.9%), decode after 50.02 / 50.00 -> 50.01 /
+50.10, wall 25.6 -> 21.2 s. -> PROMOTE (promo5: STABLE = c75018b + overlap stack + fix, serve with GGML_SCHED_MOE_PREFETCH=1).
