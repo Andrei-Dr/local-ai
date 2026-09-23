@@ -393,6 +393,12 @@ def median(v):
 def served_arc(recs, steps=SERVED_STEPS):
     """The served configuration's arc across build AND model promotions: one row per (build, model) step, medians over its
     completed non-identity runs, then the last step vs the first. Other trees and other models never enter a step."""
+    rows, kinds = served_arc_rows(recs, steps)
+    return served_arc_md(rows, kinds)
+
+
+def served_arc_rows(recs, steps=SERVED_STEPS):
+    """(rows, decode prompt kinds): per step name / role / model / n and the medians code .. long, pf22, pf93, dec93."""
     spec = [r for r in recs if r.get("kind") == "specbench" and r.get("completed") and r.get("prompts") and not identity_mode(r)]
     lpf = [r for r in recs if longpf_ok(r) and not identity_mode(r)]
     at = lambda xs, b, m: [r for r in xs if (r.get("build") or "").rstrip("/") == b and os.path.basename(r.get("model") or "") == m]
@@ -409,6 +415,10 @@ def served_arc(recs, steps=SERVED_STEPS):
         for k in kinds:
             st[k] = median([p["decode_tps"] for r in st["spec"] for p in r["prompts"]
                             if p.get("prompt") == k and isinstance(p.get("decode_tps"), (int, float))])
+    return rows, kinds
+
+
+def served_arc_md(rows, kinds):
     f = lambda v: "-" if v is None else f"{v:.1f}"
     o = ["", "## Served arc: LEGACY -> STABLE (build + model)", "",
          "The served configuration is a (build, model file) pair; each step is one promotion (research/patches/SERIES.md).",

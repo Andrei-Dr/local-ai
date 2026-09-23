@@ -85,3 +85,47 @@ class SeriesCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+QUEUE = ("old\tdone\t1\t2026-09-19 23:35:29\t2026-09-19 23:40:51\t0\tbash /ai/bench/old.sh > old.log 2>&1\n"
+         "fin\tfailed\t1\t2026-09-23 18:07:01\t2026-09-23 18:23:06\t1\tbash /ai/bench/fin.sh > fin.log 2>&1\n"
+         "run\trunning\t1\t2026-09-24 00:35:12\t-\t-\tbash /ai/bench/run.sh x > run.log 2>&1; grep -q RUN_DONE run.log\n"
+         "nxt\tpending\t0\t-\t-\t-\tbash /ai/bench/nxt.sh > nxt.log 2>&1\n")
+SCRIPTS = {"run.sh": "#!/bin/bash\n# RUN: does the thing at depth? (long explanation\n# continues)\nsource x\n",
+           "nxt.sh": "#!/bin/bash\nset -e\n# NXT — next measurement\n"}
+
+
+class QueueCase(unittest.TestCase):
+    def test_parse_and_script_purpose(self):
+        rows = docgen.parse_queue(QUEUE)
+        self.assertEqual([r["id"] for r in rows], ["old", "fin", "run", "nxt"])
+        self.assertEqual(docgen.script_name(rows[2]["cmd"]), "run.sh")
+        self.assertEqual(docgen.purpose(SCRIPTS["run.sh"]), "RUN: does the thing at depth? (long explanation")
+        self.assertEqual(docgen.purpose(SCRIPTS["nxt.sh"]), "NXT — next measurement")
+
+    def test_board_lists_running_then_pending_then_recent_finished(self):
+        md = docgen.queue_board(docgen.parse_queue(QUEUE), SCRIPTS, recent=1)
+        self.assertLess(md.index("`run`"), md.index("`nxt`"))
+        self.assertIn("| running | `run` | 2026-09-24 00:35 | RUN: does the thing at depth?", md)
+        self.assertIn("`fin` failed (rc 1) 2026-09-23 18:23", md)
+        self.assertNotIn("`old`", md)
+
+
+class LinkCase(unittest.TestCase):
+    def test_broken_markdown_link_and_missing_repo_path(self):
+        d = Path(tempfile.mkdtemp())
+        (d / "docs").mkdir()
+        (d / "ok.md").write_text("x")
+        (d / "docs" / "a.md").write_text("[fine](../ok.md) [gone](../RESUME.md) [web](https://x.y/z) `bench/box/k.sh` `ok.md`\n")
+        errs = docgen.broken_links(d, ["docs/a.md"], path_check=["docs/a.md"])
+        self.assertTrue(any("RESUME.md" in e for e in errs), errs)
+        self.assertTrue(any("bench/box/k.sh" in e for e in errs), errs)
+        self.assertFalse(any("ok.md" in e and "gone" not in e and "RESUME" not in e for e in errs), errs)
+
+
+class HeadlineCase(unittest.TestCase):
+    def test_headline_from_arc_medians(self):
+        rows = [{"name": "LEGACY", "code": 56.1, "reason": 56.4, "edit": 60.6, "pf93": 47.4, "dec93": 47.5},
+                {"name": "STABLE", "code": 64.3, "reason": 65.4, "edit": 70.4, "pf93": 510.7, "dec93": 55.0}]
+        self.assertEqual(docgen.headline(rows), "prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing "
+                                                "55-70 tokens/s (64-70 on short prompts, 55 after a 9.3k-token prompt)")

@@ -126,12 +126,123 @@ def hashes_block(env):
     return "\n".join(o)
 
 
-def arc_block():
+def parse_queue(text):
+    """Rows of the box queue file (queue.sh: id, status, tries, started, ended, rc, cmd; tab-separated)."""
+    keys = ("id", "status", "tries", "started", "ended", "rc", "cmd")
+    return [dict(zip(keys, line.split("\t", 6))) for line in text.splitlines() if line.count("\t") >= 6]
+
+
+def script_name(cmd):
+    m = re.search(r"/ai/bench/([\w.-]+\.(?:sh|py))", cmd or "")
+    return m.group(1) if m else None
+
+
+def purpose(script_text):
+    """The job script's first comment line after the shebang (its one-line statement of purpose)."""
+    for line in script_text.splitlines()[1:]:
+        if line.startswith("#") and line.strip("# ").strip():
+            return line.lstrip("#").strip()
+    return ""
+
+
+def queue_board(rows, scripts, recent=8):
+    def what(r):
+        t = purpose(scripts.get(script_name(r["cmd"]) or "", ""))
+        return (t if len(t) <= 150 else t[:147] + "...").replace("|", "\\|")
+    o = ["| state | job | started | what it measures (first line of its script) |", "|---|---|---|---|"]
+    for st in ("running", "pending"):
+        for r in rows:
+            if r["status"] == st:
+                o.append(f"| {st} | `{r['id']}` | {r['started'][:16] if r['started'] != '-' else '-'} | {what(r)} |")
+    fin = sorted((r for r in rows if r["status"] in ("done", "failed")), key=lambda r: r["ended"], reverse=True)[:recent]
+    if fin:
+        o += ["", "Last finished: " + "; ".join(
+            f"`{r['id']}` {r['status']}" + (f" (rc {r['rc']})" if r["status"] == "failed" else "") + f" {r['ended'][:16]}" for r in fin)]
+    return "\n".join(o)
+
+
+LINK = re.compile(r"\]\(([^)#\s]+)")
+REPO_PATH = re.compile(r"`((?:bench|research|stable|src|tests)/[\w./-]+\.\w+)`")
+
+
+def broken_links(root, md_files, path_check=()):
+    """Relative markdown links (every file) and backticked repo paths (files in path_check) that point at nothing."""
+    errs = []
+    for f in md_files:
+        text = (Path(root) / f).read_text(errors="ignore")
+        for target in LINK.findall(text):
+            if re.match(r"[a-z]+:", target):
+                continue
+            if not (Path(root) / f).parent.joinpath(target).exists():
+                errs.append(f"{f}: link to missing {target}")
+        if f in path_check:
+            for target in REPO_PATH.findall(text):
+                if "*" not in target and not (Path(root) / target).exists():
+                    errs.append(f"{f}: mentions missing {target}")
+    return errs
+
+
+def headline(rows):
+    a, z = rows[0], rows[-1]
+    short = [z[k] for k in ("code", "reason", "edit") if z.get(k)]
+    writes = short + ([z["dec93"]] if z.get("dec93") else [])
+    return (f"prompt reading ~{z['pf93']:.0f} tokens/s at 9.3k tokens ({a['name']} {a['pf93']:.0f}, {z['pf93'] / a['pf93']:.1f}x); "
+            f"writing {min(writes):.0f}-{max(writes):.0f} tokens/s ({min(short):.0f}-{max(short):.0f} on short prompts, "
+            f"{z['dec93']:.0f} after a 9.3k-token prompt)")
+
+
+def arc():
+    """(markdown, rows) of the served arc from the synced run ledger."""
     sys.path.insert(0, str(ROOT / "bench"))
     import ledger2md
     recs = ledger2md.load(ROOT / "bench" / "ledger_backfill.jsonl") + ledger2md.load(ROOT / "bench" / "box" / "ledger.jsonl")
-    lines = ledger2md.served_arc(recs)
-    return "\n".join(line.replace("## Served arc", "### Served arc") for line in lines).strip("\n")
+    rows, kinds = ledger2md.served_arc_rows(recs)
+    md = "\n".join(line.replace("## Served arc", "### Served arc") for line in ledger2md.served_arc_md(rows, kinds))
+    return md.strip("\n"), rows
+
+
+def model_files_block(env):
+    o = ["| file | what | where from |", "|---|---|---|"]
+    for k, what in (("MTP_HEAD", "draft (MTP) head for speculative decoding"), ("MODEL", "the STABLE model"),
+                    ("MTP_VOCAB", "the draft head's vocabulary (patch 0022)")):
+        o.append(f"| `{env[k]}` | {what} | {env[k + '_SOURCE']} |")
+    return "\n".join(o)
+
+
+# Kept current (path mentions checked); notes.md is an append-only log and snapshots are dated, so they are link-checked only.
+LIVING = ("research/design-harmony-ledger.md", "research/patches/README.md", "research/patches/SERIES.md")
+
+
+def git(*args):
+    import subprocess
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True).stdout
+
+
+def research_index():
+    files = [f for f in git("ls-files", "research/*.md").split() if f != "research/README.md"]
+    def entry(f):
+        lines = (ROOT / f).read_text(errors="ignore").splitlines()
+        title = next((x.lstrip("# ").strip() for x in lines if x.startswith("#")), Path(f).stem)
+        born = (git("log", "--diff-filter=A", "--format=%cs", "--", f).split() or ["?"])[-1]
+        return f"- [{Path(f).relative_to('research')}]({Path(f).relative_to('research')}) — {title} ({born})"
+    living = [entry(f) for f in files if f in LIVING]
+    snaps = sorted((entry(f) for f in files if f not in LIVING), key=lambda e: e.rsplit("(", 1)[-1], reverse=True)
+    return "\n".join(["**Living documents** (kept current):", "", *living, "",
+                      "**Dated snapshots** (true as of the date shown; never updated, newest first):", "", *snaps])
+
+
+def box_queue():
+    q = ROOT / "bench" / "box" / "queue.tsv"
+    if not q.exists():
+        return "(no synced queue: run bench/closeout.py)"
+    rows = parse_queue(q.read_text())
+    scripts = {}
+    for r in rows:
+        n = script_name(r["cmd"])
+        if n and (ROOT / "bench" / "box" / n).exists():
+            scripts[n] = (ROOT / "bench" / "box" / n).read_text(errors="ignore")
+    latest = max((t for r in rows for t in (r["started"], r["ended"]) if t != "-"), default="?")[:16]
+    return f"As of the last `bench/closeout.py` sync (latest queue event {latest}).\n\n" + queue_board(rows, scripts)
 
 
 def render():
@@ -144,11 +255,17 @@ def render():
     import ledger2md
     errs += check_served_steps(env, ledger2md.SERVED_STEPS)
     serving = serving_block(env)
+    arc_md, rows = arc()
+    head = headline(rows)
+    md_files = git("ls-files", "*.md").split()
+    errs += broken_links(ROOT, md_files, path_check=[f for f in md_files if f in LIVING or ("/" not in f and f != "notes.md") or f.startswith("stable/")])
     blocks = {
-        ROOT / "README.md": {"served-arc": arc_block(), "serving": serving},
-        ROOT / "QUICKSTART.md": {"serving": serving, "build": build_block(env)},
+        ROOT / "README.md": {"headline": head, "served-arc": arc_md, "serving": serving},
+        ROOT / "QUICKSTART.md": {"headline": head, "serving": serving, "build": build_block(env), "model-files": model_files_block(env)},
+        ROOT / "SPEC.md": {"box-queue": box_queue()},
+        ROOT / "research" / "README.md": {"research-index": research_index()},
         PATCHES / "SERIES.md": {"serving": serving, "series-table": series_table(entries)},
-        PATCHES / "README.md": {"patch-guide": patch_guide(entries, data["themes"])},
+        PATCHES / "README.md": {"headline": head, "patch-guide": patch_guide(entries, data["themes"])},
         ROOT / "stable" / "MODELS.md": {"model-hashes": hashes_block(env)},
     }
     return blocks, errs
