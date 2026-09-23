@@ -44,3 +44,18 @@ the GPU (FA, mmvq) turns into idle unless it also shortens the miss phase.
 - mmvq roofline: bytes per launch from the GGUF tensor sizes vs 60 us each (is the dense/cached-expert mat-vec at VRAM peak?).
 - Per layer: miss count, miss bytes, CPU phase duration (host-side timestamps) -> the split ratio for move 1.
 - Scout report (research/scout-2026-09-23-outside-box.md): HybriMoE / Fiddler / ktransformers designs for move 1.
+
+## Outcomes (2026-09-23 night, all pre-registered; details in notes.md)
+| move | predicted | measured | verdict |
+|---|---|---|---|
+| 1-3 expert bytes over PCIe (same-step prefetch, window prefetch) | ~+10% | step: -3..-13%; window: -1..-3% (host idle -0.35 ms, device +1.06 ms/token) | the DMA shares DDR4 (step) and VRAM/PCIe with the kernels (window): parked |
+| 4 FA tile above a KV threshold | GPU-side only | +6..7% decode after 9.3k (the device phase IS on the critical path at long KV) | PROMOTED (0021) |
+| draft vocabulary (FR-Spec) | ~+3-5% | +5..10% specbench, +3.7% after 9.3k, acceptance unchanged | PROMOTED (0022/0023) |
+| draft length re-tune after FR-Spec | n/a | n3 +4.1% specbench, -2.9% after 9.3k (noise) | WIN, config (keep n2 for long context) |
+| upload/compute overlap for prefill | ~+15% prefill | +23% prefill at 9.3k, +19% at 2.2k, decode unchanged (after two fixes: plan-loop cost, plan gate) | PROMOTED (0024-0030) |
+| 5 q8_0 KV | small | KLD ok, -3.6% after 9.3k | not proven |
+| more cache slots (VRAM reclaim) | +2-3% | +2.2% at cache 30 (inside spread); the draft embedding cannot be moved by -ot | not proven |
+| SMT threads | 0-8% | -t 8 +0.2%, -t 12 -8.5% | dead |
+Lesson: on this box the winners removed WORK (fewer draft-head rows, a faster kernel for the long-KV scan, a hidden upload) or
+reordered it into idle windows on the SAME resource; every move that shifted bytes between DDR4, PCIe and VRAM lost to the shared
+bottleneck it created.
