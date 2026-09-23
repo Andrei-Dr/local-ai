@@ -1139,3 +1139,11 @@ ub2048 MMA (prefill mode) 0.200063 / 80.89 | ub2048 dp4a 0.199973 / 80.85 | ub20
 (+-2% KLD, +-0.5 pt same top vs ub128 MMA): all PASS, every arm within 0.5% KLD. Left before promotion: tu2 (clean decode for
 0018, 0019 split FA). Promotion goes to a NEW build dir so queued accuracy jobs (race1 pinned; hq1/qx3/lq keep build75) stay
 comparable with their earlier rows.
+
+### 2026-09-23 07:11 — tu2 + ent1: split FA passes, 0018 parked, lossless compression dead
+tu2 (3 interleaved rounds, memory compacted per arm): 0019 GGML_CUDA_FA_TILE_MIN_BATCH=32 keeps FA-tile prefill (446.9 t/s on the
+9,279-token prompt) with decode equal to default (-0.4%, inside spread) -> PASS. 0018 (no host sync before stream-ordered copies):
+-2.0% vs the sync path, inside noise, spreads 2x wider (edit 7.97 vs 3.69) -> NOT proven; made opt-in (GGML_SCHED_NO_COPY_SYNC=1,
+commit reworded on tu116-served 1c54372). ent1 (K2 experts, 8 layers): entropy-coder ideal 90.1% (gate Q2_K) / 90.4% (up) /
+93.8% (down Q3_K) of stored size, lzma 93.2 / 93.7 / 98.4% -> no kind below 0.85: lossless expert compression DEAD. Next: promo1
+builds tu116-served in a new worktree (/ai/src/llama.cpp-v2) with -DGGML_CUDA_MMQ_NO_MMA=ON, unit + identity vs ov + headline.

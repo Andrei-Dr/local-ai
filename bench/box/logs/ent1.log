@@ -1,0 +1,30 @@
+  blk.0.ffn_down_exps.weight       Q3_K  H0 2.348  H1 2.343 / 3 bits | scales 7.88/8 | d 11.0/16 | est 0.802  lzma 0.874  zlib 0.914
+  blk.0.ffn_gate_exps.weight       Q2_K  H0 1.730  H1 1.398 / 2 bits | scales 5.00/8 | d 7.4/16 | est 0.674  lzma 0.578  zlib 0.579
+  blk.0.ffn_up_exps.weight         Q2_K  H0 1.775  H1 1.467 / 2 bits | scales 5.18/8 | d 7.7/16 | est 0.705  lzma 0.613  zlib 0.613
+  blk.5.ffn_down_exps.weight       Q3_K  H0 2.888  H1 2.887 / 3 bits | scales 7.75/8 | d 10.9/16 | est 0.958  lzma 1.000  zlib 1.000
+  blk.5.ffn_gate_exps.weight       Q2_K  H0 1.949  H1 1.945 / 2 bits | scales 6.75/8 | d 10.6/16 | est 0.933  lzma 0.983  zlib 0.980
+  blk.5.ffn_up_exps.weight         Q2_K  H0 1.948  H1 1.944 / 2 bits | scales 6.75/8 | d 10.7/16 | est 0.933  lzma 0.983  zlib 0.980
+  blk.10.ffn_down_exps.weight      Q3_K  H0 2.889  H1 2.888 / 3 bits | scales 7.74/8 | d 10.9/16 | est 0.958  lzma 1.000  zlib 1.000
+  blk.10.ffn_gate_exps.weight      Q2_K  H0 1.948  H1 1.945 / 2 bits | scales 6.76/8 | d 10.6/16 | est 0.933  lzma 0.983  zlib 0.980
+  blk.10.ffn_up_exps.weight        Q2_K  H0 1.948  H1 1.944 / 2 bits | scales 6.77/8 | d 10.6/16 | est 0.933  lzma 0.983  zlib 0.980
+  blk.15.ffn_down_exps.weight      Q3_K  H0 2.888  H1 2.887 / 3 bits | scales 7.73/8 | d 11.1/16 | est 0.958  lzma 1.000  zlib 1.000
+  blk.15.ffn_gate_exps.weight      Q2_K  H0 1.947  H1 1.943 / 2 bits | scales 6.76/8 | d 10.7/16 | est 0.933  lzma 0.983  zlib 0.979
+  blk.15.ffn_up_exps.weight        Q2_K  H0 1.946  H1 1.942 / 2 bits | scales 6.76/8 | d 10.7/16 | est 0.932  lzma 0.982  zlib 0.979
+  blk.20.ffn_down_exps.weight      Q3_K  H0 2.887  H1 2.886 / 3 bits | scales 7.73/8 | d 11.0/16 | est 0.958  lzma 1.000  zlib 1.000
+  blk.20.ffn_gate_exps.weight      Q2_K  H0 1.946  H1 1.943 / 2 bits | scales 6.76/8 | d 10.7/16 | est 0.933  lzma 0.983  zlib 0.979
+  blk.20.ffn_up_exps.weight        Q2_K  H0 1.947  H1 1.943 / 2 bits | scales 6.74/8 | d 10.7/16 | est 0.932  lzma 0.983  zlib 0.980
+  blk.25.ffn_down_exps.weight      Q3_K  H0 2.887  H1 2.886 / 3 bits | scales 7.74/8 | d 11.1/16 | est 0.958  lzma 1.000  zlib 1.000
+  blk.25.ffn_gate_exps.weight      Q2_K  H0 1.946  H1 1.942 / 2 bits | scales 6.76/8 | d 10.7/16 | est 0.933  lzma 0.982  zlib 0.979
+  blk.25.ffn_up_exps.weight        Q2_K  H0 1.945  H1 1.941 / 2 bits | scales 6.77/8 | d 10.7/16 | est 0.933  lzma 0.982  zlib 0.979
+  blk.30.ffn_down_exps.weight      Q3_K  H0 2.888  H1 2.886 / 3 bits | scales 7.74/8 | d 10.9/16 | est 0.958  lzma 1.000  zlib 1.000
+  blk.30.ffn_gate_exps.weight      Q2_K  H0 1.947  H1 1.943 / 2 bits | scales 6.76/8 | d 10.7/16 | est 0.933  lzma 0.983  zlib 0.979
+  blk.30.ffn_up_exps.weight        Q2_K  H0 1.946  H1 1.942 / 2 bits | scales 6.77/8 | d 10.6/16 | est 0.933  lzma 0.982  zlib 0.979
+  blk.35.ffn_down_exps.weight      Q3_K  H0 2.890  H1 2.889 / 3 bits | scales 7.75/8 | d 11.0/16 | est 0.959  lzma 1.000  zlib 1.000
+  blk.35.ffn_gate_exps.weight      Q2_K  H0 1.946  H1 1.942 / 2 bits | scales 6.78/8 | d 10.8/16 | est 0.933  lzma 0.983  zlib 0.979
+  blk.35.ffn_up_exps.weight        Q2_K  H0 1.947  H1 1.943 / 2 bits | scales 6.77/8 | d 10.7/16 | est 0.933  lzma 0.983  zlib 0.979
+--- SUMMARY (fraction of stored size; mean over sampled layers)
+  ffn_down_exps    Q3_K  codes H1 2.819/3  est 0.938  lzma 0.984  zlib 0.990  -> DEAD (8 layers)
+  ffn_gate_exps    Q2_K  codes H1 1.875/2  est 0.901  lzma 0.932  zlib 0.929  -> DEAD (8 layers)
+  ffn_up_exps      Q2_K  codes H1 1.883/2  est 0.904  lzma 0.937  zlib 0.934  -> DEAD (8 layers)
+VERDICT: no kind below 0.85: lossless expert compression is DEAD
+ENT1_DONE

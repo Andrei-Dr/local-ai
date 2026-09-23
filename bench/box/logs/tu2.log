@@ -1,0 +1,81 @@
+    preflight: governor=performance thp=[always] mem_avail=14565MiB swap_used=281MiB gpu=17MiB,42,P8
+--- 0. BUILD (apply research/patches/tu116; idempotent) | 07:00:39
+    already applied: 0011-perf-GGML_CUDA_FA_NO_MMA-FlashAttention-never-select.patch
+    already applied: 0012-perf-GGML_CUDA_MMQ_MOE_EXPERT_COLS-size-MoE-MMQ-tile.patch
+    already applied: 0013-perf-sched-uploads-the-whole-MoE-weight-tensor-witho.patch
+    already applied: 0014-perf-sched-skips-the-host-sync-before-an-input-copy-.patch
+    applied: 0015-perf-GGML_CUDA_FA_TILE_MIN_BATCH-FlashAttention-uses.patch
+    unit (FA_TILE_MIN_BATCH=32 FLASH_ATTN_EXT):   3979/3979 tests passed
+--- 1. DECODE (specbench, ov build, prefill mode on; 3 rounds D | S | T, memory compacted before each arm) | 07:02:36
+##### tu2_D_a | env: none
+    preflight: governor=performance thp=[always] mem_avail=14500MiB swap_used=280MiB gpu=17MiB,41,P8
+tu2_D_a        code    300 tok | wall 47.91 t/s | decode 54.83 t/s | prefill   54.3 t/s | accept 189/218=0.87    | vram 3434 MiB | '```python\nfrom typing import Optional\n\n\nclass LR'
+tu2_D_a        reason  300 tok | wall 49.89 t/s | decode 57.52 t/s | prefill   73.8 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_D_a        edit    300 tok | wall 37.73 t/s | decode 60.71 t/s | prefill  124.7 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_D_a        long    300 tok | wall 22.89 t/s | decode 47.51 t/s | prefill  320.4 t/s | accept 172/254=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_D_a]: GPU util avg  76% max 100% | power avg  69W max  84W /100W | PCIe->GPU avg  2.97 max 13.07 GB/s (~13 cap) | CPU busy  475% of 1200% | DRAM read avg   8.7 max  12.3 GB/s (~38 cap)
+##### tu2_S_a | env: GGML_SCHED_SYNC_BEFORE_COPY=1
+    preflight: governor=performance thp=[always] mem_avail=14510MiB swap_used=281MiB gpu=17MiB,46,P5
+tu2_S_a        code    300 tok | wall 51.66 t/s | decode 59.32 t/s | prefill   56.7 t/s | accept 189/218=0.87    | vram 3434 MiB | '```python\nfrom typing import Optional\n\n\nclass LR'
+tu2_S_a        reason  300 tok | wall 50.51 t/s | decode 58.30 t/s | prefill   74.2 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_S_a        edit    300 tok | wall 38.31 t/s | decode 58.01 t/s | prefill  141.0 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_S_a        long    300 tok | wall 24.53 t/s | decode 47.44 t/s | prefill  368.2 t/s | accept 171/254=0.67    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_S_a]: GPU util avg  78% max 100% | power avg  76W max  89W /100W | PCIe->GPU avg  2.56 max  8.58 GB/s (~13 cap) | CPU busy  489% of 1200% | DRAM read avg   9.1 max  12.5 GB/s (~38 cap)
+##### tu2_T_a | env: GGML_CUDA_FA_TILE_MIN_BATCH=32
+    preflight: governor=performance thp=[always] mem_avail=14532MiB swap_used=281MiB gpu=17MiB,50,P3
+tu2_T_a        code    278 tok | wall 51.04 t/s | decode 59.14 t/s | prefill   57.2 t/s | accept 175/206=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+tu2_T_a        reason  300 tok | wall 50.56 t/s | decode 58.40 t/s | prefill   73.9 t/s | accept 186/226=0.82    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_T_a        edit    300 tok | wall 39.98 t/s | decode 61.40 t/s | prefill  143.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_T_a        long    300 tok | wall 25.32 t/s | decode 47.47 t/s | prefill  393.4 t/s | accept 169/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_T_a]: GPU util avg  80% max 100% | power avg  77W max  96W /100W | PCIe->GPU avg  2.35 max  7.44 GB/s (~13 cap) | CPU busy  465% of 1200% | DRAM read avg   9.3 max  12.6 GB/s (~38 cap)
+##### tu2_D_b | env: none
+    preflight: governor=performance thp=[always] mem_avail=14547MiB swap_used=283MiB gpu=17MiB,52,P5
+tu2_D_b        code    300 tok | wall 52.18 t/s | decode 59.88 t/s | prefill   57.5 t/s | accept 189/218=0.87    | vram 3434 MiB | '```python\nfrom typing import Optional\n\n\nclass LR'
+tu2_D_b        reason  300 tok | wall 50.73 t/s | decode 58.66 t/s | prefill   73.7 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_D_b        edit    300 tok | wall 39.94 t/s | decode 61.52 t/s | prefill  142.4 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_D_b        long    300 tok | wall 24.84 t/s | decode 48.73 t/s | prefill  367.6 t/s | accept 171/254=0.67    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_D_b]: GPU util avg  80% max 100% | power avg  75W max  85W /100W | PCIe->GPU avg  2.51 max  7.16 GB/s (~13 cap) | CPU busy  459% of 1200% | DRAM read avg   9.1 max  12.4 GB/s (~38 cap)
+##### tu2_S_b | env: GGML_SCHED_SYNC_BEFORE_COPY=1
+    preflight: governor=performance thp=[always] mem_avail=14564MiB swap_used=286MiB gpu=17MiB,54,P3
+tu2_S_b        code    272 tok | wall 50.01 t/s | decode 57.83 t/s | prefill   57.8 t/s | accept 168/206=0.82    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+tu2_S_b        reason  300 tok | wall 51.36 t/s | decode 59.50 t/s | prefill   73.8 t/s | accept 190/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_S_b        edit    300 tok | wall 40.02 t/s | decode 61.70 t/s | prefill  142.5 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_S_b        long    300 tok | wall 25.00 t/s | decode 49.34 t/s | prefill  367.6 t/s | accept 175/247=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_S_b]: GPU util avg  80% max 100% | power avg  75W max  89W /100W | PCIe->GPU avg  2.24 max  6.70 GB/s (~13 cap) | CPU busy  457% of 1200% | DRAM read avg   9.2 max  12.6 GB/s (~38 cap)
+##### tu2_T_b | env: GGML_CUDA_FA_TILE_MIN_BATCH=32
+    preflight: governor=performance thp=[always] mem_avail=14564MiB swap_used=286MiB gpu=17MiB,55,P3
+tu2_T_b        code    272 tok | wall 48.90 t/s | decode 56.33 t/s | prefill   57.9 t/s | accept 168/208=0.81    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+tu2_T_b        reason  300 tok | wall 48.90 t/s | decode 56.27 t/s | prefill   73.3 t/s | accept 186/226=0.82    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_T_b        edit    300 tok | wall 37.72 t/s | decode 56.10 t/s | prefill  143.8 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_T_b        long    300 tok | wall 25.12 t/s | decode 46.83 t/s | prefill  392.9 t/s | accept 169/257=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_T_b]: GPU util avg  77% max 100% | power avg  78W max  91W /100W | PCIe->GPU avg  2.36 max 10.97 GB/s (~13 cap) | CPU busy  497% of 1200% | DRAM read avg   9.2 max  12.4 GB/s (~38 cap)
+##### tu2_D_c | env: none
+    preflight: governor=performance thp=[always] mem_avail=14551MiB swap_used=289MiB gpu=17MiB,56,P3
+tu2_D_c        code    300 tok | wall 48.91 t/s | decode 55.38 t/s | prefill   59.2 t/s | accept 190/218=0.87    | vram 3434 MiB | '```python\nfrom typing import Optional\n\n\nclass LR'
+tu2_D_c        reason  300 tok | wall 49.17 t/s | decode 56.63 t/s | prefill   73.3 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_D_c        edit    300 tok | wall 36.44 t/s | decode 53.55 t/s | prefill  142.4 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_D_c        long    300 tok | wall 24.68 t/s | decode 48.02 t/s | prefill  368.3 t/s | accept 170/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    FOREIGN CPU [tu2_D_c]: avg 71% max 191% of one core, top 'kcompactd0' -- speed numbers in this window are contaminated
+    telemetry[tu2_D_c]: GPU util avg  76% max 100% | power avg  76W max  90W /100W | PCIe->GPU avg  2.62 max 12.04 GB/s (~13 cap) | CPU busy  523% of 1200% | DRAM read avg   8.8 max  12.6 GB/s (~38 cap)
+##### tu2_S_c | env: GGML_SCHED_SYNC_BEFORE_COPY=1
+    preflight: governor=performance thp=[always] mem_avail=14543MiB swap_used=288MiB gpu=17MiB,56,P3
+tu2_S_c        code    274 tok | wall 50.15 t/s | decode 57.87 t/s | prefill   58.3 t/s | accept 170/206=0.83    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+tu2_S_c        reason  300 tok | wall 50.95 t/s | decode 58.83 t/s | prefill   74.7 t/s | accept 190/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_S_c        edit    300 tok | wall 40.00 t/s | decode 61.18 t/s | prefill  144.5 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_S_c        long    300 tok | wall 24.53 t/s | decode 47.33 t/s | prefill  369.2 t/s | accept 168/260=0.65    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_S_c]: GPU util avg  79% max 100% | power avg  77W max  88W /100W | PCIe->GPU avg  2.98 max  7.27 GB/s (~13 cap) | CPU busy  457% of 1200% | DRAM read avg   9.0 max  12.5 GB/s (~38 cap)
+##### tu2_T_c | env: GGML_CUDA_FA_TILE_MIN_BATCH=32
+    preflight: governor=performance thp=[always] mem_avail=14544MiB swap_used=289MiB gpu=17MiB,57,P3
+tu2_T_c        code    300 tok | wall 52.27 t/s | decode 59.78 t/s | prefill   59.0 t/s | accept 190/216=0.88    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+tu2_T_c        reason  300 tok | wall 50.11 t/s | decode 57.75 t/s | prefill   74.3 t/s | accept 186/225=0.83    | vram 3434 MiB | 'To determine when the second train catches the f'
+tu2_T_c        edit    300 tok | wall 36.68 t/s | decode 53.96 t/s | prefill  143.1 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+tu2_T_c        long    300 tok | wall 25.17 t/s | decode 46.83 t/s | prefill  394.6 t/s | accept 169/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[tu2_T_c]: GPU util avg  79% max 100% | power avg  79W max  90W /100W | PCIe->GPU avg  2.48 max  7.48 GB/s (~13 cap) | CPU busy  489% of 1200% | DRAM read avg   9.2 max  11.8 GB/s (~38 cap)
+  code   D  56.70 (spread 5.05) | S  58.34 (1.49) -> 0014  -2.8% | T  58.42 (3.45) -> T vs D  +3.0%
+  reason D  57.60 (spread 2.03) | S  58.88 (1.20) -> 0014  -2.2% | T  57.47 (2.13) -> T vs D  -0.2%
+  edit   D  58.59 (spread 7.97) | S  60.30 (3.69) -> 0014  -2.8% | T  57.15 (7.44) -> T vs D  -2.5%
+  long   D  48.09 (spread 1.22) | S  48.04 (2.01) -> 0014  +0.1% | T  47.04 (0.64) -> T vs D  -2.2%
+  MEAN   D  55.24 | S  56.39 | T  55.02 || 0014  -2.0% (spreads D 4.07 S 2.10) -> not proven | T vs D  -0.4% (same)
+--- 2. LONG-PROMPT PREFILL with T (9,279 tok; tu1: MMA 347.5, FA tile everywhere 448.9) | 07:09:53
+    tu2_pf_T: prompt 9279 tok @ 446.9 t/s | decode 128 tok @ 49.07 t/s | wall 23.4 s
+TU2_DONE

@@ -1,4 +1,4 @@
-# llama.cpp patch series — the single source of truth (updated 2026-09-23 07:00)
+# llama.cpp patch series — the single source of truth (updated 2026-09-23 07:15)
 
 One linear chain on mainline, regenerated with `git format-patch 0af8ea3^..tu116-kernels` from the local clone
 `~/dev/llama.cpp-mainline` (branches: moe-cache -> moe-cache-det -> prefill-mux -> tu116-kernels). Apply in order; each patch
@@ -27,10 +27,10 @@ Status: **SERVED** = in the served build (/ai/src/llama.cpp-mainline) · **TEST*
 | 0015 | tu116/0011 | FA never selects the MMA kernel | TEST | `GGML_CUDA_FA_NO_MMA=1`, off | tu1: prefill +29%, decode -3.9% -> use 0019 instead | — (superseded by 0019 for serving) |
 | 0016 | tu116/0012 | MoE MMQ tile width per expert | TEST | `GGML_CUDA_MMQ_MOE_EXPERT_COLS=1`, off | tu1: ub128 prefill +8.8%; nothing at ubp 4096 | ✅ pmux5: bit-identical output (exact) |
 | 0017 | tu116/0013 | whole-tensor expert upload, no router readback (>= 8 tok/expert) | TEST | ON; `GGML_SCHED_MOE_READBACK=1` = old | tu1: exact (IDENTICAL x4), prefill neutral | ships with the set (groundwork for upload overlap) |
-| 0018 | tu116/0014 | no host sync before stream-ordered split input copies | TEST | ON; `GGML_SCHED_SYNC_BEFORE_COPY=1` = old | tu1: exact (IDENTICAL x4), decode +3.4% on a contaminated run | **tu2** clean 3-round decode |
-| 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | TEST | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | ✅ pmux5 PASS (FA tile KLD 0.199801) + **tu2** decode |
+| 0018 | tu116/0014 | can skip the host sync before stream-ordered split input copies | TEST | **opt-in** `GGML_SCHED_NO_COPY_SYNC=1` | exact (IDENTICAL x4); tu1 +3.4% (contaminated), tu2 clean -2.0% +- noise with 2x wider spread -> not proven | parked (measure per-layer phases with nsys before revisiting) |
+| 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | TEST | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | ✅ pmux5 PASS (FA tile KLD 0.199801) + ✅ tu2 (prefill 446.9 t/s, decode -0.4% = same) |
 
-## Promotion plan (pmux5 passed 06:58; waiting on tu2)
+## Promotion plan (all gates passed 07:11) — job promo1 (bench/box/promo1.sh), branch tu116-served 1c54372
 1. Clean full build at tu116-kernels in a NEW build dir (build75 stays for the queued accuracy jobs: race1 is pinned to it; hq1 / lq1 / opt2 use it) with `-DGGML_CUDA_MMQ_NO_MMA=ON` (drop the ov tree's local define).
 2. Identity smoke (LLAMA_MOE_CACHE_SYNC=1) vs the ov build, one specbench round.
 3. Serving config: `-ub 128 -b 2048 -ubp 2048` (or 4096 by fit), env `GGML_CUDA_FA_TILE_MIN_BATCH=32`.
