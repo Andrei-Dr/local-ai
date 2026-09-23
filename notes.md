@@ -1496,3 +1496,15 @@ Serving command in research/patches/SERIES.md: K2q6, cache 21 (-c 4096) / 18 (-c
   changed the main model's output; diagnosed in ovl2-ovl20 (address-dependent CUDA fusion verdicts) and fixed before promo5b.
 - `final3` (09-23 13:xx): the first LEGACY -> STABLE -> now table (decode 1.03-1.07x, prefill 9.3k 8.51x, wall 198.3 -> 25.3 s);
   superseded by `final4` (research/STATUS-2026-09-23.md), the interleaved rerun after lead E was promoted.
+
+### 2026-09-24 23:35 — dave1 / dave2: the series on 2x MI210 (Dave's box); bug found + fixed (0031)
+Full table: research/dave-mi210-2026-09-24.md. Stock e613ef2 vs + 0001-0030, HIP gfx90a, pre-registered rules in the scripts.
+- S1 Qwen resident: decode 109.1 -> 111.6 (+2.3%, WIN, texts identical); prefill tie. S4 DSV4 145B on both GPUs: neutral, identical.
+- S2 Qwen experts in RAM: prefill 9.3k 564 -> 1188 (2.1x, WIN); decode LOSES with the cache (59.1 -> 48.0 c64 / 54.8 c128; after
+  9.3k 62.1 -> 37): a 24-core EPYC on 8-ch DDR4 computes small experts fast enough that the cache is overhead.
+- S3 DSV4 REAP 145B, one MI210, experts offloaded: dave1 patched arms crashed on the long prompt (SWA KV sized for -ub 128,
+  prefill mode splits at -ubp 2048 -> find_slot 1348 > 256 -> GPU memory fault). Fix 0031 (window caches sized for
+  max(n_ubatch, n_ubatch_prefill); Qwen unaffected by construction). dave2 with 0031: 8/8 runs complete, 0 find_slot errors;
+  decode 11.5 -> 16.2 (+40%, WIN), prefill 9.3k 125 -> 226 (+81%, WIN), after 9.3k 11.9 -> 13.8 (patched reps 17.4 / 10.1: not
+  proven); texts differ 3/4 (cache-hit rounding class) -> accuracy not proven without KLD.
+- 0031 status TEST: joins STABLE after a CUDA build on the i5 (no timing job running) + the identity check.

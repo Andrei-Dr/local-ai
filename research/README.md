@@ -11,6 +11,7 @@ Scout reports, design notes and the llama.cpp patch series. Index generated from
 
 **Dated snapshots** (true as of the date shown; never updated, newest first):
 
+- [dave-mi210-2026-09-24.md](dave-mi210-2026-09-24.md) — Our patches on different hardware: 2x AMD MI210 (2026-09-24) (?)
 - [STATUS-2026-09-23.md](STATUS-2026-09-23.md) — Status 2026-09-23 14:18 — LEGACY -> STABLE (this morning) -> STABLE (now) (2026-09-23)
 - [opt-hunt-2026-09-23.md](opt-hunt-2026-09-23.md) — Optimization hunt (2026-09-23) — small levers the big-hardware world skips (2026-09-23)
 - [scout-2026-09-23-outside-box.md](scout-2026-09-23-outside-box.md) — Outside-the-box speedup scout — 2026-09-23 (2026-09-23)

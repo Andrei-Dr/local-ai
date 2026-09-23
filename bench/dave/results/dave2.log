@@ -1,0 +1,30 @@
+##### d2_s3_base_a | 23:17:22
+    d2_s3_base_a   code    300 tok | wall 10.77 t/s | decode 11.45 t/s | prefill   19.8 t/s | accept -               | vram 
+    d2_s3_base_a   reason  300 tok | wall  9.13 t/s | decode 10.46 t/s | prefill   11.5 t/s | accept -               | vram 
+    d2_s3_base_a   edit    300 tok | wall  9.68 t/s | decode 11.76 t/s | prefill   66.4 t/s | accept -               | vram 
+    d2_s3_base_a   long    300 tok | wall  5.96 t/s | decode  9.56 t/s | prefill  111.4 t/s | accept -               | vram 
+    d2_s3_base_a_pf: prompt 8935 tok @ 123.1 t/s | decode 128 tok @ 11.62 t/s | wall 83.6 s
+    running=true find_slot_errors=0  vram 9115MiB
+##### d2_s3_c_a | 23:21:22
+    d2_s3_c_a      code    300 tok | wall 12.82 t/s | decode 13.92 t/s | prefill   17.9 t/s | accept -               | vram 
+    d2_s3_c_a      reason  300 tok | wall 14.74 t/s | decode 17.50 t/s | prefill   15.1 t/s | accept -               | vram 
+    d2_s3_c_a      edit    300 tok | wall 10.96 t/s | decode 17.18 t/s | prefill   36.9 t/s | accept -               | vram 
+    d2_s3_c_a      long    300 tok | wall 10.34 t/s | decode 17.31 t/s | prefill  181.5 t/s | accept -               | vram 
+    d2_s3_c_a_pf: prompt 8935 tok @ 225.8 t/s | decode 128 tok @ 17.40 t/s | wall 47.0 s
+    running=true find_slot_errors=0  vram 62312MiB
+##### d2_s3_base_b | 23:24:04
+    d2_s3_base_b   code    300 tok | wall 10.86 t/s | decode 12.43 t/s | prefill    9.5 t/s | accept -               | vram 
+    d2_s3_base_b   reason  300 tok | wall 10.97 t/s | decode 12.94 t/s | prefill   11.6 t/s | accept -               | vram 
+    d2_s3_base_b   edit    300 tok | wall  9.37 t/s | decode 11.36 t/s | prefill   64.7 t/s | accept -               | vram 
+    d2_s3_base_b   long    300 tok | wall  6.95 t/s | decode 12.26 t/s | prefill  113.1 t/s | accept -               | vram 
+    d2_s3_base_b_pf: prompt 8935 tok @ 127.0 t/s | decode 128 tok @ 12.08 t/s | wall 80.9 s
+    running=true find_slot_errors=0  vram 9115MiB
+##### d2_s3_c_b | 23:27:51
+    d2_s3_c_b      code    300 tok | wall 11.55 t/s | decode 13.41 t/s | prefill    9.3 t/s | accept -               | vram 
+    d2_s3_c_b      reason  300 tok | wall 15.83 t/s | decode 18.86 t/s | prefill   16.0 t/s | accept -               | vram 
+    d2_s3_c_b      edit    300 tok | wall 11.26 t/s | decode 17.51 t/s | prefill   38.5 t/s | accept -               | vram 
+    d2_s3_c_b      long    300 tok | wall  9.14 t/s | decode 13.54 t/s | prefill  198.4 t/s | accept -               | vram 
+    d2_s3_c_b_pf: prompt 8935 tok @ 226.4 t/s | decode 128 tok @ 10.10 t/s | wall 52.1 s
+    running=true find_slot_errors=0  vram 62312MiB
+patched tree: 9408b26e3b266e4e6f7e4fa7ed524c073fe64985
+DAVE2_DONE

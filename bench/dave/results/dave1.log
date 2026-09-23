@@ -1,0 +1,124 @@
+##### s1_base_a | 22:52:20
+    s1_base_a      code    300 tok | wall 101.58 t/s | decode 109.80 t/s | prefill  190.8 t/s | accept 213/255=0.84    | vra
+    s1_base_a      reason  300 tok | wall 104.45 t/s | decode 109.67 t/s | prefill  477.5 t/s | accept 212/258=0.82    | vra
+    s1_base_a      edit    300 tok | wall 111.42 t/s | decode 123.50 t/s | prefill 1523.6 t/s | accept 223/226=0.99    | vra
+    s1_base_a      long    300 tok | wall 69.26 t/s | decode 92.22 t/s | prefill 2069.4 t/s | accept 196/303=0.65    | vram 
+    s1_base_a_pf: prompt 9279 tok @ 2106.5 t/s | decode 128 tok @ 103.86 t/s | wall 5.7 s
+     vram 21930MiB 
+##### s1_patch_a | 22:52:46
+    s1_patch_a     code    300 tok | wall 104.88 t/s | decode 113.79 t/s | prefill  188.7 t/s | accept 213/255=0.84    | vra
+    s1_patch_a     reason  300 tok | wall 107.79 t/s | decode 113.40 t/s | prefill  478.1 t/s | accept 212/258=0.82    | vra
+    s1_patch_a     edit    300 tok | wall 115.01 t/s | decode 127.90 t/s | prefill 1521.1 t/s | accept 223/226=0.99    | vra
+    s1_patch_a     long    300 tok | wall 68.45 t/s | decode 90.73 t/s | prefill 2066.4 t/s | accept 192/315=0.61    | vram 
+    s1_patch_a_pf: prompt 9279 tok @ 2097.6 t/s | decode 128 tok @ 107.36 t/s | wall 5.7 s
+     vram 21986MiB 
+##### s1_base_b | 22:53:12
+    s1_base_b      code    300 tok | wall 100.95 t/s | decode 109.19 t/s | prefill  188.3 t/s | accept 213/255=0.84    | vra
+    s1_base_b      reason  300 tok | wall 104.86 t/s | decode 110.18 t/s | prefill  477.9 t/s | accept 212/258=0.82    | vra
+    s1_base_b      edit    300 tok | wall 112.69 t/s | decode 125.18 t/s | prefill 1512.0 t/s | accept 223/226=0.99    | vra
+    s1_base_b      long    300 tok | wall 69.77 t/s | decode 92.96 t/s | prefill 2072.2 t/s | accept 196/303=0.65    | vram 
+    s1_base_b_pf: prompt 9279 tok @ 2100.8 t/s | decode 128 tok @ 104.59 t/s | wall 5.7 s
+     vram 21931MiB 
+##### s1_patch_b | 22:53:37
+    s1_patch_b     code    300 tok | wall 105.17 t/s | decode 114.14 t/s | prefill  188.9 t/s | accept 213/255=0.84    | vra
+    s1_patch_b     reason  300 tok | wall 106.07 t/s | decode 111.53 t/s | prefill  477.3 t/s | accept 212/258=0.82    | vra
+    s1_patch_b     edit    300 tok | wall 115.70 t/s | decode 128.90 t/s | prefill 1511.3 t/s | accept 223/226=0.99    | vra
+    s1_patch_b     long    300 tok | wall 69.35 t/s | decode 92.19 t/s | prefill 2069.0 t/s | accept 192/315=0.61    | vram 
+    s1_patch_b_pf: prompt 9279 tok @ 2099.8 t/s | decode 128 tok @ 104.58 t/s | wall 5.7 s
+     vram 21986MiB 
+##### s2_base_a | 22:54:03
+    s2_base_a      code    300 tok | wall 55.09 t/s | decode 65.34 t/s | prefill   48.9 t/s | accept 215/251=0.86    | vram 
+    s2_base_a      reason  300 tok | wall 43.55 t/s | decode 47.91 t/s | prefill   95.9 t/s | accept 214/252=0.85    | vram 
+    s2_base_a      edit    300 tok | wall 56.87 t/s | decode 73.38 t/s | prefill  319.9 t/s | accept 224/225=1.00    | vram 
+    s2_base_a      long    300 tok | wall 26.13 t/s | decode 41.65 t/s | prefill  510.0 t/s | accept 195/308=0.63    | vram 
+    s2_base_a_pf: prompt 9279 tok @ 564.1 t/s | decode 128 tok @ 61.50 t/s | wall 18.6 s
+     vram 3483MiB 
+##### s2_c64_a | 22:54:57
+    s2_c64_a       code    300 tok | wall 43.02 t/s | decode 53.51 t/s | prefill   30.6 t/s | accept 209/267=0.78    | vram 
+    s2_c64_a       reason  300 tok | wall 41.90 t/s | decode 55.98 t/s | prefill   33.4 t/s | accept 216/249=0.87    | vram 
+    s2_c64_a       edit    300 tok | wall 32.82 t/s | decode 41.57 t/s | prefill  195.6 t/s | accept 223/226=0.99    | vram 
+    s2_c64_a       long    300 tok | wall 33.95 t/s | decode 46.98 t/s | prefill  895.1 t/s | accept 194/313=0.62    | vram 
+    s2_c64_a_pf: prompt 9279 tok @ 1194.4 t/s | decode 128 tok @ 43.07 t/s | wall 10.8 s
+     vram 8179MiB 
+##### s2_c128_a | 22:55:46
+    s2_c128_a      code    300 tok | wall 52.63 t/s | decode 60.91 t/s | prefill   53.7 t/s | accept 212/261=0.81    | vram 
+    s2_c128_a      reason  300 tok | wall 39.36 t/s | decode 46.24 t/s | prefill   52.8 t/s | accept 214/252=0.85    | vram 
+    s2_c128_a      edit    300 tok | wall 46.09 t/s | decode 82.64 t/s | prefill  131.4 t/s | accept 223/226=0.99    | vram 
+    s2_c128_a      long    300 tok | wall 29.75 t/s | decode 45.46 t/s | prefill  628.2 t/s | accept 195/312=0.62    | vram 
+    s2_c128_a_pf: prompt 9279 tok @ 1190.7 t/s | decode 128 tok @ 26.75 t/s | wall 12.6 s
+     vram 12830MiB 
+##### s2_base_b | 22:56:34
+    s2_base_b      code    300 tok | wall 60.32 t/s | decode 70.34 t/s | prefill   58.9 t/s | accept 215/251=0.86    | vram 
+    s2_base_b      reason  300 tok | wall 46.13 t/s | decode 51.03 t/s | prefill   96.4 t/s | accept 214/252=0.85    | vram 
+    s2_base_b      edit    300 tok | wall 59.29 t/s | decode 79.32 t/s | prefill  297.4 t/s | accept 224/225=1.00    | vram 
+    s2_base_b      long    300 tok | wall 26.92 t/s | decode 43.96 t/s | prefill  505.6 t/s | accept 195/308=0.63    | vram 
+    s2_base_b_pf: prompt 9279 tok @ 563.8 t/s | decode 128 tok @ 62.75 t/s | wall 18.5 s
+     vram 3483MiB 
+##### s2_c64_b | 22:57:26
+    s2_c64_b       code    300 tok | wall 37.91 t/s | decode 44.59 t/s | prefill   35.0 t/s | accept 212/261=0.81    | vram 
+    s2_c64_b       reason  300 tok | wall 46.16 t/s | decode 51.47 t/s | prefill   89.6 t/s | accept 215/252=0.85    | vram 
+    s2_c64_b       edit    300 tok | wall 34.06 t/s | decode 50.10 t/s | prefill  134.0 t/s | accept 223/226=0.99    | vram 
+    s2_c64_b       long    300 tok | wall 28.78 t/s | decode 39.75 t/s | prefill  760.9 t/s | accept 195/310=0.63    | vram 
+    s2_c64_b_pf: prompt 9279 tok @ 1116.7 t/s | decode 128 tok @ 33.02 t/s | wall 12.2 s
+     vram 8180MiB 
+##### s2_c128_b | 22:58:18
+    s2_c128_b      code    300 tok | wall 38.45 t/s | decode 47.37 t/s | prefill   28.4 t/s | accept 208/271=0.77    | vram 
+    s2_c128_b      reason  300 tok | wall 50.33 t/s | decode 56.51 t/s | prefill   92.5 t/s | accept 216/249=0.87    | vram 
+    s2_c128_b      edit    300 tok | wall 32.90 t/s | decode 41.23 t/s | prefill  204.2 t/s | accept 223/226=0.99    | vram 
+    s2_c128_b      long    300 tok | wall 34.41 t/s | decode 58.01 t/s | prefill  617.5 t/s | accept 196/308=0.64    | vram 
+    s2_c128_b_pf: prompt 9279 tok @ 1185.1 t/s | decode 128 tok @ 47.05 t/s | wall 10.6 s
+     vram 12830MiB 
+##### s3_base_a | 22:59:06
+    s3_base_a      code    300 tok | wall  5.91 t/s | decode  6.18 t/s | prefill   14.4 t/s | accept -               | vram 
+    s3_base_a      reason  300 tok | wall  7.84 t/s | decode  8.81 t/s | prefill   11.5 t/s | accept -               | vram 
+    s3_base_a      edit    300 tok | wall  7.73 t/s | decode  8.97 t/s | prefill   67.2 t/s | accept -               | vram 
+    s3_base_a      long    300 tok | wall  6.57 t/s | decode 11.31 t/s | prefill  110.7 t/s | accept -               | vram 
+    urllib.error.HTTPError: HTTP Error 400: Bad Request
+     vram 9089MiB 
+##### s3_c_a | 23:03:05
+    s3_c_a         code    300 tok | wall 11.10 t/s | decode 11.91 t/s | prefill   17.7 t/s | accept -               | vram 
+    s3_c_a         reason  300 tok | wall 14.93 t/s | decode 17.43 t/s | prefill   16.8 t/s | accept -               | vram 
+    s3_c_a         edit    300 tok | wall  7.55 t/s | decode 10.05 t/s | prefill   36.7 t/s | accept -               | vram 
+    urllib.error.URLError: <urlopen error [Errno 111] Connection refused>
+     vram 62199MiB 
+##### s3_base_b | 23:05:02
+    s3_base_b      code    300 tok | wall 11.76 t/s | decode 12.77 t/s | prefill   16.3 t/s | accept -               | vram 
+    s3_base_b      reason  300 tok | wall 10.57 t/s | decode 12.99 t/s | prefill    9.2 t/s | accept -               | vram 
+    s3_base_b      edit    300 tok | wall 10.32 t/s | decode 12.90 t/s | prefill   62.4 t/s | accept -               | vram 
+    s3_base_b      long    300 tok | wall  6.38 t/s | decode 10.91 t/s | prefill  108.5 t/s | accept -               | vram 
+    urllib.error.HTTPError: HTTP Error 400: Bad Request
+     vram 9089MiB 
+##### s3_c_b | 23:07:29
+    s3_c_b         code    300 tok | wall 11.76 t/s | decode 12.73 t/s | prefill   16.8 t/s | accept -               | vram 
+    s3_c_b         reason  300 tok | wall 14.05 t/s | decode 16.34 t/s | prefill   16.2 t/s | accept -               | vram 
+    s3_c_b         edit    300 tok | wall 10.19 t/s | decode 16.21 t/s | prefill   33.4 t/s | accept -               | vram 
+    urllib.error.URLError: <urlopen error [Errno 111] Connection refused>
+     vram 62201MiB 
+##### s4_base | 23:09:21
+    s4_base        code    300 tok | wall 24.74 t/s | decode 27.51 t/s | prefill   27.4 t/s | accept -               | vram 
+    s4_base        reason  300 tok | wall 25.30 t/s | decode 27.49 t/s | prefill   51.5 t/s | accept -               | vram 
+    s4_base        edit    300 tok | wall 23.92 t/s | decode 27.29 t/s | prefill  236.3 t/s | accept -               | vram 
+    s4_base        long    300 tok | wall 17.88 t/s | decode 27.05 t/s | prefill  373.0 t/s | accept -               | vram 
+    urllib.error.HTTPError: HTTP Error 400: Bad Request
+     vram 40213MiB 39759MiB 
+##### s4_patch | 23:10:34
+    s4_patch       code    300 tok | wall 24.92 t/s | decode 27.46 t/s | prefill   29.8 t/s | accept -               | vram 
+    s4_patch       reason  300 tok | wall 25.32 t/s | decode 27.50 t/s | prefill   51.7 t/s | accept -               | vram 
+    s4_patch       edit    300 tok | wall 23.91 t/s | decode 27.31 t/s | prefill  234.9 t/s | accept -               | vram 
+    s4_patch       long    300 tok | wall 17.83 t/s | decode 27.00 t/s | prefill  372.0 t/s | accept -               | vram 
+    urllib.error.HTTPError: HTTP Error 400: Bad Request
+     vram 42018MiB 37951MiB 
+== s1
+  base   decode 109.09 (spread 0.58) | code 109.5 reason 109.9 edit 124.3 long 92.6 | prefill 9.3k 2104 decode-after 104.2 | texts = base 4/4
+  patch  decode 111.57 (spread 0.23) | code 114.0 reason 112.5 edit 128.4 long 91.5 | prefill 9.3k 2099 decode-after 106.0 | texts = base 4/4
+== s2
+  base   decode  59.12 (spread 4.09) | code 67.8 reason 49.5 edit 76.3 long 42.8 | prefill 9.3k 564 decode-after 62.1 | texts = base 4/4
+  c64    decode  47.99 (spread 3.03) | code 49.0 reason 53.7 edit 45.8 long 43.4 | prefill 9.3k 1156 decode-after 38.0 | texts = base 1/4
+  c128   decode  54.80 (spread 8.03) | code 54.1 reason 51.4 edit 61.9 long 51.7 | prefill 9.3k 1188 decode-after 36.9 | texts = base 1/4
+== s3
+  base   decode  10.61 (spread 3.57) | code 9.5 reason 10.9 edit 10.9 long 11.1 | no 9.3k | texts = base 4/4
+  c: no data
+== s4
+  base   decode  27.34 (spread 0.00) | code 27.5 reason 27.5 edit 27.3 long 27.1 | no 9.3k | texts = base 4/4
+  patch  decode  27.32 (spread 0.00) | code 27.5 reason 27.5 edit 27.3 long 27.0 | no 9.3k | texts = base 4/4
+DAVE1_DONE
