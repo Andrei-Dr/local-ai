@@ -1,0 +1,360 @@
+# The llama.cpp patch series: ONE entry per file in mainline-series/ (bench/docgen.py checks the 1:1 match).
+# Generated from this file: the SERIES.md status table and the per-patch sections of research/patches/README.md.
+# Fields: file, theme (key of [themes]), status, switch, plain (plain-language summary), evidence, gate, was (old number).
+
+[[patch]]
+file = "0001-feat-GPU-resident-expert-cache-for-host-offloaded-Mo.patch"
+theme = "cache"
+title = "GPU-resident expert cache for host-offloaded MoE weights"
+status = "SERVED"
+switch = "`--moe-expert-cache N`"
+plain = "The cache itself: slots on the GPU, background uploads, admission only after repeated misses (so one-off experts do not evict hot ones), 1-4 token batches for speculative decoding, and CPU and GPU running at the same time."
+evidence = "the base of everything"
+gate = "—"
+was = "0001"
+
+[[patch]]
+file = "0002-feat-warm-the-MoE-expert-cache-from-the-prompt-s-rou.patch"
+theme = "cache"
+title = '''warm the expert cache from the prompt's routing'''
+status = "SERVED"
+switch = "`--moe-expert-cache-warm`"
+plain = '''Fills the cache from the prompt's routing, so the first answer tokens start warm.'''
+evidence = ""
+gate = "—"
+was = "0002"
+
+[[patch]]
+file = "0003-feat-size-n_rs_seq-for-short-n-gram-drafts-so-they-r.patch"
+theme = "cache"
+title = "size n_rs_seq for short n-gram drafts"
+status = "SERVED"
+switch = ""
+plain = "Lets short n-gram drafts roll back cheaply (speculative decoding bookkeeping)."
+evidence = ""
+gate = "—"
+was = "0003"
+
+[[patch]]
+file = "0004-fix-warm-the-MoE-expert-cache-only-from-single-seque.patch"
+theme = "cache"
+title = "warm only from single-sequence batches (fix)"
+status = "SERVED"
+switch = ""
+plain = "Fix: warms the cache only from single-sequence batches."
+evidence = ""
+gate = "—"
+was = "0004"
+
+[[patch]]
+file = "0005-feat-cache-aware-routing-for-the-MoE-expert-cache-mo.patch"
+theme = "cache"
+title = "cache-aware routing"
+status = "SERVED"
+switch = "`--moe-expert-cache-bias`, off"
+plain = "Cache-aware routing: nudges the router toward experts already cached. Changes the output, so it stays off."
+evidence = "lossy, off by default"
+gate = "—"
+was = "0005"
+
+[[patch]]
+file = "0006-fix-cache-aware-routing-only-scales-plain-non-negati.patch"
+theme = "cache"
+title = "cache-aware routing scales only plain probabilities (fix)"
+status = "SERVED"
+switch = ""
+plain = "Fix: cache-aware routing scales only plain, non-negative router probabilities."
+evidence = ""
+gate = "—"
+was = "0006"
+
+[[patch]]
+file = "0007-feat-LLAMA_MOE_CACHE_SYNC-1-deterministic-MoE-expert.patch"
+theme = "cache"
+title = "LLAMA_MOE_CACHE_SYNC=1 deterministic cache publish"
+status = "SERVED"
+switch = "env, off"
+plain = "Makes the cache deterministic. A test tool: with it on, a patched build must produce byte-identical text to the reference, which is how exact changes are proven."
+evidence = "identity-test tool"
+gate = "—"
+was = "0010"
+
+[[patch]]
+file = "0008-perf-build-the-qwen35moe-shared-expert-inside-the-Mo.patch"
+theme = "overlap"
+title = "shared expert inside the cache split (overlaps host experts)"
+status = "SERVED"
+switch = "always"
+plain = "Computes the always-on shared expert on the GPU while the CPU works on the routed experts."
+evidence = "HAND1: part of +5.4% decode, byte-identical"
+gate = "—"
+was = "0007"
+
+[[patch]]
+file = "0009-perf-CUDA-concat-flat-one-thread-per-element-kernel-.patch"
+theme = "overlap"
+title = "CUDA concat flat kernel (delta-net conv state)"
+status = "SERVED"
+switch = "always"
+plain = '''A faster GPU kernel for a small copy in the model's recurrent (delta-net) layers.'''
+evidence = "same"
+gate = "—"
+was = "0008"
+
+[[patch]]
+file = "0010-perf-ggml-backend-sched-enqueue-host-to-device-split.patch"
+theme = "overlap"
+title = "sched enqueues host->device split copies async"
+status = "SERVED"
+switch = "always"
+plain = '''Starts CPU-to-GPU copies on the GPU's stream without stalling the CPU.'''
+evidence = "same"
+gate = "—"
+was = "0009"
+
+[[patch]]
+file = "0011-feat-MoE-prefill-mode-ubatch-prefill-large-batches-r.patch"
+theme = "prefill"
+title = "**prefill mode** `--ubatch-prefill N`: cache slots released for a big prefill ubatch"
+status = "STABLE"
+switch = "CLI, off unless `-ubp`"
+plain = "Prefill mode: for a big prompt, release the cache slots, use that GPU memory to process the prompt in large chunks, then bring the cache back for writing."
+evidence = "pmux1/3: prefill 3.2x (2.2k tok), 3.5x (9.3k); decode -2.0% (noise); identity 3/4 (long: near-tie)"
+gate = "✅ pmux5 PASS (KLD 0.200063 vs 0.200676)"
+was = "—"
+
+[[patch]]
+file = "0012-fix-MoE-prefill-mode-trims-the-CUDA-temporary-pools-.patch"
+theme = "prefill"
+title = "prefill mode trims CUDA pools before slots return (fix)"
+status = "STABLE"
+switch = "with 0011"
+plain = '''Fix: returns the GPU's temporary memory pools before the cache slots come back.'''
+evidence = "needed for resume"
+gate = "with 0011"
+was = "—"
+
+[[patch]]
+file = "0013-fix-MoE-cache-suspend-detaches-the-slot-tensors-from.patch"
+theme = "prefill"
+title = "cache suspend detaches slot tensors (fix)"
+status = "STABLE"
+switch = "with 0011"
+plain = "Fix: suspending the cache detaches its tensors so resuming re-allocates them."
+evidence = "needed for resume"
+gate = "with 0011"
+was = "—"
+
+[[patch]]
+file = "0014-perf-GGML_CUDA_MMQ_NO_MMA-MMQ-uses-the-dp4a-kernels-.patch"
+theme = "turing"
+title = "**dp4a MMQ** on tensor-core-less Turing"
+status = "STABLE"
+switch = "CMake `-DGGML_CUDA_MMQ_NO_MMA=ON`"
+plain = "Matrix multiply uses the dp4a integer kernels on Turing cards without tensor cores; the enabler for fast prompt reading."
+evidence = "mmqdp1: long prefill 48.5 -> 372.4 t/s with 0011; decode flat; unit 929/929 + 1297/1297"
+gate = "✅ pmux5 PASS (KLD 0.199973)"
+was = "—"
+
+[[patch]]
+file = "0015-perf-GGML_CUDA_FA_NO_MMA-FlashAttention-never-select.patch"
+theme = "turing"
+title = "FA never selects the MMA kernel"
+status = "STABLE (off)"
+switch = "`GGML_CUDA_FA_NO_MMA=1`, off"
+plain = "Attention never selects the tensor-core kernel. Measured worse than 0019 for writing; stays off."
+evidence = "tu1: prefill +29%, decode -3.9% -> use 0019 instead"
+gate = "— (superseded by 0019 for serving)"
+was = "tu116/0011"
+
+[[patch]]
+file = "0016-perf-GGML_CUDA_MMQ_MOE_EXPERT_COLS-size-MoE-MMQ-tile.patch"
+theme = "turing"
+title = "MoE MMQ tile width per expert"
+status = "STABLE (off)"
+switch = "`GGML_CUDA_MMQ_MOE_EXPERT_COLS=1`, off"
+plain = "Sizes the expert matrix tiles by tokens per expert. Neutral at the serving config; stays off."
+evidence = "tu1: ub128 prefill +8.8%; nothing at ubp 4096"
+gate = "✅ pmux5: bit-identical output (exact)"
+was = "tu116/0012"
+
+[[patch]]
+file = "0017-perf-sched-uploads-the-whole-MoE-weight-tensor-witho.patch"
+theme = "overlap"
+title = "whole-tensor expert upload, no router readback (>= 8 tok/expert)"
+status = "STABLE"
+switch = "ON; `GGML_SCHED_MOE_READBACK=1` = old"
+plain = '''For big prompt batches, uploads whole expert tensors without first reading the router's choices back to the CPU.'''
+evidence = "tu1: exact (IDENTICAL x4), prefill neutral"
+gate = "ships with the set (groundwork for upload overlap)"
+was = "tu116/0013"
+
+[[patch]]
+file = "0018-perf-sched-can-skip-the-host-sync-before-a-stream-or.patch"
+theme = "overlap"
+title = "can skip the host sync before stream-ordered split input copies"
+status = "STABLE (on via 0020)"
+switch = "see 0020"
+plain = "Can skip a needless wait before copies the GPU already orders correctly (opt-in; 0020 makes it the default)."
+evidence = "exact (IDENTICAL x4); tu1 +3.4% (contaminated), tu2 -2.0% +- noise"
+gate = "superseded by 0020"
+was = "tu116/0014"
+
+[[patch]]
+file = "0019-perf-GGML_CUDA_FA_TILE_MIN_BATCH-FlashAttention-uses.patch"
+theme = "turing"
+title = "FA tile kernel only for batches of N+ tokens"
+status = "STABLE"
+switch = "`GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving"
+plain = "Attention uses the tile kernel for batches of 32+ tokens (prompt reading)."
+evidence = '''expected: tu1's +29% prefill without the decode loss'''
+gate = "✅ pmux5 PASS (FA tile KLD 0.199801) + ✅ tu2 (prefill 446.9 t/s, decode -0.4% = same)"
+was = "tu116/0015"
+
+[[patch]]
+file = "0020-perf-sched-skips-the-host-sync-before-stream-ordered.patch"
+theme = "overlap"
+title = "0018 default-on (`GGML_SCHED_COPY_SYNC=1` restores the wait)"
+status = "STABLE"
+switch = "ON"
+plain = "Makes 0018 the default: host overhead per layer drops from ~89 to ~63 microseconds."
+evidence = "prof18 nsys: host overhead per MoE layer 89.5 / 79.4 -> 62.7 / 71.0 us, syncs per launch 5.2 -> 4.6, device phase unchanged (~1.8% of a round, under specbench noise)"
+gate = "✅ promo2 IDENTICAL x4"
+was = "—"
+
+[[patch]]
+file = "0021-perf-GGML_CUDA_FA_MMA_MAX_KV-FlashAttention-uses-the-MMA-kernel-only-below-a-KV-length.patch"
+theme = "turing"
+title = "FA MMA kernel only below a KV length (tile above)"
+status = "STABLE"
+switch = "`GGML_CUDA_FA_MMA_MAX_KV=4096` for serving (unset = off)"
+plain = "Attention also uses the tile kernel once the context is long (writing after a long prompt)."
+evidence = "att1: tile 1.9x per launch at 9.3k KV; fakv1: 9.3k decode +6.2 / +6.8 / +7.4% (MAX_KV 2048 / 4096 / 8192, spread 0.29), specbench within spread"
+gate = "✅ promo3: IDENTICAL x4 with the env unset; 9.3k decode +6.0%; tile kernel KLD non-inferior (pmux5)"
+was = "—"
+
+[[patch]]
+file = "0022-perf-LLAMA_MTP_VOCAB_FILE-FR-Spec-draft-vocabulary-f.patch"
+theme = "draft"
+title = "**FR-Spec draft vocabulary** for the Qwen3.5/3.6 MTP head"
+status = "STABLE"
+switch = "`LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin` for serving (unset = full head)"
+plain = "The draft head scores only the ~49k most common tokens instead of all 248k. The full model still checks every guess against the full vocabulary, so the output is unchanged; only the draft gets cheaper."
+evidence = '''pf3: the draft head reads ~0.81 ms/token at VRAM roofline; fr2: 49k list (model's own eval answers + prompts + code) +6.0% decode, acceptance 0.837 vs 0.832'''
+gate = "✅ promo4: IDENTICAL x4 unset; specbench +9.9 / +4.9 / +6.0 / +8.6%, 9.3k decode +3.7%; target verifies the full vocabulary"
+was = "—"
+
+[[patch]]
+file = "0023-fix-FR-Spec-draft-head-skip-graphs-built-over-unallo.patch"
+theme = "draft"
+title = "FR-Spec head skips graphs built over unallocated weights (fix)"
+status = "STABLE"
+switch = "with 0022"
+plain = "Fix: the cut-down draft head skips graphs built over weights that are not allocated yet (startup memory-fit pass)."
+evidence = "fr1b: the memory-fit dry run asserted"
+gate = "with 0022"
+was = "—"
+
+[[patch]]
+file = "0024-perf-GGML_SCHED_MOE_PREFETCH-overlap-host-expert-wei.patch"
+theme = "prefill"
+title = "**upload/compute overlap for prefill** (hoisted host-weight copies, second stream)"
+status = "STABLE"
+switch = "`GGML_SCHED_MOE_PREFETCH=1` for serving (unset = off)"
+plain = '''Overlaps uploading the next layer's experts with computing the current one, on a second GPU stream.'''
+evidence = "ovl12/ovl20: 9.3k prefill +18..24%, prefill KLD identical to 6 decimals"
+gate = "✅ promo5b: IDENTICAL x4 unset; 9.3k prefill 403.8 -> 498.4, 2.2k 393.8 -> 468.4, decode unchanged"
+was = "—"
+
+[[patch]]
+file = "0025-diag-GGML_SCHED_MOE_PREFETCH-2-hoist-the-input-copie.patch"
+theme = "prefill"
+title = "overlap diagnostic: mode 2 (hoisted copies, stream-ordered uploads)"
+status = "STABLE"
+switch = "env, off"
+plain = "Diagnostic: mode 2 plans the overlap without the second stream (isolates the layout change)."
+evidence = "ovl2-ovl19 bisection tools"
+gate = "inert unless set"
+was = "—"
+
+[[patch]]
+file = "0026-diag-GGML_SCHED_MOE_PREFETCH_LOG-_MIN_IDS-log-planne.patch"
+theme = "prefill"
+title = "overlap diagnostic: _LOG / _MIN_IDS"
+status = "STABLE"
+switch = "env, off"
+plain = "Diagnostic: logs the planned splits and filters them by routed-token count."
+evidence = "ovl2-ovl19 bisection tools"
+gate = "inert unless set"
+was = "—"
+
+[[patch]]
+file = "0027-diag-GGML_SCHED_MOE_PREFETCH_ONLY-plan-only-targets-.patch"
+theme = "prefill"
+title = "overlap diagnostic: _ONLY (plan by node-name substring)"
+status = "STABLE"
+switch = "env, off"
+plain = "Diagnostic: plans only splits whose first node name matches a substring."
+evidence = "ovl2-ovl19 bisection tools"
+gate = "inert unless set"
+was = "—"
+
+[[patch]]
+file = "0028-diag-GGML_SCHED_MOE_PREFETCH_SKIPLOOP-mode-on-plan-l.patch"
+theme = "prefill"
+title = "overlap diagnostic: _SKIPLOOP (mode on, plan loop skipped)"
+status = "STABLE"
+switch = "env, off"
+plain = "Diagnostic: turns the mode on but skips the planning loop (to bisect its cost)."
+evidence = "ovl2-ovl19 bisection tools"
+gate = "inert unless set"
+was = "—"
+
+[[patch]]
+file = "0029-perf-overlap-plan-op-test-first-CUDA-backend-verdict.patch"
+theme = "prefill"
+title = "overlap plan: op test first, per-backend CUDA verdict cached (fix)"
+status = "STABLE"
+switch = "with 0024"
+plain = "Fix: the overlap planner tests the operation first and caches the GPU verdict, removing a ~7% cost on every token."
+evidence = "ovl19/20: the per-split device queries cost ~7% of decode whenever the mode was on"
+gate = "with 0024"
+was = "—"
+
+[[patch]]
+file = "0030-fix-overlap-plan-only-for-graphs-that-reach-the-whol.patch"
+theme = "prefill"
+title = "overlap plan only for graphs >= the whole-tensor threshold (fix)"
+status = "STABLE"
+switch = "with 0024"
+plain = "Fix: plans only graphs big enough for whole-tensor uploads, so a planned buffer no longer blocks the cache from coming back."
+evidence = "promo5: the planned reserve graph kept 290 MiB through decode, the cache could not re-allocate (-20%)"
+gate = "✅ promo5b"
+was = "—"
+
+# Guide sections, in this order (research/patches/README.md).
+[themes.cache]
+heading = "1. A GPU cache for the experts"
+intro = """The core idea. The GPU keeps a least-recently-used cache of expert weights ("slots", ~20-26 per layer). An expert in the
+cache is computed on the GPU; a miss is computed on the CPU from system RAM while its upload happens in the background, so a miss
+never waits for the bus. About half of all expert uses hit the cache."""
+
+[themes.overlap]
+heading = "2. Keep the CPU and the GPU busy at the same time"
+intro = """Each token alternates between CPU work (expert misses) and GPU work 40 times. These patches remove waits so the two
+overlap; 0008-0010 together gave part of a +5.4% decode gain with byte-identical output."""
+
+[themes.prefill]
+heading = "3. Fast prompt reading: prefill mode"
+intro = """Reading a prompt processes thousands of tokens at once, where the per-token cache no longer helps. With 0014, prefill
+mode took a 9,279-token prompt from 47 to 404 tokens/s; the upload overlap (0024) adds +19-23% with identical results."""
+
+[themes.turing]
+heading = "4. GPU code for a card without tensor cores"
+intro = """GTX 16xx cards report the same generation as RTX 20xx cards but lack their tensor cores, so upstream picks kernels that
+are slow here. Writing after a 9k-token prompt got +6-7% from 0021 alone."""
+
+[themes.draft]
+heading = "5. Cheaper speculative decoding"
+intro = """The model has a small built-in draft head (MTP) that guesses the next tokens; the full model checks the guesses in one
+pass. Cutting the draft's vocabulary made writing 5-10% faster with the output unchanged."""

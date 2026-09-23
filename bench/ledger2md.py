@@ -535,3 +535,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    import docgen  # README / QUICKSTART / SERIES blocks read the ledger and stable/stable.env
+    docgen.main([])

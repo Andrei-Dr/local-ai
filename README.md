@@ -5,6 +5,43 @@ Mainline llama.cpp plus our own patches: MoE experts on the CPU, a GPU-resident 
 quantized attention kernels, and two-phase long context (prefill server -> slot file -> decode server) out to the native 262k.
 Accuracy first: a faster configuration ships only after it is proven non-inferior.
 
+
+**Get started:** [QUICKSTART.md](QUICKSTART.md) (build STABLE, get the model files, serve).
+
+## Progress: LEGACY -> STABLE
+
+LEGACY is our first served build (upstream llama.cpp + the expert cache, patches 0001-0010) with the K2 model; STABLE is what
+we serve now. Tokens/s, medians over real runs, regenerated from the run ledger by `bench/ledger2md.py` and on every commit.
+
+<!-- BEGIN GENERATED: served-arc (bench/docgen.py; edit the source, not this block) -->
+### Served arc: LEGACY -> STABLE (build + model)
+
+The served configuration is a (build, model file) pair; each step is one promotion (research/patches/SERIES.md).
+Cells are medians over every completed, non-identity run of exactly that build and model (diagnostic arms included).
+
+| step | build | model | decode code | decode reason | decode edit | decode long | prefill 2.2k | prefill 9.3k | decode after 9.3k | runs |
+|---|---|---|---|---|---|---|---|---|---|---|
+| LEGACY | LEGACY | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 56.1 | 56.4 | 60.6 | 46.8 | 48.5 | 47.4 | 47.5 | 43 |
+| STABLE build, K2 | STABLE | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 60.7 | 59.4 | 63.1 | 48.8 | 394.0 | 404.3 | 52.3 | 112 |
+| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 64.3 | 65.4 | 70.4 | 49.2 | 480.1 | 510.7 | 55.0 | 9 |
+
+**STABLE vs LEGACY (median vs median):** decode code +14.5%, decode reason +15.9%, decode edit +16.1%, decode long +5.2%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +15.7%
+<!-- END GENERATED: served-arc -->
+
+## What we serve (STABLE)
+
+<!-- BEGIN GENERATED: serving (bench/docgen.py; edit the source, not this block) -->
+STABLE since 2026-09-24: llama.cpp `e613ef2` + patches 0001-0030, model `Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf`, draft head `mtp-Qwen3.6-35B-A3B-Q4_0.gguf` with vocabulary `mtp-Qwen3.6-35B-A3B-vocab49k.bin`. Source: `stable/stable.env`.
+
+```
+LLAMA_MTP_VOCAB_FILE=mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 llama-server -m Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf -md mtp-Qwen3.6-35B-A3B-Q4_0.gguf -c 4096 -ngl 999 -fa on -t 6 -ot exps=CPU --spec-type draft-mtp --spec-draft-n-max 3 -ub 128 -ubp 2048 --moe-expert-cache 21 -b 2048
+```
+At `-c 12288`: `--moe-expert-cache 18 -b 4096` instead of `--moe-expert-cache 21 -b 2048`.
+`stable/serve.sh` runs exactly this (`--ctx 4096 | 12288`).
+<!-- END GENERATED: serving -->
+
+## Repository map
+
 - `SPEC.md` — the program spec and status board: what is running, what is decided, what is dead and why. Start here.
 - `notes.md` — the dated lab log: hardware, findings, measurement tables, runbook, every result with its reading.
 - `bench/` — harness. `box/` mirrors `/ai/bench` on the box (job scripts, the durable job queue, waiters); `box/patches/` holds

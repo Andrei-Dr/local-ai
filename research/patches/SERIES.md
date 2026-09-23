@@ -1,4 +1,4 @@
-# llama.cpp patch series — the single source of truth (updated 2026-09-23 14:00)
+# llama.cpp patch series — status ledger (the table is generated from series.toml)
 
 One linear chain on mainline, regenerated with `git format-patch 0af8ea3^..tu116-served` from the local clone
 `~/dev/llama.cpp-mainline` (branches: moe-cache -> moe-cache-det -> prefill-mux -> tu116-kernels). Apply in order; each patch
@@ -8,14 +8,17 @@ The box keeps an operational copy of 0015-0019 in `/ai/bench/patches/tu116/` (tu
 Status: **STABLE** = in the stable build (/ai/src/llama.cpp-v2, promo1 07:47) · **SERVED** = also in LEGACY (/ai/src/llama.cpp-mainline) · **TEST** = only in the test tree (/ai/src/llama.cpp-ov)
 · gate = what still decides promotion. Switches: env vars unless noted; "default" = behavior with the variable unset.
 
+Generated from `series.toml` (edit that file; `bench/docgen.py` rewrites this table).
+
+<!-- BEGIN GENERATED: series-table (bench/docgen.py; edit the source, not this block) -->
 | # | was | patch | status | switch / default | evidence | gate |
 |---|---|---|---|---|---|---|
 | 0001 | 0001 | GPU-resident expert cache for host-offloaded MoE weights | SERVED | `--moe-expert-cache N` | the base of everything | — |
-| 0002 | 0002 | warm the expert cache from the prompt's routing | SERVED | `--moe-expert-cache-warm` | | — |
-| 0003 | 0003 | size n_rs_seq for short n-gram drafts | SERVED | | | — |
-| 0004 | 0004 | warm only from single-sequence batches (fix) | SERVED | | | — |
+| 0002 | 0002 | warm the expert cache from the prompt's routing | SERVED | `--moe-expert-cache-warm` |  | — |
+| 0003 | 0003 | size n_rs_seq for short n-gram drafts | SERVED |  |  | — |
+| 0004 | 0004 | warm only from single-sequence batches (fix) | SERVED |  |  | — |
 | 0005 | 0005 | cache-aware routing | SERVED | `--moe-expert-cache-bias`, off | lossy, off by default | — |
-| 0006 | 0006 | cache-aware routing scales only plain probabilities (fix) | SERVED | | | — |
+| 0006 | 0006 | cache-aware routing scales only plain probabilities (fix) | SERVED |  |  | — |
 | 0007 | 0010 | LLAMA_MOE_CACHE_SYNC=1 deterministic cache publish | SERVED | env, off | identity-test tool | — |
 | 0008 | 0007 | shared expert inside the cache split (overlaps host experts) | SERVED | always | HAND1: part of +5.4% decode, byte-identical | — |
 | 0009 | 0008 | CUDA concat flat kernel (delta-net conv state) | SERVED | always | same | — |
@@ -28,21 +31,35 @@ Status: **STABLE** = in the stable build (/ai/src/llama.cpp-v2, promo1 07:47) ·
 | 0016 | tu116/0012 | MoE MMQ tile width per expert | STABLE (off) | `GGML_CUDA_MMQ_MOE_EXPERT_COLS=1`, off | tu1: ub128 prefill +8.8%; nothing at ubp 4096 | ✅ pmux5: bit-identical output (exact) |
 | 0017 | tu116/0013 | whole-tensor expert upload, no router readback (>= 8 tok/expert) | STABLE | ON; `GGML_SCHED_MOE_READBACK=1` = old | tu1: exact (IDENTICAL x4), prefill neutral | ships with the set (groundwork for upload overlap) |
 | 0018 | tu116/0014 | can skip the host sync before stream-ordered split input copies | STABLE (on via 0020) | see 0020 | exact (IDENTICAL x4); tu1 +3.4% (contaminated), tu2 -2.0% +- noise | superseded by 0020 |
-| 0020 | — | 0018 default-on (`GGML_SCHED_COPY_SYNC=1` restores the wait) | STABLE | ON | prof18 nsys: host overhead per MoE layer 89.5 / 79.4 -> 62.7 / 71.0 us, syncs per launch 5.2 -> 4.6, device phase unchanged (~1.8% of a round, under specbench noise) | ✅ promo2 IDENTICAL x4 |
 | 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | STABLE | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | ✅ pmux5 PASS (FA tile KLD 0.199801) + ✅ tu2 (prefill 446.9 t/s, decode -0.4% = same) |
+| 0020 | — | 0018 default-on (`GGML_SCHED_COPY_SYNC=1` restores the wait) | STABLE | ON | prof18 nsys: host overhead per MoE layer 89.5 / 79.4 -> 62.7 / 71.0 us, syncs per launch 5.2 -> 4.6, device phase unchanged (~1.8% of a round, under specbench noise) | ✅ promo2 IDENTICAL x4 |
 | 0021 | — | FA MMA kernel only below a KV length (tile above) | STABLE | `GGML_CUDA_FA_MMA_MAX_KV=4096` for serving (unset = off) | att1: tile 1.9x per launch at 9.3k KV; fakv1: 9.3k decode +6.2 / +6.8 / +7.4% (MAX_KV 2048 / 4096 / 8192, spread 0.29), specbench within spread | ✅ promo3: IDENTICAL x4 with the env unset; 9.3k decode +6.0%; tile kernel KLD non-inferior (pmux5) |
 | 0022 | — | **FR-Spec draft vocabulary** for the Qwen3.5/3.6 MTP head | STABLE | `LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin` for serving (unset = full head) | pf3: the draft head reads ~0.81 ms/token at VRAM roofline; fr2: 49k list (model's own eval answers + prompts + code) +6.0% decode, acceptance 0.837 vs 0.832 | ✅ promo4: IDENTICAL x4 unset; specbench +9.9 / +4.9 / +6.0 / +8.6%, 9.3k decode +3.7%; target verifies the full vocabulary |
 | 0023 | — | FR-Spec head skips graphs built over unallocated weights (fix) | STABLE | with 0022 | fr1b: the memory-fit dry run asserted | with 0022 |
 | 0024 | — | **upload/compute overlap for prefill** (hoisted host-weight copies, second stream) | STABLE | `GGML_SCHED_MOE_PREFETCH=1` for serving (unset = off) | ovl12/ovl20: 9.3k prefill +18..24%, prefill KLD identical to 6 decimals | ✅ promo5b: IDENTICAL x4 unset; 9.3k prefill 403.8 -> 498.4, 2.2k 393.8 -> 468.4, decode unchanged |
-| 0025-0028 | — | overlap diagnostics (mode 2 = plan only, _LOG / _MIN_IDS, _ONLY, _SKIPLOOP) | STABLE | env, off | ovl2-ovl19 bisection tools | inert unless set |
+| 0025 | — | overlap diagnostic: mode 2 (hoisted copies, stream-ordered uploads) | STABLE | env, off | ovl2-ovl19 bisection tools | inert unless set |
+| 0026 | — | overlap diagnostic: _LOG / _MIN_IDS | STABLE | env, off | ovl2-ovl19 bisection tools | inert unless set |
+| 0027 | — | overlap diagnostic: _ONLY (plan by node-name substring) | STABLE | env, off | ovl2-ovl19 bisection tools | inert unless set |
+| 0028 | — | overlap diagnostic: _SKIPLOOP (mode on, plan loop skipped) | STABLE | env, off | ovl2-ovl19 bisection tools | inert unless set |
 | 0029 | — | overlap plan: op test first, per-backend CUDA verdict cached (fix) | STABLE | with 0024 | ovl19/20: the per-split device queries cost ~7% of decode whenever the mode was on | with 0024 |
 | 0030 | — | overlap plan only for graphs >= the whole-tensor threshold (fix) | STABLE | with 0024 | promo5: the planned reserve graph kept 290 MiB through decode, the cache could not re-allocate (-20%) | ✅ promo5b |
+<!-- END GENERATED: series-table -->
 
 ## Promotion DONE 07:47 — promo1 (bench/box/promo1.sh), branch tu116-served 1c54372
 Result: unit 929 / 1297 / 3979 pass; IDENTICAL x4 vs the ov build; specbench old served config -> STABLE serving config:
 decode code +0.9 / reason +0.2 / edit -0.8 / long -6.1% (open item, see notes), prefill 1.55x / 1.91x / 2.99x / 8.13x;
 9,279-token prompt 47.3 -> 403.2 t/s (8.5x), wall 198.8 -> 25.6 s, decode after it 47.3 -> 49.8.
-**STABLE serving command (2026-09-24: build d0fd493 from promo5b + model K2q6 from k2q6b, approved by Andrei):** `GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 /ai/src/llama.cpp-v2/build75/bin/llama-server -m /ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf -ngl 999 -fa on -t 6 -ot exps=CPU --moe-expert-cache 21 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 3 -ub 128 -b 2048 -ubp 2048` (-c 4096; at -c 12288 use cache 18 and -b 4096). K2q6 = K2 with the dense roles at Q4_K from the Q6 source (KLD 0.204 -> 0.115); cache 22 at -c 4096 is the OOM edge. Draft n3 (tune1: parity with n2 at 9.3k, +4% on short prompts).
+**STABLE serving command** (generated from `stable/stable.env`):
+
+<!-- BEGIN GENERATED: serving (bench/docgen.py; edit the source, not this block) -->
+STABLE since 2026-09-24: llama.cpp `e613ef2` + patches 0001-0030, model `Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf`, draft head `mtp-Qwen3.6-35B-A3B-Q4_0.gguf` with vocabulary `mtp-Qwen3.6-35B-A3B-vocab49k.bin`. Source: `stable/stable.env`.
+
+```
+LLAMA_MTP_VOCAB_FILE=mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 llama-server -m Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf -md mtp-Qwen3.6-35B-A3B-Q4_0.gguf -c 4096 -ngl 999 -fa on -t 6 -ot exps=CPU --spec-type draft-mtp --spec-draft-n-max 3 -ub 128 -ubp 2048 --moe-expert-cache 21 -b 2048
+```
+At `-c 12288`: `--moe-expert-cache 18 -b 4096` instead of `--moe-expert-cache 21 -b 2048`.
+`stable/serve.sh` runs exactly this (`--ctx 4096 | 12288`).
+<!-- END GENERATED: serving -->
 
 Previous (promo5b, K2): same flags with `-m <K2> --moe-expert-cache 26` (22 at -c 12288), `--spec-draft-n-max 2`.
 Original plan:
@@ -63,7 +80,5 @@ Original plan:
 
 ## Not in the series (dead or parked; see research/opt-hunt-2026-09-23.md)
 Warm-tail prompt warm-up (LLAMA_MOE_WARM_TAIL, experimental/warm-tail.patch): dec3 clean box NOT PROVEN (-0.7%, 9.3k decode 1/3).
-Upload overlap (experimental/upload-overlap.patch): identity FAILS (ovl1); the hoist alone changes the main model's output (ovl2-4),
-under diagnosis (ovl5), OFF.
 Router F32 (lossy), state-gather skip (MTP rollback), per-layer slot allocation, alternative cache policies (incl. pure/global
 LFU, lfu_variants.py), -t 5, OMP pinning, experts on huge pages.
