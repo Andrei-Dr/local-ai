@@ -1420,3 +1420,15 @@ Identity unset vs promo5's post-build baseline: IDENTICAL x4. No OOM, no slot re
 unset: specbench decode +1.2 / +1.6 / +1.9 / -0.7%; prefill long 2.2k 393.8 -> 468.4 (+19%); 9,279-token prompt at ubp 2048: prefill
 404.1 / 403.4 -> 498.0 / 498.8 (+23.4%), decode after 54.63 / 55.05 -> 54.91 / 55.27, wall 25.3 -> 21.0 s; ubp 4096: 510.5 / 508.6
 prefill, decode after 51.89 / 55.99 (noisy) -> serve at ubp 2048. Series 0024-0030.
+
+### 2026-09-23 18:25 — second push (Andrei: "4 leads, go"): race1 done; qx3 failed on its own; lead 3 quantified; tune1 + mv1 queued
+- race1 (LEGACY, hard math, thinking on, 16 analyzable items): base 37.5% / 25.0% (+-11-12, 9-12 of 16 truncated or empty = the
+  token cap dominates); racing N=2: 7 finished / 6 correct, N=3: 7 / 7 any-correct; RACE_VERDICT mixed.
+- qx3 FAILED at 18:12 on its own (before any stop): expert_mix.py "Killed" building the 25%-hot mix (OOM on 16 GB, inferred);
+  its X4 ceiling arm finished (median KLD 0.0761, same top 83.97%). Needs a streaming mix writer before a re-run.
+- Lead 3 (small device kernels, pf3 decode trace): kernels < 8 us = 586 launches / 1.65 ms per token (11% of GPU busy); top:
+  quantize_q8_1 152/token 0.34 ms (activation re-quantized before every mat-vec), rms_norm 0.25, bin_bcast 0.20, cpy 0.14 ms.
+  Reusing quantized activations across mat-vecs that share an input saves at most ~0.17 ms/token (~1%) -> below leads 1/2/4.
+- Lead 2 (mat-vec roofline): dense weights are mostly IQ2_S (attn_gate, attn_q, ssm_out, shexp) + Q4_K (attn_qkv, attn_v); the
+  4096-row mat-vec moves ~2.6 MB in 82.7 us (~32 GB/s), 1024-row ~17 GB/s, vs 192 GB/s; dense mat-vecs ~3.6 ms/token vs ~1.3 ms
+  at bandwidth -> mv1 measures GB/s per weight type (ALU-bound dequant?).
