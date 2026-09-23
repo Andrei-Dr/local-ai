@@ -40,6 +40,19 @@ prefill 2.2k = best specbench long-prompt prefill, prefill 9.3k = best longpf (9
 
 - `~` speed = the quality run's in-run mean decode tok/s (no specbench row for that model); not the tuned best.
 
+## Served arc: LEGACY -> STABLE (build + model)
+
+The served configuration is a (build, model file) pair; each step is one promotion (research/patches/SERIES.md).
+Cells are medians over every completed, non-identity run of exactly that build and model (diagnostic arms included).
+
+| step | build | model | decode code | decode reason | decode edit | decode long | prefill 2.2k | prefill 9.3k | decode after 9.3k | runs |
+|---|---|---|---|---|---|---|---|---|---|---|
+| LEGACY | LEGACY | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 56.1 | 56.4 | 60.6 | 46.8 | 48.5 | 47.4 | 47.5 | 43 |
+| STABLE build, K2 | STABLE | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 60.7 | 59.4 | 63.1 | 48.8 | 394.0 | 404.3 | 52.3 | 112 |
+| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 64.3 | 65.4 | 70.4 | 49.2 | 480.1 | 510.7 | 55.0 | 9 |
+
+**STABLE vs LEGACY (median vs median):** decode code +14.5%, decode reason +15.9%, decode edit +16.1%, decode long +5.2%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +15.7%
+
 ## Builds: STABLE vs LEGACY vs TEST
 
 STABLE = `/ai/src/llama.cpp-v2/build75` (served), LEGACY = `/ai/src/llama.cpp-mainline/build75` (pre-promotion, rollback),
