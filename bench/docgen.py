@@ -42,10 +42,13 @@ def replace_block(text, name, body):
 def parse_env(text):
     """KEY="value" lines of a bash-sourceable env file (comments and blank lines ignored)."""
     env = {}
-    for line in text.splitlines():
-        m = re.match(r'\s*([A-Z0-9_]+)="(.*)"\s*$', line)
-        if m:
-            env[m.group(1)] = m.group(2)
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        m = re.match(r'([A-Z0-9_]+)="([^"]*)"$', line.strip())
+        if not m:
+            raise DocgenError(f"stable.env line {n}: expected KEY=\"value\" alone on the line: {line.strip()}")
+        env[m.group(1)] = m.group(2)
     return env
 
 
@@ -63,6 +66,15 @@ def check_series(patch_dir, entries, themes):
     errs += [f"{f}: listed more than once in series.toml" for f in sorted({f for f in named if named.count(f) > 1})]
     errs += [f"{e['file']}: unknown theme '{e.get('theme')}'" for e in entries if e.get("theme") not in themes]
     return errs
+
+
+def check_served_steps(env, steps):
+    """The served arc's last step must be the current STABLE (build, model): a promotion has to append its step."""
+    last = steps[-1]
+    if (last[1], last[2]) != (env.get("STABLE_BOX_BUILD"), env.get("MODEL")):
+        return [f"stable/stable.env STABLE ({env.get('STABLE_BOX_BUILD')}, {env.get('MODEL')}) is not the last bench/ledger2md.py "
+                f"SERVED_STEPS entry ({last[1]}, {last[2]}): append the promotion's step"]
+    return []
 
 
 def series_table(entries):
@@ -121,6 +133,9 @@ def render():
     data = tomllib.loads((PATCHES / "series.toml").read_text())
     entries = sorted(data["patch"], key=lambda e: e["file"])
     errs = check_series(PATCHES / "mainline-series", entries, data["themes"])
+    sys.path.insert(0, str(ROOT / "bench"))
+    import ledger2md
+    errs += check_served_steps(env, ledger2md.SERVED_STEPS)
     serving = serving_block(env)
     blocks = {
         ROOT / "README.md": {"served-arc": arc_block(), "serving": serving},
@@ -135,7 +150,7 @@ def main(argv):
     check = "--check" in argv
     blocks, errs = render()
     if errs:
-        print("series.toml does not match mainline-series/:\n  " + "\n  ".join(errs))
+        print("docs sources disagree:\n  " + "\n  ".join(errs))
         return 1
     stale = []
     for path, bs in blocks.items():

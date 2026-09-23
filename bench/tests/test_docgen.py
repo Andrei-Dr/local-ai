@@ -44,6 +44,23 @@ class EnvCase(unittest.TestCase):
                               "(+ LLAMA_MTP_VOCAB_FILE=v.bin)")
 
 
+class EnvStrictCase(unittest.TestCase):
+    def test_a_line_bash_reads_but_the_parser_cannot_is_an_error(self):
+        with self.assertRaises(docgen.DocgenError):
+            docgen.parse_env('A="1"   # trailing comment\n')
+
+
+class ServedStepsCase(unittest.TestCase):
+    STEPS = [("LEGACY", "/old", "k2.gguf"), ("STABLE", "/new", "k2q6.gguf")]
+
+    def test_current_stable_is_the_last_step(self):
+        self.assertEqual(docgen.check_served_steps({"STABLE_BOX_BUILD": "/new", "MODEL": "k2q6.gguf"}, self.STEPS), [])
+
+    def test_promotion_without_a_new_step_is_reported(self):
+        errs = docgen.check_served_steps({"STABLE_BOX_BUILD": "/new", "MODEL": "k3.gguf"}, self.STEPS)
+        self.assertTrue(errs and "SERVED_STEPS" in errs[0], errs)
+
+
 class SeriesCase(unittest.TestCase):
     def series(self, files, entries):
         d = Path(tempfile.mkdtemp())
