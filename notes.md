@@ -1406,3 +1406,11 @@ combo a9bd82c (op test first, per-backend CUDA verdict cached). ABBA U N O O N U
 plans) 55.02 / 56.58 (-1.6%) | O (overlap on) 56.48 / 56.83 (-0.1%). Prefill: code 57.6 / 56.6 / 57.7, long 2.2k 394.8 / 393.4 /
 468.2 (+18.6%). 9,279-token prompt: prefill U 402.7 / 402.9 -> O 498.7 / 499.5 (+23.9%), decode after 50.02 / 50.00 -> 50.01 /
 50.10, wall 25.6 -> 21.2 s. -> PROMOTE (promo5: STABLE = c75018b + overlap stack + fix, serve with GGML_SCHED_MOE_PREFETCH=1).
+
+### 2026-09-23 13:48 — promo5: E identity passes, but with the full serving env the overlap starves the cache (fixed: d0fd493)
+v2 ff'd to 2f02192 (overlap stack; off by default). Identity with GGML_SCHED_MOE_PREFETCH unset: IDENTICAL x4. Speed with the full
+serving env (FA_MMA_MAX_KV 4096 + 49k draft vocab): specbench with the overlap on -> CUDA OOM at cache 26; 9,279-token prompt: prefill
+404 -> 499 (+23%) but decode after 54.8 -> 43.8 (-20%): "could not re-allocate the device slots" — the ubatch-sized reserve graph
+(1,024 ids) was planned too (compute buffer 129 -> 290 MiB kept through decode), so the cache could not return after prefill mode.
+Fix d0fd493: plan only graphs that reach the whole-tensor threshold (8 x n_expert ids; prefetch never engages below it). promo5b.
+STABLE stays at 2f02192 meanwhile (overlap off by default = today's behavior).
