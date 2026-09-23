@@ -1,0 +1,41 @@
+From c75018be7791b9e5eec2f128a5f1228dd88dded7 Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 11:36:18 +0300
+Subject: [PATCH 23/23] =?UTF-8?q?fix:=20FR-Spec=20draft=20head=20=E2=80=94?=
+ =?UTF-8?q?=20skip=20graphs=20built=20over=20unallocated=20weights=20(memo?=
+ =?UTF-8?q?ry-fit=20dry=20run)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit 854cbce434f4c07d424fc79bed2451e771109038)
+---
+ src/models/qwen35moe.cpp | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/src/models/qwen35moe.cpp b/src/models/qwen35moe.cpp
+index 35207ef..dda9465 100644
+--- a/src/models/qwen35moe.cpp
++++ b/src/models/qwen35moe.cpp
+@@ -27,9 +27,16 @@ const mtp_subvocab * mtp_subvocab_get(const ggml_tensor * head_w) {
+     if (sv.tried) {
+         return sv.head == head_w && sv.w_sub ? &sv : nullptr;
+     }
+-    sv.tried = true;
+     const char * path = getenv("LLAMA_MTP_VOCAB_FILE");
+-    if (!path || !head_w->buffer || ggml_is_transposed(head_w)) {
++    if (!path) {
++        return nullptr;
++    }
++    // graphs are also built over UNALLOCATED weights (the memory-fit dry run): wait for a head with data before deciding
++    if (!head_w->buffer || head_w->data == nullptr) {
++        return nullptr;
++    }
++    sv.tried = true;
++    if (ggml_is_transposed(head_w)) {
+         return nullptr;
+     }
+     const int64_t n_embd = head_w->ne[0], n_vocab = head_w->ne[1];
+-- 
+2.55.0
+

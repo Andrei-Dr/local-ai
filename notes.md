@@ -1375,3 +1375,17 @@ code + Python stdlib (~49.2k distinct tokens). Specbench, 2 rounds, mean decode 
 U (unset) vs N (=1, never plans): same self-symbol profile (~48% unresolved spin, q2_K 19.7%, q3_K 13.4-13.7% dots); N adds kernel-
 driver time (_nv049601rm 0.8%) -> the cost is waiting / driver work, not host compute. Overlap stays parked (prefill +18% unusable
 until the per-graph cost is found); open question recorded.
+
+### 2026-09-23 12:55 — promo4: lead B PROMOTED — STABLE = c75018b (+ FR-Spec draft vocab), serve with the 49k list
+v2 ff'd to c75018b (1be3f5f + ac498ad FR-Spec + c75018b dry-run fix), rebuilt. Identity with LLAMA_MTP_VOCAB_FILE unset vs the
+pre-promotion binary: IDENTICAL x4. Speed (both arms with GGML_CUDA_FA_MMA_MAX_KV=4096): specbench decode unset -> vocab49k: code
+57.45 -> 63.14 (+9.9%), reason 58.27 -> 61.12 (+4.9%), edit 61.30 -> 64.94 (+6.0%), long 46.09 -> 50.06 (+8.6%); 9,279-token prompt
+decode 52.75 / 52.51 -> 55.04 / 54.09 (+3.7%). Series 0022 + 0023; artifact /ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin
+(= bench fr2_vocab_49152.bin, 49,154 ids).
+
+### 2026-09-23 12:47 — kvq1 (lead G): q8_0 KV passes KLD but is SLOWER after a long prompt -> NOT PROVEN
+KLD (-c 2048, 6 chunks vs Q6): f16 0.203860 / top 81.965 | q8 0.202041 / 81.818 (-0.89%, PASS). 9.3k decode f16 (cache 22) 49.45 /
+48.38 vs q8 (cache 25) 47.35 / 46.99 (-3.6%, spread 1.07); specbench f16 (26) 56.14 (spread 0.90) vs q8 (27) 56.97 (+1.5%, inside).
+The q8 FA path is slower than f16 + tile at long KV; the 3 extra slots do not pay it back.
+Lead scoreboard: A parked (not proven) | B PROMOTED (+5..10% decode) | C dead | D PROMOTED (+6% decode at 9.3k) | E overlap parked
+(+18% prefill, -6% decode from a plan-independent per-graph cost) | F not proven | G not proven.
