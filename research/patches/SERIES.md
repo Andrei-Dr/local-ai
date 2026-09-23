@@ -43,6 +43,7 @@ Generated from `series.toml` (edit that file; `bench/docgen.py` rewrites this ta
 | 0028 | — | overlap diagnostic: _SKIPLOOP (mode on, plan loop skipped) | STABLE | env, off | ovl2-ovl19 bisection tools | inert unless set |
 | 0029 | — | overlap plan: op test first, per-backend CUDA verdict cached (fix) | STABLE | with 0024 | ovl19/20: the per-split device queries cost ~7% of decode whenever the mode was on | with 0024 |
 | 0030 | — | overlap plan only for graphs >= the whole-tensor threshold (fix) | STABLE | with 0024 | promo5: the planned reserve graph kept 290 MiB through decode, the cache could not re-allocate (-20%) | ✅ promo5b |
+| 0031 | — | size window (SWA) KV caches for the prefill-mode ubatch | TEST | with 0011 | dave2 (MI210): DeepSeek-V4 REAP 145B with -ubp 2048 died on the long prompt (find_slot 1348 > 256, GPU fault) before, completes after | exact on Qwen by construction (only window-cache sizes change); crash repro on DSV4 |
 <!-- END GENERATED: series-table -->
 
 ## Promotion DONE 07:47 — promo1 (bench/box/promo1.sh), branch tu116-served 1c54372

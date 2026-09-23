@@ -1,0 +1,91 @@
+From 12db0c37a0efa9a8d63c57dfba75d2590d0b4cc3 Mon Sep 17 00:00:00 2001
+From: Andrei-Dr <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 23:16:08 +0000
+Subject: [PATCH] fix: size window (SWA) KV caches for the prefill-mode ubatch
+
+Prefill mode (-ubp) splits large batches at n_ubatch_prefill, but create_memory sized every KV cache for n_ubatch. Caches of size n_ctx do not care; a sliding-window cache holds n_swa + n_ubatch cells, so with -ub 128 -ubp 2048 a 2048-token ubatch cannot find a slot (DeepSeek-V4: find_slot n_tokens 1348 > size 256), the server retries smaller batches and the GPU faults. Size window caches for max(n_ubatch, n_ubatch_prefill). Models without window attention (Qwen3.6) allocate the same memory as before.
+---
+ src/llama-model.cpp | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index e195f50..561b9e8 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -2272,6 +2272,10 @@ ggml_tensor * llama_model::get_rope_factors(const llama_cparams & cparams, int i
+ }
+ 
+ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, const llama_cparams & cparams) const {
++    // window-sized (SWA) caches hold n_swa + one ubatch: size them for the largest ubatch this context splits at, which is
++    // n_ubatch_prefill in MoE prefill mode (a 2048-token ubatch does not fit a window cache sized for -ub 128)
++    const uint32_t n_ubatch_mem = std::max(cparams.n_ubatch, cparams.n_ubatch_prefill);
++
+     llama_memory_i * res;
+ 
+     switch (arch) {
+@@ -2455,7 +2459,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                             cparams.kv_unified,
+                             cparams.n_ctx_seq,
+                             cparams.n_seq_max,
+-                            cparams.n_ubatch,
++                            n_ubatch_mem,
+                             1,
+                             filter_mla,
+                             filter_lid,
+@@ -2481,7 +2485,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                             cparams.kv_unified,
+                             cparams.n_ctx_seq,
+                             cparams.n_seq_max,
+-                            cparams.n_ubatch,
++                            n_ubatch_mem,
+                             1,
+                             nullptr,
+                             filter_mtp,
+@@ -2498,7 +2502,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                             cparams.kv_unified,
+                             cparams.n_ctx_seq,
+                             cparams.n_seq_max,
+-                            cparams.n_ubatch,
++                            n_ubatch_mem,
+                             1,
+                             cparams.n_rs_seq,
+                             nullptr,
+@@ -2521,7 +2525,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                             cparams.kv_unified,
+                             cparams.n_ctx_seq,
+                             cparams.n_seq_max,
+-                            cparams.n_ubatch,
++                            n_ubatch_mem,
+                             1,
+                             nullptr,
+                             nullptr,
+@@ -2598,7 +2602,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                             /* attn_v_trans      */ !cparams.flash_attn,
+                             /* attn_swa_full     */ params.swa_full,
+                             /* attn_kv_size      */ cparams.n_ctx_seq,
+-                            /* attn_n_ubatch     */ cparams.n_ubatch,
++                            /* attn_n_ubatch     */ n_ubatch_mem,
+                             /* attn_n_pad        */ 1,
+                             /* recurrent_type_r  */ GGML_TYPE_F32,
+                             /* recurrent_type_s  */ GGML_TYPE_F32,
+@@ -2707,7 +2711,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                                     cparams.kv_unified,
+                                     cparams.n_ctx_seq,
+                                     cparams.n_seq_max,
+-                                    cparams.n_ubatch,
++                                    n_ubatch_mem,
+                                     1,
+                                     mem_other,
+                                     filter,
+@@ -2724,7 +2728,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                                     cparams.kv_unified,
+                                     cparams.n_ctx_seq,
+                                     cparams.n_seq_max,
+-                                    cparams.n_ubatch,
++                                    n_ubatch_mem,
+                                     1,
+                                     nullptr,
+                                     filter,
+-- 
+2.55.0
+

@@ -65,7 +65,7 @@ overlap; 0008-0010 together gave part of a +5.4% decode gain with byte-identical
 - **0018** Can skip a needless wait before copies the GPU already orders correctly (opt-in; 0020 makes it the default). Switch: `see 0020`. Status: STABLE (on via 0020).
 - **0020** Makes 0018 the default: host overhead per layer drops from ~89 to ~63 microseconds. Switch: `ON`. Status: STABLE.
 
-### 3. Fast prompt reading: prefill mode (0011-0030)
+### 3. Fast prompt reading: prefill mode (0011-0031)
 Reading a prompt processes thousands of tokens at once, where the per-token cache no longer helps. With 0014, prefill
 mode took a 9,279-token prompt from 47 to 404 tokens/s; the upload overlap (0024) adds +19-23% with identical results.
 
@@ -79,6 +79,7 @@ mode took a 9,279-token prompt from 47 to 404 tokens/s; the upload overlap (0024
 - **0028** Diagnostic: turns the mode on but skips the planning loop (to bisect its cost). Switch: `env, off`. Status: STABLE.
 - **0029** Fix: the overlap planner tests the operation first and caches the GPU verdict, removing a ~7% cost on every token. Switch: `with 0024`. Status: STABLE.
 - **0030** Fix: plans only graphs big enough for whole-tensor uploads, so a planned buffer no longer blocks the cache from coming back. Switch: `with 0024`. Status: STABLE.
+- **0031** Fix: models with sliding-window attention (e.g. DeepSeek-V4) keep a small KV cache sized for one batch; prefill mode now sizes it for its larger batch instead of crashing on long prompts. Models without it (our Qwen) allocate exactly what they did before. Switch: `with 0011`. Status: TEST.
 
 ### 4. GPU code for a card without tensor cores (0014-0021)
 GTX 16xx cards report the same generation as RTX 20xx cards but lack their tensor cores, so upstream picks kernels that

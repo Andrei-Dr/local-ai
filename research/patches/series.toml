@@ -333,6 +333,18 @@ gate = "✅ promo5b"
 was = "—"
 
 # Guide sections, in this order (research/patches/README.md).
+
+[[patch]]
+file = "0031-fix-size-window-SWA-KV-caches-for-the-prefill-mode-u.patch"
+theme = "prefill"
+title = "size window (SWA) KV caches for the prefill-mode ubatch"
+status = "TEST"
+switch = "with 0011"
+plain = "Fix: models with sliding-window attention (e.g. DeepSeek-V4) keep a small KV cache sized for one batch; prefill mode now sizes it for its larger batch instead of crashing on long prompts. Models without it (our Qwen) allocate exactly what they did before."
+evidence = "dave2 (MI210): DeepSeek-V4 REAP 145B with -ubp 2048 died on the long prompt (find_slot 1348 > 256, GPU fault) before, completes after"
+gate = "exact on Qwen by construction (only window-cache sizes change); crash repro on DSV4"
+was = "—"
+
 [themes.cache]
 heading = "1. A GPU cache for the experts"
 intro = """The core idea. The GPU keeps a least-recently-used cache of expert weights ("slots", ~20-26 per layer). An expert in the
