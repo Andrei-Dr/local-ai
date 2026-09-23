@@ -1,0 +1,82 @@
+From 3561add7f5b63102976307573fd44a954914236e Mon Sep 17 00:00:00 2001
+From: Andrei <66381299+Andrei-Dr@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 07:58:40 +0300
+Subject: [PATCH] =?UTF-8?q?feat:=20LLAMA=5FMOE=5FWARM=5FTAIL=3DH=20?=
+ =?UTF-8?q?=E2=80=94=20recency-weighted=20prompt=20warm-up=20(routing=20we?=
+ =?UTF-8?q?ighted=200.5^(age/H)=20so=20the=20slots=20follow=20the=20prompt?=
+ =?UTF-8?q?'s=20tail)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/llama-moecache.cpp | 31 ++++++++++++++++++++++++++-----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
+
+diff --git a/src/llama-moecache.cpp b/src/llama-moecache.cpp
+index 7005987..16f99a5 100644
+--- a/src/llama-moecache.cpp
++++ b/src/llama-moecache.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include <algorithm>
+ #include <cinttypes>
++#include <cmath>
+ #include <condition_variable>
+ #include <cstdlib>
+ #include <cstring>
+@@ -39,7 +40,7 @@ struct layer_state {
+     uint32_t              tok_clock = 0;
+ 
+     // prompt warm-up: routing counts of the large batches since the last step()
+-    std::vector<uint32_t> warm_cnt; // [n_expert]
++    std::vector<float>    warm_cnt; // [n_expert] (recency-weighted when LLAMA_MOE_WARM_TAIL is set)
+     bool                  warm_seen = false;
+ };
+ 
+@@ -165,10 +166,30 @@ void moe_warm_obs_op(ggml_tensor * dst, const ggml_tensor * a, int ith, int nth,
+     const int32_t * ids = (const int32_t *) a->data;
+     const int64_t   n   = ggml_nelements(a);
+ 
++    // LLAMA_MOE_WARM_TAIL=H: weight each token's routing by 0.5^(age/H), age = tokens until the end of the prompt, so the slots
++    // are ranked by the prompt's tail — the decode that follows routes like the last tokens, not like the whole document. Without
++    // it, one big prefill-mode batch counts every token alike, while ubatch-sized batches keep only the last batch's counts.
++    static const float half_life = [] {
++        const char * env = getenv("LLAMA_MOE_WARM_TAIL");
++        return env != nullptr ? std::max(0.0f, (float) atof(env)) : 0.0f;
++    }();
++    const int64_t n_used   = a->ne[0];
++    const int64_t n_tokens = n_used > 0 ? n / n_used : 0;
++
+     std::lock_guard<std::mutex> lock(mc->mtx);
+-    for (int64_t i = 0; i < n; ++i) {
+-        if (ids[i] >= 0 && ids[i] < (int32_t) ls.warm_cnt.size()) {
+-            ls.warm_cnt[ids[i]]++;
++    if (half_life > 0.0f && n_tokens > 0) {
++        const float carry = std::pow(0.5f, (float) n_tokens / half_life);
++        for (float & c : ls.warm_cnt) {
++            c *= carry;
++        }
++    }
++    for (int64_t t = 0; t < n_tokens; ++t) {
++        const float w = half_life > 0.0f ? std::pow(0.5f, (float) (n_tokens - 1 - t) / half_life) : 1.0f;
++        for (int64_t k = 0; k < n_used; ++k) {
++            const int32_t e = ids[t*n_used + k];
++            if (e >= 0 && e < (int32_t) ls.warm_cnt.size()) {
++                ls.warm_cnt[e] += w;
++            }
+         }
+     }
+     ls.warm_seen = true;
+@@ -217,7 +238,7 @@ static void reset_slots(moe_cache * mc, bool keep_warm) {
+         ls.miss_pos.assign(n_expert, 0);
+         ls.pending.clear();
+         if (!keep_warm) {
+-            ls.warm_cnt.assign(n_expert, 0);
++            ls.warm_cnt.assign(n_expert, 0.0f);
+             ls.warm_seen = false;
+         }
+ 
+-- 
+2.55.0
+
