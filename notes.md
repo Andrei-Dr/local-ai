@@ -1164,3 +1164,12 @@ syncs per graph launch 5.21 / 5.23 -> 4.58 / 4.63; device phase 414 / 420 vs 418
 unchanged (the remaining syncs wait longer), round 975 -> 925 us mean but the CPU expert phase alone swings +-25 us between
 captures — the gain (~1.8%) sits below specbench's noise, which is why tu1 / tu2 read +3.4 / -2.0%. Exact by construction ->
 promotion rule met at the mechanism level: 0020 flips it on (GGML_SCHED_COPY_SYNC=1 = old), promo2 checks identity before race1.
+
+### 2026-09-23 08:11 — dec1: promo1's long-decode -6% does NOT reproduce in-build; short prompts -3..-4.5% under prefill mode
+One build (ov = STABLE code + env-gated warm-tail), 3 interleaved rounds. Decode P (prefill mode) / O (-b 256 path) / T (prefill
+mode + LLAMA_MOE_WARM_TAIL=128): code 54.40 / 56.94 / 56.71, reason 56.00 / 58.16 / 57.13, edit 58.71 / 60.64 / 58.44, long 2.2k
+47.16 / 45.81 / 45.76 (spreads 0.3-4.3). 9,279-token prompt (1 run): prefill 403.5 / 121.9 / 402.6 t/s, decode 46.82 / 49.06 /
+50.20. Reading: prefill mode is not slower on long prompts (+2.9% vs O); short prompts trail O in all 3 by 3-4.5% (inside spreads);
+T recovers code / partly reason and has the best 9.3k decode (1 run). NOT PROVEN -> dec2 (P vs T, 5 rounds + 9.3k x3,
+pre-registered rule in the script). Mechanism noted: in prefill mode the warm-up counts span the whole prompt (step() is skipped
+while the cache is suspended); on the -b 256 path they span the last batch.

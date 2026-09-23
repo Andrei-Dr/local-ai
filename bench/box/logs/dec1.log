@@ -1,0 +1,95 @@
+    preflight: governor=performance thp=[always] mem_avail=14552MiB swap_used=282MiB gpu=17MiB,47,P8
+--- 0. BUILD (apply patches/warm-tail.patch to ov; idempotent) | 08:00:13
+    applied
+--- 1. SPECBENCH (3 rounds P | O | T) | 08:00:16
+##### dec1_P_a | env: none | -b 2048 -ubp 2048
+    preflight: governor=performance thp=[always] mem_avail=14403MiB swap_used=282MiB gpu=17MiB,47,P8
+dec1_P_a       code    293 tok | wall 47.17 t/s | decode 53.71 t/s | prefill   56.0 t/s | accept 179/230=0.78    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_P_a       reason  300 tok | wall 48.70 t/s | decode 55.81 t/s | prefill   75.0 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_P_a       edit    300 tok | wall 38.16 t/s | decode 56.99 t/s | prefill  144.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_P_a       long    300 tok | wall 25.48 t/s | decode 47.83 t/s | prefill  395.5 t/s | accept 172/254=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_P_a]: GPU util avg  78% max 100% | power avg  74W max  85W /100W | PCIe->GPU avg  2.23 max  7.88 GB/s (~13 cap) | CPU busy  505% of 1200% | DRAM read avg   8.9 max  12.3 GB/s (~38 cap)
+    0.36.912.173 I moe-cache: prompt warm-up: 1040 uploads
+    0.38.017.868 I moe-cache: prompt warm-up: 342 uploads
+##### dec1_O_a | env: none | -b 256
+    preflight: governor=performance thp=[always] mem_avail=14560MiB swap_used=283MiB gpu=17MiB,51,P3
+dec1_O_a       code    297 tok | wall 51.07 t/s | decode 58.07 t/s | prefill   60.5 t/s | accept 186/224=0.83    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_O_a       reason  300 tok | wall 51.82 t/s | decode 60.12 t/s | prefill   73.8 t/s | accept 190/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_O_a       edit    300 tok | wall 37.37 t/s | decode 61.62 t/s | prefill  118.8 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_O_a       long    300 tok | wall 12.36 t/s | decode 46.05 t/s | prefill  122.8 t/s | accept 164/269=0.61    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_O_a]: GPU util avg  86% max 100% | power avg  71W max  85W /100W | PCIe->GPU avg  4.44 max 12.75 GB/s (~13 cap) | CPU busy  364% of 1200% | DRAM read avg   8.8 max  12.6 GB/s (~38 cap)
+    0.48.594.135 I moe-cache: prompt warm-up: 438 uploads
+    0.49.750.640 I moe-cache: prompt warm-up: 437 uploads
+##### dec1_T_a | env: LLAMA_MOE_WARM_TAIL=128 | -b 2048 -ubp 2048
+    preflight: governor=performance thp=[always] mem_avail=14573MiB swap_used=284MiB gpu=17MiB,54,P3
+dec1_T_a       code    300 tok | wall 50.55 t/s | decode 58.58 t/s | prefill   54.7 t/s | accept 190/216=0.88    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_T_a       reason  300 tok | wall 49.56 t/s | decode 57.26 t/s | prefill   74.0 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_T_a       edit    300 tok | wall 39.37 t/s | decode 60.66 t/s | prefill  144.6 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_T_a       long    300 tok | wall 24.61 t/s | decode 46.44 t/s | prefill  391.0 t/s | accept 170/257=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_T_a]: GPU util avg  78% max 100% | power avg  75W max  90W /100W | PCIe->GPU avg  2.67 max 12.53 GB/s (~13 cap) | CPU busy  453% of 1200% | DRAM read avg   9.1 max  12.2 GB/s (~38 cap)
+    0.38.364.433 I moe-cache: prompt warm-up: 1040 uploads
+    0.39.469.821 I moe-cache: prompt warm-up: 437 uploads
+##### dec1_P_b | env: none | -b 2048 -ubp 2048
+    preflight: governor=performance thp=[always] mem_avail=14500MiB swap_used=291MiB gpu=17MiB,54,P5
+dec1_P_b       code    276 tok | wall 48.41 t/s | decode 55.52 t/s | prefill   59.0 t/s | accept 173/204=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_P_b       reason  300 tok | wall 48.60 t/s | decode 55.77 t/s | prefill   74.1 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_P_b       edit    300 tok | wall 38.50 t/s | decode 57.83 t/s | prefill  143.9 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_P_b       long    300 tok | wall 24.87 t/s | decode 45.84 t/s | prefill  394.1 t/s | accept 168/262=0.64    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    FOREIGN CPU [dec1_P_b]: avg 67% max 162% of one core, top 'kcompactd0' -- speed numbers in this window are contaminated
+    telemetry[dec1_P_b]: GPU util avg  78% max 100% | power avg  74W max  87W /100W | PCIe->GPU avg  2.35 max  6.98 GB/s (~13 cap) | CPU busy  524% of 1200% | DRAM read avg   9.0 max  11.7 GB/s (~38 cap)
+    0.36.340.795 I moe-cache: prompt warm-up: 1040 uploads
+    0.37.452.932 I moe-cache: prompt warm-up: 342 uploads
+##### dec1_O_b | env: none | -b 256
+    preflight: governor=performance thp=[always] mem_avail=14550MiB swap_used=289MiB gpu=17MiB,55,P3
+dec1_O_b       code    287 tok | wall 47.25 t/s | decode 54.47 t/s | prefill   55.2 t/s | accept 178/220=0.81    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_O_b       reason  300 tok | wall 48.52 t/s | decode 55.98 t/s | prefill   73.8 t/s | accept 187/224=0.83    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_O_b       edit    300 tok | wall 35.97 t/s | decode 58.89 t/s | prefill  118.4 t/s | accept 198/201=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_O_b       long    300 tok | wall 12.20 t/s | decode 45.52 t/s | prefill  122.2 t/s | accept 167/262=0.64    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_O_b]: GPU util avg  84% max 100% | power avg  71W max  87W /100W | PCIe->GPU avg  3.87 max  7.43 GB/s (~13 cap) | CPU busy  360% of 1200% | DRAM read avg   8.4 max  12.0 GB/s (~38 cap)
+    0.51.647.201 I moe-cache: prompt warm-up: 438 uploads
+    0.52.807.098 I moe-cache: prompt warm-up: 437 uploads
+##### dec1_T_b | env: LLAMA_MOE_WARM_TAIL=128 | -b 2048 -ubp 2048
+    preflight: governor=performance thp=[always] mem_avail=14561MiB swap_used=290MiB gpu=17MiB,56,P5
+dec1_T_b       code    275 tok | wall 48.23 t/s | decode 56.33 t/s | prefill   54.5 t/s | accept 171/206=0.83    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_T_b       reason  300 tok | wall 48.29 t/s | decode 56.98 t/s | prefill   72.4 t/s | accept 190/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_T_b       edit    300 tok | wall 37.59 t/s | decode 56.99 t/s | prefill  142.4 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_T_b       long    300 tok | wall 24.07 t/s | decode 44.43 t/s | prefill  392.8 t/s | accept 170/257=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_T_b]: GPU util avg  76% max 100% | power avg  72W max  87W /100W | PCIe->GPU avg  2.22 max  8.63 GB/s (~13 cap) | CPU busy  480% of 1200% | DRAM read avg   8.8 max  11.8 GB/s (~38 cap)
+    0.38.728.595 I moe-cache: prompt warm-up: 1040 uploads
+    0.39.838.535 I moe-cache: prompt warm-up: 437 uploads
+##### dec1_P_c | env: none | -b 2048 -ubp 2048
+    preflight: governor=performance thp=[always] mem_avail=14501MiB swap_used=290MiB gpu=17MiB,55,P5
+dec1_P_c       code    293 tok | wall 47.86 t/s | decode 53.97 t/s | prefill   61.2 t/s | accept 180/228=0.79    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_P_c       reason  300 tok | wall 49.06 t/s | decode 56.42 t/s | prefill   73.8 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_P_c       edit    300 tok | wall 39.95 t/s | decode 61.30 t/s | prefill  143.4 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_P_c       long    300 tok | wall 25.41 t/s | decode 47.80 t/s | prefill  393.4 t/s | accept 170/257=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_P_c]: GPU util avg  79% max 100% | power avg  75W max  87W /100W | PCIe->GPU avg  2.11 max 12.91 GB/s (~13 cap) | CPU busy  487% of 1200% | DRAM read avg   9.2 max  12.5 GB/s (~38 cap)
+    0.36.411.433 I moe-cache: prompt warm-up: 1040 uploads
+    0.37.526.567 I moe-cache: prompt warm-up: 342 uploads
+##### dec1_O_c | env: none | -b 256
+    preflight: governor=performance thp=[always] mem_avail=14572MiB swap_used=288MiB gpu=17MiB,56,P3
+dec1_O_c       code    273 tok | wall 50.23 t/s | decode 58.29 t/s | prefill   56.5 t/s | accept 171/202=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_O_c       reason  300 tok | wall 50.55 t/s | decode 58.38 t/s | prefill   74.0 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To determine when the second train catches the f'
+dec1_O_c       edit    300 tok | wall 37.26 t/s | decode 61.40 t/s | prefill  118.6 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_O_c       long    300 tok | wall 12.32 t/s | decode 45.87 t/s | prefill  122.4 t/s | accept 166/265=0.63    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_O_c]: GPU util avg  85% max 100% | power avg  70W max  87W /100W | PCIe->GPU avg  3.93 max  7.52 GB/s (~13 cap) | CPU busy  365% of 1200% | DRAM read avg   8.6 max  12.3 GB/s (~38 cap)
+    0.48.239.930 I moe-cache: prompt warm-up: 438 uploads
+    0.49.390.333 I moe-cache: prompt warm-up: 437 uploads
+##### dec1_T_c | env: LLAMA_MOE_WARM_TAIL=128 | -b 2048 -ubp 2048
+    preflight: governor=performance thp=[always] mem_avail=14594MiB swap_used=290MiB gpu=17MiB,56,P3
+dec1_T_c       code    275 tok | wall 47.40 t/s | decode 55.21 t/s | prefill   54.0 t/s | accept 171/206=0.83    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+dec1_T_c       reason  300 tok | wall 49.48 t/s | decode 57.14 t/s | prefill   74.1 t/s | accept 189/220=0.86    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+dec1_T_c       edit    300 tok | wall 38.00 t/s | decode 57.66 t/s | prefill  143.8 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+dec1_T_c       long    300 tok | wall 24.65 t/s | decode 46.40 t/s | prefill  393.3 t/s | accept 170/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[dec1_T_c]: GPU util avg  79% max 100% | power avg  73W max  86W /100W | PCIe->GPU avg  2.76 max  8.14 GB/s (~13 cap) | CPU busy  469% of 1200% | DRAM read avg   9.1 max  12.1 GB/s (~38 cap)
+    0.38.636.645 I moe-cache: prompt warm-up: 1040 uploads
+    0.39.745.485 I moe-cache: prompt warm-up: 437 uploads
+  code   decode P  54.40 (1.81) | O  56.94 (3.82) | T  56.71 (3.37) || P vs O  -4.5% | T vs O  -0.4% | T vs P  +4.2%
+  reason decode P  56.00 (0.65) | O  58.16 (4.14) | T  57.13 (0.28) || P vs O  -3.7% | T vs O  -1.8% | T vs P  +2.0%
+  edit   decode P  58.71 (4.31) | O  60.64 (2.73) | T  58.44 (3.67) || P vs O  -3.2% | T vs O  -3.6% | T vs P  -0.5%
+  long   decode P  47.16 (1.99) | O  45.81 (0.53) | T  45.76 (2.01) || P vs O  +2.9% | T vs O  -0.1% | T vs P  -3.0%
+--- 2. 9,279-TOKEN PROMPT (-c 12288, cache 22) | 08:08:20
+    [P] dec1_pf_P: prompt 9279 tok @ 403.5 t/s | decode 128 tok @ 46.82 t/s | wall 25.8 s
+    [O] dec1_pf_O: prompt 9279 tok @ 121.9 t/s | decode 128 tok @ 49.06 t/s | wall 78.8 s
+    [T] dec1_pf_T: prompt 9279 tok @ 402.6 t/s | decode 128 tok @ 50.20 t/s | wall 25.6 s
+DEC1_DONE
