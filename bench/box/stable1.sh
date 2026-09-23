@@ -15,7 +15,7 @@ echo "##### stable1_pf | $(date +%T)"
 sync; echo 1 > /proc/sys/vm/compact_memory; sleep 2
 stable_server 12288 stable1_pf
 for i in $(seq 1 150); do curl -sf localhost:8099/health >/dev/null 2>&1 && break; kill -0 $STABLE_PID 2>/dev/null || break; sleep 2; done
-ARGV=$(tr '\0' ' ' < /proc/$(pgrep -f 'llama-server.*--port 8099' | head -1)/cmdline 2>/dev/null)
+ARGV=$(tr '\0' ' ' < /proc/$STABLE_PID/cmdline 2>/dev/null)  # the subshell exec'd llama-server: same pid
 echo -n "    "; python3 longpf.py stable1_pf 40000 2>&1 | tail -1 | tr -d '\n'; echo " | $(grep -hoE 'could not re-allocate|out of memory' server_stable1_pf.log | head -1)"
 kill $STABLE_PID; wait $STABLE_PID 2>/dev/null
 A4=$(stable_args 4096); A12=$(stable_args 12288)

@@ -25,7 +25,8 @@ def server_process(port="8099"):
             argv = open(f"/proc/{pid}/cmdline", "rb").read().decode(errors="replace").split("\0")[:-1]
             if not argv or not argv[0].endswith("llama-server") or "--port" not in argv or argv[argv.index("--port") + 1] != port:
                 continue
-            env = [e for e in open(f"/proc/{pid}/environ", "rb").read().decode(errors="replace").split("\0") if e.startswith(("GGML_", "LLAMA_"))]
+            env = [e for e in open(f"/proc/{pid}/environ", "rb").read().decode(errors="replace").split("\0")
+                   if e.startswith(("GGML_", "LLAMA_", "LEDGER_STABLE="))]
             return os.path.realpath(f"/proc/{pid}/exe"), argv, env
         except (OSError, IndexError):
             continue
@@ -44,8 +45,12 @@ if OUT == "/ai/bench/runs":
         if "-m" in args:
             del args[args.index("-m"):args.index("-m") + 2]
         offload = next((e.split("=", 1)[1] for e in env if e.startswith("GGML_OP_OFFLOAD_MIN_BATCH=")), "32")
-        lenv = dict(os.environ, MODEL=model, BUILD=os.path.dirname(os.path.dirname(exe)), OFFLOAD=offload,
-                    LEDGER_ARGS=" ".join(args), LEDGER_ENV=" ".join(sorted(e for e in env if not e.startswith("GGML_OP_OFFLOAD_MIN_BATCH="))))
+        stable = next((e.split("=", 1)[1] for e in env if e.startswith("LEDGER_STABLE=")), None)  # set by stable.sh's stable_server
+        lenv = {k: v for k, v in os.environ.items() if k != "LEDGER_STABLE"}
+        lenv.update(MODEL=model, BUILD=os.path.dirname(os.path.dirname(exe)), OFFLOAD=offload, LEDGER_ARGS=" ".join(args),
+                    LEDGER_ENV=" ".join(sorted(e for e in env if not e.startswith(("GGML_OP_OFFLOAD_MIN_BATCH=", "LEDGER_STABLE=")))))
+        if stable:
+            lenv["LEDGER_STABLE"] = stable
         import subprocess
         r = subprocess.run(["python3", "/ai/bench/ledger.py", label, "--longpf"], env=lenv, capture_output=True, text=True)
         if r.returncode != 0:

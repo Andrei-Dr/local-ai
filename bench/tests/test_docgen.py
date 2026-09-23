@@ -83,9 +83,6 @@ class SeriesCase(unittest.TestCase):
         self.assertTrue(any("theme" in e for e in errs), errs)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 QUEUE = ("old\tdone\t1\t2026-09-19 23:35:29\t2026-09-19 23:40:51\t0\tbash /ai/bench/old.sh > old.log 2>&1\n"
          "fin\tfailed\t1\t2026-09-23 18:07:01\t2026-09-23 18:23:06\t1\tbash /ai/bench/fin.sh > fin.log 2>&1\n"
@@ -129,3 +126,26 @@ class HeadlineCase(unittest.TestCase):
                 {"name": "STABLE", "code": 64.3, "reason": 65.4, "edit": 70.4, "pf93": 510.7, "dec93": 55.0}]
         self.assertEqual(docgen.headline(rows), "prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing "
                                                 "55-70 tokens/s (64-70 on short prompts, 55 after a 9.3k-token prompt)")
+
+
+
+class ReviewFixCase(unittest.TestCase):
+    def test_headline_without_measurements_does_not_crash(self):
+        self.assertIn("no complete measurements", docgen.headline([{"name": "A", "pf93": None}, {"name": "B", "pf93": None}]))
+
+    def test_serve_env_tokens_must_be_key_value(self):
+        self.assertEqual(docgen.check_env({"SERVE_ENV": "A=1 B_2=x"}), [])
+        self.assertTrue(docgen.check_env({"SERVE_ENV": "A=1 oops"}))
+
+    def test_embedded_quote_rejected_like_the_box_parser(self):
+        with self.assertRaises(docgen.DocgenError):
+            docgen.parse_env('A="x"y"\n')
+
+    def test_other_contexts_listed_exactly(self):
+        env = docgen.parse_env(ENV + 'SERVE_CTX_14096="--x"\n')
+        self.assertIn("At `-c 14096`", docgen.serving_block(env))
+        self.assertIn("At `-c 12288`", docgen.serving_block(env))
+
+
+if __name__ == "__main__":
+    unittest.main()

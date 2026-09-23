@@ -10,7 +10,7 @@
 STABLE_ENV_FILE=${STABLE_ENV_FILE:-/ai/bench/stable.env}
 STABLE_MODELS=${STABLE_MODELS:-/ai/models}
 [ -r "$STABLE_ENV_FILE" ] || { echo "stable.sh: $STABLE_ENV_FILE missing (deploy stable/stable.env)" >&2; return 1; }
-eval "$(sed -n 's/^\([A-Z0-9_]*\)=\(".*"\)$/STABLE_\1=\2/p' "$STABLE_ENV_FILE")"
+eval "$(sed -n 's/^\([A-Z0-9_]*\)=\("[^"]*"\)$/STABLE_\1=\2/p' "$STABLE_ENV_FILE")"  # same grammar as docgen.parse_env
 STABLE_BUILD=$STABLE_STABLE_BOX_BUILD
 STABLE_MODEL_PATH=$STABLE_MODELS/$STABLE_MODEL
 STABLE_HEAD_PATH=$STABLE_MODELS/$STABLE_MTP_HEAD
@@ -32,14 +32,13 @@ stable_args() {
 
 # stable_server CTX LABEL [arm flags...]: start STABLE llama-server on :8099 in the background (log server_LABEL.log in
 # STABLE_LOGDIR, pid in STABLE_PID); MODEL / BUILD in the caller's environment override the STABLE files. The caller waits for
-# /health as usual. Exports LEDGER_STABLE so the ledger records which STABLE the arm was built on.
+# /health as usual. The server process (only) carries LEDGER_STABLE; longpf.py reads it from there into the ledger.
 stable_server() {
     local ctx=$1 label=$2 args
     shift 2
     args=$(stable_args "$ctx") || return 1
-    export LEDGER_STABLE=$STABLE_STABLE_SINCE
     # shellcheck disable=SC2086  # args is a flag list
-    ( stable_export_env; exec env -u LD_LIBRARY_PATH "${BUILD:-$STABLE_BUILD}/bin/llama-server" -m "${MODEL:-$STABLE_MODEL_PATH}" \
+    ( stable_export_env; export LEDGER_STABLE=$STABLE_STABLE_SINCE; exec env -u LD_LIBRARY_PATH "${BUILD:-$STABLE_BUILD}/bin/llama-server" -m "${MODEL:-$STABLE_MODEL_PATH}" \
         -c "$ctx" --load-mode none --jinja --parallel 1 --port 8099 --cache-ram 0 $args "$@" ) \
         > "${STABLE_LOGDIR:-/ai/bench}/server_$label.log" 2>&1 &
     STABLE_PID=$!

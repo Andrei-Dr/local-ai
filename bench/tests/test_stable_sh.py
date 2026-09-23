@@ -56,3 +56,28 @@ class StableServerCase(unittest.TestCase):
         self.assertIn("-m /m/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf -c 4096", args)
         self.assertTrue(args.endswith("--moe-expert-cache 21 -b 2048 --moe-expert-cache 20"), args)
         self.assertEqual(out.splitlines()[1], "ENV 0 2026-09-24")
+
+
+class ReviewFixShCase(unittest.TestCase):
+    def test_stable_server_does_not_leak_ledger_stable_into_the_job_shell(self):
+        import tempfile
+        d = Path(tempfile.mkdtemp())
+        (d / "bin").mkdir()
+        (d / "bin" / "llama-server").write_text('#!/bin/sh\necho "SERVER $LEDGER_STABLE"\n')
+        (d / "bin" / "llama-server").chmod(0o755)
+        rc, out, err = sh(f'stable_server 4096 t2 && wait $STABLE_PID && cat {d}/server_t2.log && echo "SHELL [$LEDGER_STABLE]"',
+                          BUILD=str(d), STABLE_LOGDIR=str(d))
+        self.assertEqual(out.splitlines(), ["SERVER 2026-09-24", "SHELL []"], err)
+
+    def test_serve_sh_keeps_a_model_override(self):
+        import tempfile
+        d = Path(tempfile.mkdtemp())
+        (d / "bin").mkdir()
+        (d / "models").mkdir()
+        (d / "bin" / "llama-server").write_text('#!/bin/sh\necho "$*"\n')
+        (d / "bin" / "llama-server").chmod(0o755)
+        for f in ("other.gguf", "mtp-Qwen3.6-35B-A3B-Q4_0.gguf"):
+            (d / "models" / f).write_text("x")
+        r = subprocess.run([str(ROOT / "stable" / "serve.sh")], capture_output=True, text=True,
+                           env={"PATH": "/usr/bin:/bin", "LLAMA_BIN": str(d / "bin"), "MODELS": str(d / "models"), "MODEL": "other.gguf"})
+        self.assertIn(f"-m {d}/models/other.gguf", r.stdout, r.stderr)

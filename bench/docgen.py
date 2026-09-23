@@ -12,7 +12,10 @@ usage: docgen.py            write the blocks (run by bench/ledger2md.py and the 
 """
 import re
 import sys
-import tomllib
+
+if sys.version_info < (3, 11):
+    sys.exit(f"docgen.py needs Python 3.11+ (tomllib); this is {sys.version.split()[0]}: set DOCGEN_PY")
+import tomllib  # noqa: E402
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -68,6 +71,12 @@ def check_series(patch_dir, entries, themes):
     return errs
 
 
+def check_env(env):
+    """SERVE_ENV is word-split by stable.sh / serve.sh: every token must be KEY=VALUE with no spaces inside a value."""
+    return [f"stable.env SERVE_ENV token '{t}' is not KEY=VALUE" for t in env.get("SERVE_ENV", "").split()
+            if not re.fullmatch(r"[A-Z0-9_]+=\S+", t)]
+
+
 def check_served_steps(env, steps):
     """The served arc's last step must be the current STABLE (build, model): a promotion has to append its step."""
     last = steps[-1]
@@ -101,7 +110,7 @@ def patch_guide(entries, themes):
 
 def serving_block(env):
     ctx = env["SERVE_CTX_DEFAULT"]
-    other = [k[len("SERVE_CTX_"):] for k in env if k.startswith("SERVE_CTX_") and k != "SERVE_CTX_DEFAULT" and not k.endswith(ctx)]
+    other = [k[len("SERVE_CTX_"):] for k in env if k.startswith("SERVE_CTX_") and k != "SERVE_CTX_DEFAULT" and k != "SERVE_CTX_" + ctx]
     o = [f"STABLE since {env['STABLE_SINCE']}: llama.cpp `{env['LLAMA_CPP_BASE']}` + patches {env['LLAMA_CPP_SERIES']}, model "
          f"`{env['MODEL']}`, draft head `{env['MTP_HEAD']}` with vocabulary `{env['MTP_VOCAB']}`. Source: `stable/stable.env`.",
          "", "```", f"LLAMA_MTP_VOCAB_FILE={env['MTP_VOCAB']} {serving_command(env, ctx).split(' (+ ')[0]}", "```"]
@@ -186,6 +195,8 @@ def headline(rows):
     a, z = rows[0], rows[-1]
     short = [z[k] for k in ("code", "reason", "edit") if z.get(k)]
     writes = short + ([z["dec93"]] if z.get("dec93") else [])
+    if not short or not z.get("dec93") or not z.get("pf93") or not a.get("pf93"):
+        return f"(no complete measurements yet for {z['name']} / {a['name']}: run specbench + longpf on both, then bench/closeout.py)"
     return (f"prompt reading ~{z['pf93']:.0f} tokens/s at 9.3k tokens ({a['name']} {a['pf93']:.0f}, {z['pf93'] / a['pf93']:.1f}x); "
             f"writing {min(writes):.0f}-{max(writes):.0f} tokens/s ({min(short):.0f}-{max(short):.0f} on short prompts, "
             f"{z['dec93']:.0f} after a 9.3k-token prompt)")
@@ -254,6 +265,7 @@ def render():
     sys.path.insert(0, str(ROOT / "bench"))
     import ledger2md
     errs += check_served_steps(env, ledger2md.SERVED_STEPS)
+    errs += check_env(env)
     serving = serving_block(env)
     arc_md, rows = arc()
     head = headline(rows)

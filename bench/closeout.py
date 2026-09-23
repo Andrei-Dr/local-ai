@@ -51,7 +51,8 @@ def sync(jobs):
     rsync(f"{BENCH}/queue.tsv", MIRROR / "queue.tsv")
     rsync(f"{BENCH}/qual/results/", ROOT / "bench" / "qual" / "results")
     for j in jobs:
-        subprocess.run(["rsync", "-a", f"{BOX}:{BENCH}/{j}.log", str(MIRROR / "logs" / f"{j}.log")])
+        if subprocess.run(["rsync", "-a", f"{BOX}:{BENCH}/{j}.log", str(MIRROR / "logs" / f"{j}.log")]).returncode:
+            print(f"  WARNING: no log synced for {j} ({BENCH}/{j}.log)")
 
 
 def script_drift():
@@ -100,13 +101,19 @@ def stable_drift(env):
         got = json.loads(r.stdout.strip().splitlines()[-1])
     except (IndexError, json.JSONDecodeError):
         return [f"could not read the box's STABLE state: {r.stderr.strip()[-300:]}"]
+    return compare_stable(env, got)
+
+
+def compare_stable(env, got):
     errs = []
     if got["tree"] != env["LLAMA_CPP_STABLE_TREE"]:
         errs.append(f"box STABLE source tree {got['tree']} != stable.env {env['LLAMA_CPP_STABLE_TREE']}")
     if got["dirty"]:
         errs.append("box STABLE source tree has uncommitted changes")
     for k in ("MODEL", "MTP_HEAD", "MTP_VOCAB"):
-        if got[k] != env[k + "_SHA256"]:
+        if got[k] == "missing":
+            errs.append(f"box /ai/models/{env[k]} not found")
+        elif got[k] != env[k + "_SHA256"]:
             errs.append(f"box {env[k]}: sha256 {got[k][:16]}... != stable.env {env[k + '_SHA256'][:16]}...")
     return errs
 

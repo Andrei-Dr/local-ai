@@ -34,3 +34,15 @@ class NotesCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StableCompareCase(unittest.TestCase):
+    ENV = {"LLAMA_CPP_STABLE_TREE": "t", "MODEL": "m.gguf", "MODEL_SHA256": "a", "MTP_HEAD": "h.gguf", "MTP_HEAD_SHA256": "b",
+           "MTP_VOCAB": "v.bin", "MTP_VOCAB_SHA256": "c"}
+
+    def test_match_and_each_failure(self):
+        self.assertEqual(closeout.compare_stable(self.ENV, {"tree": "t", "dirty": False, "MODEL": "a", "MTP_HEAD": "b", "MTP_VOCAB": "c"}), [])
+        errs = closeout.compare_stable(self.ENV, {"tree": "x", "dirty": True, "MODEL": "missing", "MTP_HEAD": "z", "MTP_VOCAB": "c"})
+        self.assertEqual(len(errs), 4, errs)
+        self.assertTrue(any("m.gguf not found" in e for e in errs), errs)
+        self.assertTrue(any("h.gguf: sha256" in e for e in errs), errs)
