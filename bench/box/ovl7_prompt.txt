@@ -1,0 +1,3 @@
+<|im_start|>user
+Write a Python class implementing an LRU cache with get and put in O(1), with type hints and a short docstring for each method.<|im_end|>
+<|im_start|>assistant
