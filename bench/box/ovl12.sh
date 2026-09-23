@@ -17,8 +17,9 @@ M=/ai/models; N=Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive
 K2=$M/$N-K2-expQ2K-downQ3K.gguf; HEAD=$M/mtp-Qwen3.6-35B-A3B-Q4_0.gguf
 [ -z "$(git -C $T2 status --porcelain --untracked-files=no)" ] || { echo "OVL12_REFUSED: $T2 has local changes"; exit 1; }
 [ -s pfkld_q6.kld ] || { echo "OVL12_REFUSED: no pfkld_q6.kld (pfkld must run first)"; exit 1; }
-if [ "$(git -C $T2 rev-parse --short=7 HEAD)" != "$SHA" ]; then git -C $T2 checkout -q combo 2>/dev/null || git -C $T2 checkout -q -b combo origin/combo 2>/dev/null || git -C $T2 checkout -q $SHA; fi
-[ "$(git -C $T2 rev-parse --short=7 HEAD)" = "$SHA" ] || { echo "OVL12_REFUSED: $T2 not at $SHA ($(git -C $T2 rev-parse --short HEAD))"; exit 1; }
+# t2 -> the combo branch tip (the box repo's combo = what was pushed last); it must contain $SHA (overlap + fusion log)
+[ "$(git -C $T2 rev-parse --abbrev-ref HEAD)" = "combo" ] || git -C $T2 checkout -q combo || { echo "OVL12_REFUSED: cannot check out combo"; exit 1; }
+git -C $T2 merge-base --is-ancestor $SHA HEAD || { echo "OVL12_REFUSED: $T2 ($(git -C $T2 rev-parse --short HEAD)) does not contain $SHA"; exit 1; }
 cmake --build $NEW -j6 --target llama-server llama-perplexity > ovl12_build.log 2>&1 || { grep error ovl12_build.log | head; echo "OVL12_FAILED: build"; exit 1; }
 strings $NEW/bin/libggml-cuda.so* | grep -q GGML_CUDA_FUSION_LOG || { echo "OVL12_FAILED: build lacks the fusion log"; exit 1; }
 echo "    built $(git -C $T2 rev-parse --short HEAD) | $(date +%T)"
