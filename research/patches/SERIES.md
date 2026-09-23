@@ -1,4 +1,4 @@
-# llama.cpp patch series — the single source of truth (updated 2026-09-23 07:58)
+# llama.cpp patch series — the single source of truth (updated 2026-09-23 12:00)
 
 One linear chain on mainline, regenerated with `git format-patch 0af8ea3^..tu116-served` from the local clone
 `~/dev/llama.cpp-mainline` (branches: moe-cache -> moe-cache-det -> prefill-mux -> tu116-kernels). Apply in order; each patch
@@ -30,12 +30,13 @@ Status: **STABLE** = in the stable build (/ai/src/llama.cpp-v2, promo1 07:47) ·
 | 0018 | tu116/0014 | can skip the host sync before stream-ordered split input copies | STABLE (on via 0020) | see 0020 | exact (IDENTICAL x4); tu1 +3.4% (contaminated), tu2 -2.0% +- noise | superseded by 0020 |
 | 0020 | — | 0018 default-on (`GGML_SCHED_COPY_SYNC=1` restores the wait) | STABLE | ON | prof18 nsys: host overhead per MoE layer 89.5 / 79.4 -> 62.7 / 71.0 us, syncs per launch 5.2 -> 4.6, device phase unchanged (~1.8% of a round, under specbench noise) | ✅ promo2 IDENTICAL x4 |
 | 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | STABLE | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | ✅ pmux5 PASS (FA tile KLD 0.199801) + ✅ tu2 (prefill 446.9 t/s, decode -0.4% = same) |
+| 0021 | — | FA MMA kernel only below a KV length (tile above) | STABLE | `GGML_CUDA_FA_MMA_MAX_KV=4096` for serving (unset = off) | att1: tile 1.9x per launch at 9.3k KV; fakv1: 9.3k decode +6.2 / +6.8 / +7.4% (MAX_KV 2048 / 4096 / 8192, spread 0.29), specbench within spread | ✅ promo3: IDENTICAL x4 with the env unset; 9.3k decode +6.0%; tile kernel KLD non-inferior (pmux5) |
 
 ## Promotion DONE 07:47 — promo1 (bench/box/promo1.sh), branch tu116-served 1c54372
 Result: unit 929 / 1297 / 3979 pass; IDENTICAL x4 vs the ov build; specbench old served config -> STABLE serving config:
 decode code +0.9 / reason +0.2 / edit -0.8 / long -6.1% (open item, see notes), prefill 1.55x / 1.91x / 2.99x / 8.13x;
 9,279-token prompt 47.3 -> 403.2 t/s (8.5x), wall 198.8 -> 25.6 s, decode after it 47.3 -> 49.8.
-**STABLE serving command:** `GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_OP_OFFLOAD_MIN_BATCH=32 /ai/src/llama.cpp-v2/build75/bin/llama-server -m <K2> -ngl 999 -fa on -t 6 -ot exps=CPU --moe-expert-cache 26 -md <mtp head> --spec-type draft-mtp --spec-draft-n-max 2 -ub 128 -b 2048 -ubp 2048` (-c 4096; at -c 12288 use cache 22).
+**STABLE serving command (from promo3, 11:57, commit 1be3f5f):** `GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 GGML_OP_OFFLOAD_MIN_BATCH=32 /ai/src/llama.cpp-v2/build75/bin/llama-server -m <K2> -ngl 999 -fa on -t 6 -ot exps=CPU --moe-expert-cache 26 -md <mtp head> --spec-type draft-mtp --spec-draft-n-max 2 -ub 128 -b 2048 -ubp 2048` (-c 4096; at -c 12288 use cache 22).
 Original plan:
 1. Clean full build at tu116-kernels in a NEW build dir (build75 stays for the queued accuracy jobs: race1 is pinned to it; hq1 / lq1 / opt2 use it) with `-DGGML_CUDA_MMQ_NO_MMA=ON` (drop the ov tree's local define).
 2. Identity smoke (LLAMA_MOE_CACHE_SYNC=1) vs the ov build, one specbench round.

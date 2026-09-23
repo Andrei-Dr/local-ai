@@ -1329,3 +1329,14 @@ prefill code 59.0 -> 49.9 / 50.3, edit 143.9 -> 119.8 / 119.3, long 393.2 -> 356
 with the plan (52.7 -> 54.2% at 256 steps); main CUDA0 compute buffer 129 -> 290 MiB (reserve at bs=128). -> ovl15: CUDA-API
 host timeline (hand1_phases.py, graphs on) off vs plan. fr1b was void (draft server asserted: the FR-Spec head init ran during the
 memory-fit dry run over unallocated weights; fixed in combo 854cbce -> fr1c).
+
+### 2026-09-23 11:57 — promo3: lead D PROMOTED — STABLE = 1be3f5f (8dca9af + GGML_CUDA_FA_MMA_MAX_KV), serve with =4096
+v2 worktree ff'd to 1be3f5f, rebuilt. Identity with the env unset vs the pre-promotion binary: IDENTICAL x4. 9,279-token prompt
+decode: unset 49.69 / 49.69 -> MAX_KV 4096 53.71 / 51.67 (+6.0%). Specbench: -4.5 / -1.7 / +0.2 / +1.6% — noise (those prompts
+never reach 4096 KV, same kernels). Series: 0021; STABLE serving env gains GGML_CUDA_FA_MMA_MAX_KV=4096.
+
+### 2026-09-23 11:57 — ovl15: the plan slows EVERY layer ~5% in both phases; not VRAM pressure, not allocations
+hand1_phases (graphs on, code prompt + 300 decode): period 914.6 -> 962.8 us/layer; CPU experts 441.6 -> 460.1, device 408.8 ->
+431.1; malloc/free/cuMem and sync counts identical; cache 22 (frees ~180 MiB): plan still -6.1%. Short-prompt prefill 54.8 ->
+46.6. Root cause open. ovl16: gate the plan to batches >= 256 tokens (MIN_IDS=2048) — the reserve graph, short prompts and decode
+stay unplanned; pass = decode within spread AND 9.3k prefill still up.
