@@ -1113,3 +1113,11 @@ prefill (pmux3 MMA build: 167.1) and 43.0 t/s decode after it. Window 29.4 s: ke
 mmvq 1.3 s (the 128 decode tokens), elementwise 1.0 s. MMQ now runs ~5.6 TOPS (~30% of dp4a peak); FA at ~1 TFLOPS on the MMA
 kernel = the same tensor-core-on-TU116 defect as MMQ had -> tu1's GGML_CUDA_FA_NO_MMA arm is the next lever, then upload overlap
 (3.2 s serialized = ~11% of the window, now worth building).
+
+### 2026-09-23 06:01 — mmqdp1: dp4a MMQ is a free 7.7x on long-prompt prefill; pmux4 floor is exactly 0
+Unit: test-backend-ops MUL_MAT_ID 929/929, MUL_MAT 1297/1297 (CUDA vs CPU). Long prompt (9,279 tok, cache 22, MTP): ubp 2048
+324.6 t/s (MMA 152.3), ubp 4096 349.6 (MMA 167.1). Decode (specbench, served vs dp4a build + prefill mode ubp 2048, two
+interleaved rounds): code -1.0% (spread 1.68), reason +0.9% (1.16), edit -0.7% (0.31), long +1.4% (0.95) = unchanged; prefill on
+the served config -> dp4a+prefill mode: long 48.5 -> 372.4 t/s (7.7x), edit 48.2 -> 141.8, reason 38.6 -> 73.5, code 34.8 -> 55.6;
+long-prompt wall t/s 5.8 -> 23.8 (4.1x). pmux4 floor row (ub 128 vs ub 128): KLD 0.000000, same top 100% — the run is
+deterministic, so ub 2048's 0.0055 / 96.9% is a real ubatch effect; pmux5 judges it against the Q6 truth.

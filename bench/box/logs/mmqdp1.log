@@ -1,0 +1,41 @@
+    preflight: governor=performance thp=[always] mem_avail=14579MiB swap_used=245MiB gpu=17MiB,46,P8
+--- 0. UNIT (test-backend-ops, CUDA0 vs CPU)
+    MUL_MAT_ID:   929/929 tests passed rc=0 0 FAIL lines
+    MUL_MAT:   1297/1297 tests passed rc=0 0 FAIL lines
+--- 1. LONG-PROMPT PREFILL (9,279 tok; -c 12288, cache 22, MTP head) — MMA reference from pmux3: ubp2048 152.3, ubp4096 167.1 t/s
+    mmqdp1_ubp2048: prompt 9279 tok @ 324.6 t/s | decode 128 tok @ 48.65 t/s | wall 31.3 s
+    mmqdp1_ubp4096: prompt 9279 tok @ 349.6 t/s | decode 128 tok @ 48.78 t/s | wall 29.2 s
+--- 2. DECODE (specbench, served build vs dp4a build; prompts <= 377 tok so prefill mode barely engages)
+##### mmqdp1_base_a | served
+    preflight: governor=performance thp=[always] mem_avail=14548MiB swap_used=250MiB gpu=17MiB,53,P0
+mmqdp1_base_a  code    300 tok | wall 47.58 t/s | decode 58.88 t/s | prefill   34.9 t/s | accept 190/218=0.87    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+mmqdp1_base_a  reason  300 tok | wall 44.72 t/s | decode 58.01 t/s | prefill   38.7 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+mmqdp1_base_a  edit    300 tok | wall 23.54 t/s | decode 60.63 t/s | prefill   48.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+mmqdp1_base_a  long    300 tok | wall  5.87 t/s | decode 47.78 t/s | prefill   48.6 t/s | accept 171/256=0.67    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[mmqdp1_base_a]: GPU util avg  92% max 100% | power avg  54W max  87W /100W | PCIe->GPU avg  2.33 max  5.47 GB/s (~13 cap) | CPU busy  267% of 1200% | DRAM read avg   5.1 max  12.6 GB/s (~38 cap)
+##### mmqdp1_dp4a_a | ov
+    preflight: governor=performance thp=[always] mem_avail=14544MiB swap_used=250MiB gpu=17MiB,54,P0
+mmqdp1_dp4a_a  code    300 tok | wall 52.13 t/s | decode 59.85 t/s | prefill   57.2 t/s | accept 189/218=0.87    | vram 3434 MiB | '```python\nfrom typing import Optional\n\n\nclass LR'
+mmqdp1_dp4a_a  reason  300 tok | wall 50.76 t/s | decode 58.63 t/s | prefill   74.3 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To determine when the second train catches the f'
+mmqdp1_dp4a_a  edit    300 tok | wall 39.45 t/s | decode 60.57 t/s | prefill  141.5 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+mmqdp1_dp4a_a  long    300 tok | wall 24.89 t/s | decode 48.31 t/s | prefill  372.4 t/s | accept 172/252=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[mmqdp1_dp4a_a]: GPU util avg  79% max 100% | power avg  77W max  90W /100W | PCIe->GPU avg  2.77 max  7.33 GB/s (~13 cap) | CPU busy  472% of 1200% | DRAM read avg   9.1 max  12.5 GB/s (~38 cap)
+##### mmqdp1_base_b | served
+    preflight: governor=performance thp=[always] mem_avail=14523MiB swap_used=251MiB gpu=17MiB,56,P0
+mmqdp1_base_b  code    300 tok | wall 46.14 t/s | decode 57.20 t/s | prefill   34.6 t/s | accept 188/220=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+mmqdp1_base_b  reason  300 tok | wall 43.87 t/s | decode 56.85 t/s | prefill   38.5 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+mmqdp1_base_b  edit    300 tok | wall 23.34 t/s | decode 60.32 t/s | prefill   48.2 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+mmqdp1_base_b  long    300 tok | wall  5.82 t/s | decode 46.83 t/s | prefill   48.5 t/s | accept 175/245=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[mmqdp1_base_b]: GPU util avg  91% max 100% | power avg  55W max  92W /100W | PCIe->GPU avg  2.33 max  5.36 GB/s (~13 cap) | CPU busy  267% of 1200% | DRAM read avg   5.0 max  12.4 GB/s (~38 cap)
+##### mmqdp1_dp4a_b | ov
+    preflight: governor=performance thp=[always] mem_avail=14473MiB swap_used=261MiB gpu=17MiB,55,P0
+mmqdp1_dp4a_b  code    272 tok | wall 47.26 t/s | decode 55.12 t/s | prefill   54.0 t/s | accept 168/206=0.82    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+mmqdp1_dp4a_b  reason  300 tok | wall 49.37 t/s | decode 57.25 t/s | prefill   72.8 t/s | accept 189/219=0.86    | vram 3434 MiB | 'To determine when the second train catches the f'
+mmqdp1_dp4a_b  edit    300 tok | wall 38.64 t/s | decode 59.49 t/s | prefill  142.1 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+mmqdp1_dp4a_b  long    300 tok | wall 22.77 t/s | decode 47.60 t/s | prefill  372.4 t/s | accept 173/250=0.69    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[mmqdp1_dp4a_b]: GPU util avg  74% max 100% | power avg  76W max  89W /100W | PCIe->GPU avg  2.29 max 12.95 GB/s (~13 cap) | CPU busy  452% of 1200% | DRAM read avg   8.7 max  12.1 GB/s (~38 cap)
+  code   decode base  58.04 dp4a  57.48 ( -1.0%, base spread 1.68) | prefill   34.8 ->   55.6 t/s
+  reason decode base  57.43 dp4a  57.94 ( +0.9%, base spread 1.16) | prefill   38.6 ->   73.5 t/s
+  edit   decode base  60.48 dp4a  60.03 ( -0.7%, base spread 0.31) | prefill   48.2 ->  141.8 t/s
+  long   decode base  47.30 dp4a  47.95 ( +1.4%, base spread 0.95) | prefill   48.5 ->  372.4 t/s
+MMQDP1_DONE
