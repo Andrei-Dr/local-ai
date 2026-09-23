@@ -1,0 +1,72 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14708MiB swap_used=261MiB gpu=17MiB,48,P8
+--- 0. BUILD K2q6 | 00:03:43
+    spliced 310 tensors from donor
+      blk.0.attn_gate.weight IQ2_S->Q4_K
+      blk.0.ffn_down_shexp.weight IQ3_S->Q6_K
+      blk.0.ffn_gate_inp_shexp.weight F32->F32
+      blk.0.ffn_gate_shexp.weight IQ2_S->Q4_K
+      blk.0.ffn_up_shexp.weight IQ2_S->Q4_K
+      blk.0.ssm_alpha.weight IQ2_S->Q4_K
+    ROLE attn_gate.weight       tensors   30 weights      251658240 bpw 4.5     Q4_K x30
+    ROLE attn_k.weight          tensors   10 weights       10485760 bpw 4.5     Q4_K x10
+    ROLE attn_k_norm.weight     tensors   10 weights           2560 bpw 32.0    F32 x10
+    ROLE attn_norm.weight       tensors   40 weights          81920 bpw 32.0    F32 x40
+    ROLE attn_output.weight     tensors   10 weights       83886080 bpw 4.5     Q4_K x10
+    ROLE attn_q.weight          tensors   10 weights      167772160 bpw 4.5     Q4_K x10
+    ROLE attn_q_norm.weight     tensors   10 weights           2560 bpw 32.0    F32 x10
+    ROLE attn_qkv.weight        tensors   30 weights      503316480 bpw 4.5     Q4_K x30
+    ROLE attn_v.weight          tensors   10 weights       10485760 bpw 4.5     Q4_K x10
+    ROLE ffn_down_exps.weight   tensors   40 weights    10737418240 bpw 3.44    Q3_K x40
+    ROLE ffn_down_shexp.weight  tensors   40 weights       41943040 bpw 5.53    Q6_K x20, Q4_K x20
+    ROLE ffn_gate_exps.weight   tensors   40 weights    10737418240 bpw 2.62    Q2_K x40
+    ROLE ffn_gate_inp.weight    tensors   40 weights       20971520 bpw 32.0    F32 x40
+    ROLE ffn_gate_inp_shexp.weight tensors   40 weights          81920 bpw 32.0    F32 x40
+    ROLE ffn_gate_shexp.weight  tensors   40 weights       41943040 bpw 4.5     Q4_K x40
+    ROLE ffn_up_exps.weight     tensors   40 weights    10737418240 bpw 2.62    Q2_K x40
+    ROLE ffn_up_shexp.weight    tensors   40 weights       41943040 bpw 4.5     Q4_K x40
+    ROLE output.weight          tensors    1 weights      508559360 bpw 5.5     Q5_K x1
+    ROLE output_norm.weight     tensors    1 weights           2048 bpw 32.0    F32 x1
+    ROLE post_attention_norm.weight tensors   40 weights          81920 bpw 32.0    F32 x40
+    ROLE ssm_a                  tensors   30 weights            960 bpw 32.0    F32 x30
+    ROLE ssm_alpha.weight       tensors   30 weights        1966080 bpw 4.5     Q4_K x30
+    ROLE ssm_beta.weight        tensors   30 weights        1966080 bpw 4.5     Q4_K x30
+    ROLE ssm_conv1d.weight      tensors   30 weights         983040 bpw 32.0    F32 x30
+    ROLE ssm_dt.bias            tensors   30 weights            960 bpw 32.0    F32 x30
+    ROLE ssm_norm.weight        tensors   30 weights           3840 bpw 32.0    F32 x30
+    ROLE ssm_out.weight         tensors   30 weights      251658240 bpw 4.5     Q4_K x30
+    ROLE token_embd.weight      tensors    1 weights      508559360 bpw 3.44    IQ3_S x1
+    TOTAL           n    733 weights    34660610688 est_bytes    13115156992 bpw 3.03    excluded 0
+    EXPERTS(_exps)  n    120 weights    32212254720 est_bytes    11660165120 bpw 2.9     excluded 0
+    REST            n    613 weights     2448355968 est_bytes     1454991872 bpw 4.75    excluded 0
+    dense types vs K2d:
+    identical role/type table
+--- 1. KLD | 00:12:54
+  k2q6: chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean KLD: 0.114607 ± 0.003552 Same top p: 86.755 ± 0.433 % 
+--- 2. SPEED specbench (n3): K2 c26 | K2q6 c22 (2 rounds) | 00:13:59
+##### k2q6_k2c26_a | 00:14:02
+    k2q6_k2c26_a   code    277 tok | wall 54.92 t/s | decode 64.69 t/s | prefill   56.5 t/s | accept 198/240=0.82 
+    k2q6_k2c26_a   reason  300 tok | wall 54.07 t/s | decode 63.24 t/s | prefill   73.4 t/s | accept 210/265=0.79 
+    k2q6_k2c26_a   edit    300 tok | wall 43.53 t/s | decode 69.96 t/s | prefill  144.2 t/s | accept 223/226=0.99 
+    k2q6_k2c26_a   long    300 tok | wall 27.78 t/s | decode 48.54 t/s | prefill  470.8 t/s | accept 191/323=0.59 
+    hit rate 48.6% 
+##### k2q6_k2q6c22_a | 00:14:47
+    k2q6_k2q6c22_a code    300 tok | wall 57.11 t/s | decode 66.40 t/s | prefill   58.0 t/s | accept 209/267=0.78 
+    k2q6_k2q6c22_a reason  300 tok | wall 57.39 t/s | decode 67.52 t/s | prefill   75.3 t/s | accept 215/249=0.86 
+    k2q6_k2q6c22_a edit    300 tok | wall 44.39 t/s | decode 71.42 t/s | prefill  146.7 t/s | accept 223/227=0.98 
+    hit rate 46.8% out of memory
+##### k2q6_k2c26_b | 00:15:26
+    k2q6_k2c26_b   code    277 tok | wall 54.09 t/s | decode 62.87 t/s | prefill   59.4 t/s | accept 195/249=0.78 
+    k2q6_k2c26_b   reason  300 tok | wall 52.97 t/s | decode 61.68 t/s | prefill   73.8 t/s | accept 207/273=0.76 
+    k2q6_k2c26_b   edit    300 tok | wall 43.63 t/s | decode 70.39 t/s | prefill  143.7 t/s | accept 223/226=0.99 
+    k2q6_k2c26_b   long    300 tok | wall 28.62 t/s | decode 51.30 t/s | prefill  469.3 t/s | accept 195/309=0.63 
+    hit rate 48.7% 
+##### k2q6_k2q6c22_b | 00:16:11
+    k2q6_k2q6c22_b code    300 tok | wall 56.27 t/s | decode 65.25 t/s | prefill   58.0 t/s | accept 208/272=0.76 
+    k2q6_k2q6c22_b reason  300 tok | wall 54.78 t/s | decode 63.89 t/s | prefill   75.6 t/s | accept 207/274=0.76 
+    k2q6_k2q6c22_b edit    300 tok | wall 44.50 t/s | decode 71.54 t/s | prefill  147.3 t/s | accept 223/226=0.99 
+    k2q6_k2q6c22_b long    300 tok | wall 28.25 t/s | decode 49.22 t/s | prefill  480.5 t/s | accept 189/330=0.57 
+    hit rate 46.0% 
+  KLD K2 0.203860 top 81.965 | K2q6 0.114607 top 86.755 -> -43.78% -> PASS
+  specbench n3: k2c26 61.58 (+0.0%) (K2 spread 1.64) -> FAIL
+  K2Q6_VERDICT NO
+K2Q6_DONE

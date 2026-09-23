@@ -1,9 +1,12 @@
 # llama.cpp patches — what they are and what they do
 
 These patches make a 35-billion-parameter Mixture-of-Experts model (Qwen3.6-35B-A3B, ~13 GB quantized) run fast on a PC whose
-GPU has only 4 GB of memory (GTX 1650 SUPER, no tensor cores) and a 6-core CPU with 16 GB of RAM. Stock llama.cpp runs it, but
-slowly: about 48 tokens/s reading a long prompt. With these patches it reads prompts at about 500 tokens/s and writes at
-55-70 tokens/s, and every change was checked for accuracy before it shipped.
+GPU has only 4 GB of memory (GTX 1650 SUPER, no tensor cores) and a 6-core CPU with 16 GB of RAM. Every change was checked for accuracy before it shipped. Measured now (LEGACY = our first served build, medians from the run
+ledger):
+
+<!-- BEGIN GENERATED: headline (bench/docgen.py; edit the source, not this block) -->
+prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing 55-70 tokens/s (64-70 on short prompts, 55 after a 9.3k-token prompt)
+<!-- END GENERATED: headline -->
 
 This page explains the patches in plain language. `SERIES.md` is the lab ledger: the status of each patch, the switch that turns
 it on, the measurements behind it, and the exact command we serve with.

@@ -29,11 +29,13 @@ cmake --build build -j --target llama-server
 ## 3. Get the model files into ./models
 Full provenance, recipes and sha256 hashes: [stable/MODELS.md](stable/MODELS.md).
 
+<!-- BEGIN GENERATED: model-files (bench/docgen.py; edit the source, not this block) -->
 | file | what | where from |
 |---|---|---|
-| `mtp-Qwen3.6-35B-A3B-Q4_0.gguf` | the draft (MTP) head for speculative decoding | public: Hugging Face `ggml-org/Qwen3.6-35B-A3B-GGUF` |
-| `Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf` | the STABLE model (experts Q2_K/Q3_K, dense layers Q4_K) | built by us from the public `HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive` Q6_K_P (recipe: `bench/box/kq1.sh`, then `bench/box/k2q6.sh`); not published yet |
-| `mtp-Qwen3.6-35B-A3B-vocab49k.bin` | the draft head's 49k-token vocabulary (patch 0022) | built by us (`bench/box/fr2_vocab.py`); not published yet; optional |
+| `mtp-Qwen3.6-35B-A3B-Q4_0.gguf` | draft (MTP) head for speculative decoding | public: HF ggml-org/Qwen3.6-35B-A3B-GGUF |
+| `Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf` | the STABLE model | built by us from HF HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive (Q6_K_P); not published yet |
+| `mtp-Qwen3.6-35B-A3B-vocab49k.bin` | the draft head's vocabulary (patch 0022) | built by us (bench/box/fr2_vocab.py); not published yet; optional |
+<!-- END GENERATED: model-files -->
 
 Until the built files are published, any Qwen3.6-35B-A3B GGUF works with the same build, for example the public
 `...-HauhauCS-Aggressive-IQ2_M.gguf`: `MODEL=<file> stable/serve.sh`. Without the vocabulary file the draft reads the full
@@ -61,8 +63,14 @@ At `-c 12288`: `--moe-expert-cache 18 -b 4096` instead of `--moe-expert-cache 21
 curl -s localhost:8080/v1/chat/completions -H 'Content-Type: application/json' \
   -d '{"messages":[{"role":"user","content":"Say hi"}],"max_tokens":32}'
 ```
-The server log reports the expert-cache hit rate and the draft acceptance; expect ~55-70 tokens/s writing on a GTX 1650 SUPER.
-Current measured numbers: the "Progress" table in [README.md](README.md).
+The server log reports the expert-cache hit rate and the draft acceptance. What to expect on a GTX 1650 SUPER (measured,
+generated from the run ledger):
+
+<!-- BEGIN GENERATED: headline (bench/docgen.py; edit the source, not this block) -->
+prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing 55-70 tokens/s (64-70 on short prompts, 55 after a 9.3k-token prompt)
+<!-- END GENERATED: headline -->
+
+Full table: the "Progress" section of [README.md](README.md).
 
 ## For contributors
 - `git config core.hooksPath .githooks` once per clone: the pre-commit hook regenerates every generated block and refuses a

@@ -5,6 +5,12 @@ Mainline llama.cpp plus our own patches: MoE experts on the CPU, a GPU-resident 
 quantized attention kernels, and two-phase long context (prefill server -> slot file -> decode server) out to the native 262k.
 Accuracy first: a faster configuration ships only after it is proven non-inferior.
 
+Measured now (STABLE vs LEGACY, medians from the run ledger):
+
+<!-- BEGIN GENERATED: headline (bench/docgen.py; edit the source, not this block) -->
+prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing 55-70 tokens/s (64-70 on short prompts, 55 after a 9.3k-token prompt)
+<!-- END GENERATED: headline -->
+
 
 **Get started:** [QUICKSTART.md](QUICKSTART.md) (build STABLE, get the model files, serve).
 

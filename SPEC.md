@@ -24,21 +24,26 @@ Tags used throughout: **[M]** measured by us (ledger row exists), **[V]** verifi
 
 ## 1. Status board
 
-### 1.0 In flight right now (2026-09-22 02:30) — the one board to read first
+### 1.0 In flight right now — the one board to read first
 Three lists: what the box runs (A), what is owed OFF the box and by whom (B), what waits for Andrei (C). Nothing pending lives
 anywhere else. Box jobs run strictly in order (`/ai/bench/queue.sh list`; durable, one job at a time, box exclusive; nothing
 runs beside a job). Per-job decision rules: `research/HANDOFF-2026-09-21-queue-watch.md` — apply them literally.
 
 **A. Box queue**
 
-| # | box job | work ID | question it answers | decision it feeds |
-|---|---|---|---|---|
-| running | `race1` (since 09-22 19:22) | RACE1 | the 16 MATH-L5 chains that hit 32k, rerun with seed salts 1 and 2: is a cut chain a property of the problem or of the seed (`bench/qual/race.py`, verdict rule in `race1.sh`) | `seed` => B4 (serving form, then AIME's 10 cut chains); `problem` => dead, budget / quant is the lever. Weight drops if C2 serves stock |
-| 1 | `qx3` (re-queued; X4 already built) | QX | KLD of hot-25% / hot-50% mixes vs K2 0.218 (X4 ceiling DONE: 0.137, -37%) | GO (mix25 >= 25% lower mean KLD) => B2 |
-| 2 | `lq1` | LQ1 | retrieval at depth per KV type (f16 / q8 / q4 / q4 no-rot) | the shipped long-context KV type (C3) |
-| 3 | `lq2` | FA4 | retrieval at depth, K-walk kernel `GGML_CUDA_FA_VEC_KROW` 0 vs 1, to 131k | pass => KROW becomes the code default (B5) |
-| 4 | `hq1_k2` (~14 h) | HQ1 | K2 quant on the hard sets, paired vs IQ2_M | K2 as default (C1) |
-| 5-6 | `bonsai1_easy`, `bonsai1_hard` | BON1 | ternary Bonsai accuracy | record |
+<!-- BEGIN GENERATED: box-queue (bench/docgen.py; edit the source, not this block) -->
+As of the last `bench/closeout.py` sync (latest queue event 2026-09-24 00:35).
+
+| state | job | started | what it measures (first line of its script) |
+|---|---|---|---|
+| running | `lq2` | 2026-09-24 00:35 | LQ2: is the FA4 row-owning K walk (GGML_CUDA_FA_VEC_KROW=1, +17-22% decode at depth) NON-INFERIOR where it matters — retrieval at |
+| pending | `hq1_k2q6` | - | HQ1: the HARD quality sets, thinking ON — the first measurement that can see a reasoning collapse. Scouts (2026-09-20) report |
+| pending | `hq1_k2` | - | HQ1: the HARD quality sets, thinking ON — the first measurement that can see a reasoning collapse. Scouts (2026-09-20) report |
+| pending | `bonsai1_easy` | - | BONSAI1: the accuracy run we dropped. On 2026-09-19 Ternary-Bonsai-2-27B (PrismML QAT ternary of Qwen3.8-27B, PQ2_0 2.13 bpw) |
+| pending | `bonsai1_hard` | - | BONSAI1: the accuracy run we dropped. On 2026-09-19 Ternary-Bonsai-2-27B (PrismML QAT ternary of Qwen3.8-27B, PQ2_0 2.13 bpw) |
+
+Last finished: `k2q6b` done 2026-09-24 00:34; `k2q6` done 2026-09-24 00:16; `lq1` done 2026-09-24 00:02; `k2d` done 2026-09-23 18:45; `tune1` done 2026-09-23 18:34; `mv1` done 2026-09-23 18:26; `qx3` failed (rc 1) 2026-09-23 18:23; `race1` done 2026-09-23 18:06
+<!-- END GENERATED: box-queue -->
 
 Done 2026-09-21/23 (numbers in `notes.md`): HAND1 levers PROMOTED (+5.4% decode, bit-identical); `hq1_stock` => served fine-tune WORSE than stock IQ2_M on hard reasoning (paired ALL +10.4 for stock, CI [+1.5, +19.3]; MATH-L5 80.0 vs 57.5, p 0.012) => C2 is ready for Andrei; `hand1` done => B1 unblocked; `qx3` first run failed on an `expert_mix.py` byte-vs-element shape check (fixed, re-queued). `whittle1` KILLED (GSM8K 81.5 / MMLU-Pro 43.6 vs 96.0 / 71.4, 34.8 t/s; judges that
 checkpoint, not the approach); `cpu1bench` + `cpu1bench2` (CPU miss phase memory bound at 6 threads, CONFIRMED by the control; CPU1
@@ -322,7 +327,7 @@ Only after S4 says the preview is competitive on this box. Inputs the author pub
 
 ## 8. Experiment protocol and quality gates
 
-- **Naming:** `<ID>_<model>_<config>`; the box script is mirrored in `bench/box/`, the log marker is `<SCRIPT>_DONE`, waiting is only ever done with `bench/watch.sh` (death-aware) or the row monitor.
+- **Naming:** `<ID>_<model>_<config>`; the box script is mirrored in `bench/box/`, the log marker is `<SCRIPT>_DONE`, waiting is only ever done with `bench/box/watch.sh` (death-aware) or the row monitor.
 - **Workloads (H2):** W1 chat/reasoning, W2 code generation, W3 code edit / copy-heavy, W4 long-context summarization/RAG. Results are reported per workload, never blended. W1-W3 exist in `specclient.py` (W3 behind `EDIT=1`); W4 is to be added.
 - **Lossless changes** (cache, speculation, prefetch): temp-0 text identity against the reference config on the fixed prompts, plus one full quality pass per major change as a canary.
 - **Weight changes** (quant, distill, router or head fine-tunes): quality harness at temp 0, thinking off, new caps (768/1024/1024): GSM8K-50, HumanEval-41, MMLU-Pro-70. Pass = every benchmark within 1 sigma of the reference row. That gate is loose at n=50 (1 sigma is up to ~6 points, i.e. 3 GSM8K items), so it is only the ITERATION gate; anything that is going to be called done (T1, T2, a new default file) must also pass at the larger n. For final default decisions use the larger set (GSM8K-200, MMLU-Pro-280), because at n=50 sigma is 2.8-5.9 points and cannot separate close candidates. Plus a refusal spot-check on anything that replaces an abliterated file.

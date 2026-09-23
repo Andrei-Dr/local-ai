@@ -1489,3 +1489,10 @@ self-test on the MTP head = byte-identical round trip). Role/type table identica
 ### 2026-09-24 00:40 — STABLE = build d0fd493 + model K2q6 (Andrei approved)
 Serving command in research/patches/SERIES.md: K2q6, cache 21 (-c 4096) / 18 (-c 12288), draft n3. hq1.sh gained a k2q6 arm
 (cache 20 at -c 49152, same +203 MiB rule); hq1_k2q6 runs before hq1_k2 so the hard-reasoning read covers the served model first.
+
+### 2026-09-24 01:30 — backfill: jobs that finished without their own entry (found by bench/closeout.py)
+- `dl_stock` (09-21): downloaded the stock bartowski IQ2_M control for `hq1_stock` (result in SPEC 1.0: fine-tune worse than stock on hard reasoning).
+- `ovl1` (09-23): first identity check of the upload overlap: only `edit` IDENTICAL, the other prompts differed -> the hoist
+  changed the main model's output; diagnosed in ovl2-ovl20 (address-dependent CUDA fusion verdicts) and fixed before promo5b.
+- `final3` (09-23 13:xx): the first LEGACY -> STABLE -> now table (decode 1.03-1.07x, prefill 9.3k 8.51x, wall 198.3 -> 25.3 s);
+  superseded by `final4` (research/STATUS-2026-09-23.md), the interleaved rerun after lead E was promoted.

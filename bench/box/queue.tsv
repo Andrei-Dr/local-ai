@@ -5,8 +5,118 @@ distill	done	1	2026-09-19 23:41:51	2026-09-20 00:09:53	0	bash /ai/bench/distill.
 build_mainline	done	1	2026-09-20 00:25:34	2026-09-20 00:35:33	0	bash /ai/bench/build_mainline.sh >> build_mainline.log 2>&1; grep -q BUILD_MAINLINE_DONE build_mainline.log
 mainline_ab	done	1	2026-09-20 00:36:33	2026-09-20 00:38:19	0	grep -q BUILD_MAINLINE_DONE build_mainline.log && bash /ai/bench/mainline_ab.sh > mainline_ab.log 2>&1; grep -q MAINLINE_AB_DONE mainline_ab.log
 trace2	done	1	2026-09-20 00:39:19	2026-09-20 01:07:01	0	bash /ai/bench/trace2.sh > trace2.log 2>&1; grep -q TRACE2_DONE trace2.log
-ngram1	running	1	2026-09-20 01:08:01	-	-	bash /ai/bench/ngram1.sh > ngram1.log 2>&1; grep -q NGRAM1_DONE ngram1.log
-steady1	pending	0	-	-	-	bash /ai/bench/steady1.sh > steady1.log 2>&1; grep -q STEADY1_DONE steady1.log
-mmlu2k	pending	0	-	-	-	bash /ai/bench/mmlu2k.sh > mmlu2k.log 2>&1; grep -q MMLU2K_DONE mmlu2k.log
-mainqual	pending	0	-	-	-	bash /ai/bench/mainqual.sh > mainqual.log 2>&1; grep -q MAINQUAL_DONE mainqual.log
-trace2b	pending	0	-	-	-	bash /ai/bench/trace2.sh > trace2b.log 2>&1; grep -q TRACE2_DONE trace2b.log && ls /ai/bench/traces/q36_code_tok.bin.tok
+ngram1	done	1	2026-09-20 01:08:01	2026-09-20 01:15:34	0	bash /ai/bench/ngram1.sh > ngram1.log 2>&1; grep -q NGRAM1_DONE ngram1.log
+steady1	done	1	2026-09-20 01:16:35	2026-09-20 01:18:01	0	bash /ai/bench/steady1.sh > steady1.log 2>&1; grep -q STEADY1_DONE steady1.log
+mmlu2k	done	1	2026-09-20 01:19:01	2026-09-20 01:54:48	0	bash /ai/bench/mmlu2k.sh > mmlu2k.log 2>&1; grep -q MMLU2K_DONE mmlu2k.log
+trace2b	done	1	2026-09-20 01:55:49	2026-09-20 02:23:28	0	bash /ai/bench/trace2.sh > trace2b.log 2>&1; grep -q TRACE2_DONE trace2b.log && ls /ai/bench/traces/q36_code_tok.bin.tok
+p4c1	done	1	2026-09-20 02:24:28	2026-09-20 02:46:42	0	bash /ai/bench/p4c1.sh > p4c1.log 2>&1; grep -q P4C1_DONE p4c1.log
+lat1	done	1	2026-09-20 02:47:42	2026-09-20 03:03:02	0	bash /ai/bench/lat1.sh > lat1.log 2>&1; grep -q LAT1_DONE lat1.log
+mtp1	done	1	2026-09-20 03:04:02	2026-09-20 03:12:01	0	bash /ai/bench/mtp1.sh > mtp1.log 2>&1; grep -q MTP1_DONE mtp1.log
+r1	done	1	2026-09-20 03:13:01	2026-09-20 03:58:18	0	bash /ai/bench/r1.sh > r1.log 2>&1; grep -q R1_DONE r1.log
+kq1	done	1	2026-09-20 08:23:41	2026-09-20 09:48:55	0	bash /ai/bench/kq1.sh > kq1.log 2>&1; grep -q KQ1_DONE kq1.log
+ctx1	done	1	2026-09-20 09:49:55	2026-09-20 11:32:51	0	bash /ai/bench/ctx1.sh > ctx1.log 2>&1; grep -q CTX1_DONE ctx1.log
+mainqual	done	1	2026-09-20 11:33:52	2026-09-20 12:55:46	0	bash /ai/bench/mainqual.sh > mainqual.log 2>&1; grep -q MAINQUAL_DONE mainqual.log
+h2qual	done	1	2026-09-20 12:56:46	2026-09-20 18:57:52	0	bash /ai/bench/h2qual.sh > h2qual.log 2>&1; grep -q H2QUAL_DONE h2qual.log
+orf1	done	1	2026-09-20 18:58:52	2026-09-20 19:30:01	0	bash /ai/bench/orf1.sh > orf1.log 2>&1; grep -q ORF1_DONE orf1.log
+r1b	done	1	2026-09-20 19:31:02	2026-09-20 20:36:29	0	bash /ai/bench/r1b.sh > r1b.log 2>&1; grep -q R1B_DONE r1b.log
+r1c	done	1	2026-09-20 20:48:33	2026-09-20 21:24:34	0	bash /ai/bench/r1c.sh > r1c.log 2>&1; grep -q R1C_DONE r1c.log
+kq1h	done	1	2026-09-20 21:25:34	2026-09-20 22:41:02	0	bash /ai/bench/kq1h.sh > kq1h.log 2>&1; grep -q KQ1H_DONE kq1h.log
+ctx1b	done	1	2026-09-20 22:42:02	2026-09-21 01:38:13	0	bash /ai/bench/ctx1b.sh > ctx1b.log 2>&1; grep -q CTX1B_DONE ctx1b.log
+fa1	done	1	2026-09-21 02:21:10	2026-09-21 03:04:55	0	bash /ai/bench/fa1.sh build > fa1_build.out 2>&1 && bash /ai/bench/fa1.sh verify > fa1.log 2>&1; grep -q FA1_DONE fa1.log
+arch1	done	1	2026-09-21 01:57:54	2026-09-21 02:20:10	0	bash /ai/bench/arch1.sh build > arch1_build.out 2>&1 && bash /ai/bench/arch1.sh verify > arch1.log 2>&1; grep -q ARCH1_DONE arch1.log
+kld1	done	1	2026-09-21 03:05:55	2026-09-21 03:28:09	0	bash /ai/bench/kld1.sh > kld1.log 2>&1; grep -q KLD1_DONE kld1.log
+ctx1c	done	1	2026-09-21 03:29:09	2026-09-21 03:38:29	0	bash /ai/bench/ctx1c.sh > ctx1c.log 2>&1; grep -q CTX1C_DONE ctx1c.log
+ctx1d	done	1	2026-09-21 03:39:29	2026-09-21 03:47:48	0	bash /ai/bench/ctx1d.sh > ctx1d.log 2>&1; grep -q CTX1D_DONE ctx1d.log
+prof3	done	1	2026-09-21 03:48:48	2026-09-21 03:49:23	0	bash /ai/bench/prof3.sh > prof3.log 2>&1; grep -q PROF3_DONE prof3.log
+prof2	done	1	2026-09-21 03:50:23	2026-09-21 03:52:15	0	bash /ai/bench/prof2.sh > prof2.log 2>&1; grep -qE "PROF2_DONE|KQ1G[A-Z]*_DONE" prof2.log
+kq1graft	done	1	2026-09-21 03:53:15	2026-09-21 03:58:41	0	bash /ai/bench/kq1graft.sh > kq1graft.log 2>&1; grep -qE "PROF2_DONE|KQ1G[A-Z]*_DONE" kq1graft.log
+prof4	done	1	2026-09-21 07:38:09	2026-09-21 07:39:05	0	bash /ai/bench/prof4.sh > prof4.log 2>&1; grep -q PROF4_DONE prof4.log
+fa3	done	1	2026-09-21 07:51:50	2026-09-21 08:05:33	0	bash /ai/bench/fa3.sh > fa3.log 2>&1; grep -q FA3_DONE fa3.log
+fa4	done	1	2026-09-21 08:11:53	2026-09-21 08:20:44	0	bash /ai/bench/fa4.sh > fa4.log 2>&1; grep -q FA4_DONE fa4.log
+fa5probe	done	1	2026-09-21 19:39:17	2026-09-21 19:41:22	0	bash /ai/bench/fa5probe.sh > fa5probe.log 2>&1; grep -q FA5PROBE_DONE fa5probe.log
+cpu1bench	done	1	2026-09-21 19:48:52	2026-09-21 19:52:16	0	bash /ai/bench/cpu1bench.sh > cpu1bench.log 2>&1; grep -q CPU1BENCH_DONE cpu1bench.log
+whittle1	done	1	2026-09-21 20:03:09	2026-09-21 21:42:31	0	bash /ai/bench/whittle1.sh > whittle1.log 2>&1; grep -q WHITTLE1_DONE whittle1.log
+cpu1bench2	done	1	2026-09-21 21:44:02	2026-09-21 21:46:59	0	bash /ai/bench/cpu1bench.sh > cpu1bench2.log 2>&1; grep -q CPU1BENCH_DONE cpu1bench2.log
+hq1_iq2m	done	1	2026-09-21 21:47:59	2026-09-22 01:08:43	0	bash /ai/bench/hq1.sh iq2m > hq1_iq2m.log 2>&1; grep -q "HQ1_DONE iq2m" hq1_iq2m.log
+dl_stock	done	1	2026-09-22 01:09:43	2026-09-22 01:14:03	0	bash /ai/bench/dl_stock.sh > dl_stock.log 2>&1; grep -q DL_STOCK_DONE dl_stock.log
+dense1	done	1	2026-09-22 01:15:03	2026-09-22 01:23:30	0	bash /ai/bench/dense1.sh > dense1.log 2>&1; grep -q DENSE1_DONE dense1.log
+hq1_stock	done	1	2026-09-22 08:20:32	2026-09-22 18:54:49	0	bash /ai/bench/hq1.sh stock > hq1_stock.log 2>&1; grep -q "HQ1_DONE stock" hq1_stock.log
+hand1	done	1	2026-09-22 18:55:49	2026-09-22 18:55:51	0	bash /ai/bench/hand1.sh > hand1.log 2>&1; grep -q HAND1_DONE hand1.log
+shov1	skipped	0	-	-	-	bash /ai/bench/shov1.sh > shov1.log 2>&1; grep -q SHOV1_DONE shov1.log
+hand2	done	1	2026-09-23 00:39:58	2026-09-23 00:47:41	0	bash /ai/bench/hand2.sh > hand2.log 2>&1; grep -q HAND2_DONE hand2.log
+hand2id	done	1	2026-09-23 00:54:46	2026-09-23 01:01:17	0	bash /ai/bench/hand2id.sh > hand2id.log 2>&1; grep -q HAND2ID_DONE hand2id.log
+opt1	done	1	2026-09-23 01:29:31	2026-09-23 01:42:14	0	bash /ai/bench/opt1.sh > opt1.log 2>&1; grep -q OPT1_DONE opt1.log
+pmux1	done	1	2026-09-23 01:49:47	2026-09-23 01:57:32	0	bash /ai/bench/pmux1.sh > pmux1.log 2>&1; grep -q PMUX1_DONE pmux1.log
+pmux2	done	1	2026-09-23 02:06:28	2026-09-23 02:15:34	0	bash /ai/bench/pmux2.sh > pmux2.log 2>&1; grep -q PMUX2_DONE pmux2.log
+pmux3	done	1	2026-09-23 02:16:34	2026-09-23 02:22:43	0	bash /ai/bench/pmux3.sh > pmux3.log 2>&1; grep -q PMUX3_DONE pmux3.log
+pfprof1	done	1	2026-09-23 05:27:00	2026-09-23 05:27:54	0	bash /ai/bench/pfprof1.sh > pfprof1.log 2>&1; grep -q PFPROF1_DONE pfprof1.log
+pmux4	done	1	2026-09-23 05:28:54	2026-09-23 05:52:25	0	bash /ai/bench/pmux4.sh > pmux4.log 2>&1; grep -q PMUX4_DONE pmux4.log
+mmqdp1	done	1	2026-09-23 05:53:26	2026-09-23 06:00:42	0	bash /ai/bench/mmqdp1.sh > mmqdp1.log 2>&1; grep -q MMQDP1_DONE mmqdp1.log
+tu1	done	1	2026-09-23 06:01:42	2026-09-23 06:17:32	0	bash /ai/bench/tu1.sh > tu1.log 2>&1; grep -q TU1_DONE tu1.log
+pmux5	done	1	2026-09-23 06:18:32	2026-09-23 06:58:07	0	bash /ai/bench/pmux5.sh > pmux5.log 2>&1; grep -q PMUX5_DONE pmux5.log
+ent1	done	1	2026-09-23 06:59:08	2026-09-23 06:59:39	0	PYTHONPATH=/ai/src/llama.cpp-mainline/gguf-py /ai/.venv/bin/python /ai/bench/ent1.py /ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2-expQ2K-downQ3K.gguf 4 > ent1.log 2>&1; grep -q ENT1_DONE ent1.log
+tu2	done	1	2026-09-23 07:00:39	2026-09-23 07:10:32	0	bash /ai/bench/tu2.sh > tu2.log 2>&1; grep -q TU2_DONE tu2.log
+opt2	done	1	2026-09-23 07:11:32	2026-09-23 07:24:08	0	bash /ai/bench/opt2.sh > opt2.log 2>&1; grep -q OPT2_DONE opt2.log
+promo1	done	1	2026-09-23 07:25:08	2026-09-23 07:47:28	0	bash /ai/bench/promo1.sh > promo1.log 2>&1; grep -q PROMO1_DONE promo1.log
+prof18	done	1	2026-09-23 07:48:28	2026-09-23 07:50:49	0	bash /ai/bench/prof18.sh > prof18.log 2>&1; grep -q PROF18_DONE prof18.log
+promo2	done	1	2026-09-23 07:53:09	2026-09-23 07:55:01	0	bash /ai/bench/promo2.sh > promo2.log 2>&1; grep -q PROMO2_DONE promo2.log
+dec1	done	1	2026-09-23 08:00:13	2026-09-23 08:11:18	0	bash /ai/bench/dec1.sh > dec1.log 2>&1; grep -q DEC1_DONE dec1.log
+ovl1	failed	1	2026-09-23 08:12:18	2026-09-23 08:22:32	1	bash /ai/bench/ovl1.sh > ovl1.log 2>&1; grep -q OVL1_DONE ovl1.log
+dec2	done	1	2026-09-23 08:23:32	2026-09-23 08:35:54	0	bash /ai/bench/dec2.sh > dec2.log 2>&1; grep -q DEC2_DONE dec2.log
+ovl2	done	1	2026-09-23 08:36:54	2026-09-23 08:42:10	0	bash /ai/bench/ovl2.sh > ovl2.log 2>&1; grep -q OVL2_DONE ovl2.log
+dec3	done	1	2026-09-23 08:43:10	2026-09-23 08:55:23	0	bash /ai/bench/dec3.sh > dec3.log 2>&1; grep -q DEC3_DONE dec3.log
+ovl3	done	1	2026-09-23 08:56:23	2026-09-23 09:00:37	0	bash /ai/bench/ovl3.sh > ovl3.log 2>&1; grep -q OVL3_DONE ovl3.log
+ovl4	done	1	2026-09-23 09:03:43	2026-09-23 09:08:01	0	bash /ai/bench/ovl4.sh > ovl4.log 2>&1; grep -q OVL4_DONE ovl4.log
+ovl5	done	1	2026-09-23 09:10:58	2026-09-23 09:14:43	0	bash /ai/bench/ovl5.sh > ovl5.log 2>&1; grep -q OVL5_DONE ovl5.log
+ovl6	done	1	2026-09-23 09:17:12	2026-09-23 09:18:58	0	bash /ai/bench/ovl6.sh > ovl6.log 2>&1; grep -q OVL6_DONE ovl6.log
+ovl7	done	1	2026-09-23 09:21:32	2026-09-23 09:24:54	0	bash /ai/bench/ovl7.sh > ovl7.log 2>&1; grep -q OVL7_DONE ovl7.log
+ovl8	done	1	2026-09-23 09:27:57	2026-09-23 09:30:33	0	bash /ai/bench/ovl8.sh > ovl8.log 2>&1; grep -q OVL8_DONE ovl8.log
+att1	done	1	2026-09-23 09:31:33	2026-09-23 09:38:37	0	bash /ai/bench/att1.sh > att1.log 2>&1; grep -q ATT1_DONE att1.log
+ovl9	done	1	2026-09-23 09:39:37	2026-09-23 09:40:23	0	bash /ai/bench/ovl9.sh > ovl9.log 2>&1; grep -q OVL9_DONE ovl9.log
+mt1	done	1	2026-09-23 09:41:23	2026-09-23 09:43:22	0	bash /ai/bench/mt1.sh > mt1.log 2>&1; grep -q MT1_DONE mt1.log
+ovl10	done	1	2026-09-23 09:44:22	2026-09-23 09:48:03	0	bash /ai/bench/ovl10.sh > ovl10.log 2>&1; grep -q OVL10_DONE ovl10.log
+pg1	done	1	2026-09-23 09:49:04	2026-09-23 09:49:56	0	bash /ai/bench/pg1.sh > pg1.log 2>&1; grep -q PG1_DONE pg1.log
+ovl11	done	1	2026-09-23 09:52:16	2026-09-23 09:54:07	0	bash /ai/bench/ovl11.sh > ovl11.log 2>&1; grep -q OVL11_DONE ovl11.log
+pg2	done	1	2026-09-23 09:55:07	2026-09-23 09:55:59	0	bash /ai/bench/pg2.sh > pg2.log 2>&1; grep -q PG2_DONE pg2.log
+pf1	done	1	2026-09-23 10:00:54	2026-09-23 10:12:16	0	bash /ai/bench/pf1.sh > pf1.log 2>&1; grep -q PF1_DONE pf1.log
+pf2	done	1	2026-09-23 10:13:16	2026-09-23 10:20:09	0	bash /ai/bench/pf2.sh > pf2.log 2>&1; grep -q PF2_DONE pf2.log
+pf3	done	1	2026-09-23 10:22:13	2026-09-23 10:24:00	0	bash /ai/bench/pf3.sh > pf3.log 2>&1; grep -q PF3_DONE pf3.log
+thr1	done	1	2026-09-23 10:27:54	2026-09-23 10:32:42	0	bash /ai/bench/thr1.sh > thr1.log 2>&1; grep -q THR1_DONE thr1.log
+pf4	done	1	2026-09-23 10:33:42	2026-09-23 10:47:12	0	bash /ai/bench/pf4.sh > pf4.log 2>&1; grep -q PF4_DONE pf4.log
+pfkld	done	1	2026-09-23 10:48:12	2026-09-23 11:04:58	0	bash /ai/bench/pfkld.sh > pfkld.log 2>&1; grep -q PFKLD_DONE pfkld.log
+ovl12	done	1	2026-09-23 11:05:58	2026-09-23 11:14:56	0	bash /ai/bench/ovl12.sh > ovl12.log 2>&1; grep -q OVL12_DONE ovl12.log
+fr1	failed	1	2026-09-23 11:15:57	2026-09-23 11:16:05	1	bash /ai/bench/fr1.sh > fr1.log 2>&1; grep -q FR1_DONE fr1.log
+ovl13	done	1	2026-09-23 11:28:31	2026-09-23 11:33:37	0	bash /ai/bench/ovl13.sh > ovl13.log 2>&1; grep -q OVL13_DONE ovl13.log
+fakv1	done	1	2026-09-23 11:17:05	2026-09-23 11:27:31	0	bash /ai/bench/fakv1.sh > fakv1.log 2>&1; grep -q FAKV1_DONE fakv1.log
+fr1b	done	1	2026-09-23 11:34:37	2026-09-23 11:36:48	0	bash /ai/bench/fr1.sh > fr1.log 2>&1; grep -q FR1_DONE fr1.log
+ovl14	done	1	2026-09-23 11:37:48	2026-09-23 11:42:45	0	bash /ai/bench/ovl14.sh > ovl14.log 2>&1; grep -q OVL14_DONE ovl14.log
+promo3	done	1	2026-09-23 11:43:45	2026-09-23 11:51:56	0	bash /ai/bench/promo3.sh > promo3.log 2>&1; grep -q PROMO3_DONE promo3.log
+ovl15	done	1	2026-09-23 11:52:56	2026-09-23 11:57:20	0	bash /ai/bench/ovl15.sh > ovl15.log 2>&1; grep -q OVL15_DONE ovl15.log
+fr1c	done	1	2026-09-23 11:58:20	2026-09-23 12:04:59	0	bash /ai/bench/fr1.sh > fr1.log 2>&1; grep -q FR1_DONE fr1.log
+ovl16	done	1	2026-09-23 12:05:59	2026-09-23 12:11:58	0	bash /ai/bench/ovl16.sh > ovl16.log 2>&1; grep -q OVL16_DONE ovl16.log
+vram1	done	1	2026-09-23 12:12:58	2026-09-23 12:20:20	0	bash /ai/bench/vram1.sh > vram1.log 2>&1; grep -q VRAM1_DONE vram1.log
+ovl17	done	1	2026-09-23 12:21:20	2026-09-23 12:26:22	0	bash /ai/bench/ovl17.sh > ovl17.log 2>&1; grep -q OVL17_DONE ovl17.log
+fr2	done	1	2026-09-23 12:27:22	2026-09-23 12:34:04	0	bash /ai/bench/fr2.sh > fr2.log 2>&1; grep -q FR2_DONE fr2.log
+ovl18	done	1	2026-09-23 12:35:04	2026-09-23 12:37:05	0	bash /ai/bench/ovl18.sh > ovl18.log 2>&1; grep -q OVL18_DONE ovl18.log
+kvq1	done	1	2026-09-23 12:38:05	2026-09-23 12:46:10	0	bash /ai/bench/kvq1.sh > kvq1.log 2>&1; grep -q KVQ1_DONE kvq1.log
+promo4	done	1	2026-09-23 12:47:10	2026-09-23 12:54:54	0	bash /ai/bench/promo4.sh > promo4.log 2>&1; grep -q PROMO4_DONE promo4.log
+final3	done	1	2026-09-23 12:55:54	2026-09-23 13:12:08	0	bash /ai/bench/final3.sh > final3.log 2>&1; grep -q FINAL3_DONE final3.log
+mtpn1	done	1	2026-09-23 13:13:08	2026-09-23 13:21:32	0	bash /ai/bench/mtpn1.sh > mtpn1.log 2>&1; grep -q MTPN1_DONE mtpn1.log
+ovl19	done	1	2026-09-23 13:22:32	2026-09-23 13:27:41	0	bash /ai/bench/ovl19.sh > ovl19.log 2>&1; grep -q OVL19_DONE ovl19.log
+ovl20	done	1	2026-09-23 13:30:38	2026-09-23 13:38:11	0	bash /ai/bench/ovl20.sh > ovl20.log 2>&1; grep -q OVL20_DONE ovl20.log
+promo5	done	1	2026-09-23 13:40:25	2026-09-23 13:48:07	0	bash /ai/bench/promo5.sh > promo5.log 2>&1; grep -q PROMO5_DONE promo5.log
+promo5b	done	1	2026-09-23 13:50:45	2026-09-23 13:58:39	0	bash /ai/bench/promo5b.sh > promo5b.log 2>&1; grep -q PROMO5B_DONE promo5b.log
+final4	done	1	2026-09-23 13:59:39	2026-09-23 14:18:25	0	bash /ai/bench/final4.sh > final4.log 2>&1; grep -q FINAL4_DONE final4.log
+race1	done	1	2026-09-23 14:19:58	2026-09-23 18:06:01	0	bash /ai/bench/race1.sh > race1.log 2>&1; grep -q RACE1_DONE race1.log
+qx3	failed	1	2026-09-23 18:07:01	2026-09-23 18:23:06	1	bash /ai/bench/qx3.sh > qx3.log 2>&1; grep -q QX3_DONE qx3.log
+mv1	done	1	2026-09-23 18:25:58	2026-09-23 18:26:56	0	bash /ai/bench/mv1.sh > mv1.log 2>&1; grep -q MV1_DONE mv1.log
+tune1	done	1	2026-09-23 18:27:56	2026-09-23 18:34:46	0	bash /ai/bench/tune1.sh > tune1.log 2>&1; grep -q TUNE1_DONE tune1.log
+k2d	done	1	2026-09-23 18:35:46	2026-09-23 18:45:43	0	bash /ai/bench/k2d.sh > k2d.log 2>&1; grep -q K2D_DONE k2d.log
+lq1	done	1	2026-09-23 18:46:43	2026-09-24 00:02:43	0	bash /ai/bench/lq1.sh > lq1.log 2>&1; grep -q LQ1_DONE lq1.log
+k2q6	done	1	2026-09-24 00:03:43	2026-09-24 00:16:54	0	bash /ai/bench/k2q6.sh > k2q6.log 2>&1; grep -q K2Q6_DONE k2q6.log
+k2q6b	done	1	2026-09-24 00:19:33	2026-09-24 00:34:12	0	bash /ai/bench/k2q6b.sh > k2q6b.log 2>&1; grep -q K2Q6B_DONE k2q6b.log
+lq2	running	1	2026-09-24 00:35:12	-	-	bash /ai/bench/lq2.sh > lq2.log 2>&1; grep -q LQ2_DONE lq2.log
+hq1_k2q6	pending	0	-	-	-	bash /ai/bench/hq1.sh k2q6 > hq1_k2q6.log 2>&1; grep -q "HQ1_DONE k2q6" hq1_k2q6.log
+hq1_k2	pending	0	-	-	-	bash /ai/bench/hq1.sh k2 > hq1_k2.log 2>&1; grep -q "HQ1_DONE k2" hq1_k2.log
+bonsai1_easy	pending	0	-	-	-	bash /ai/bench/bonsai1.sh easy > bonsai1_easy.log 2>&1; grep -q "BONSAI1_DONE easy" bonsai1_easy.log
+bonsai1_hard	pending	0	-	-	-	bash /ai/bench/bonsai1.sh hard > bonsai1_hard.log 2>&1; grep -q "BONSAI1_DONE hard" bonsai1_hard.log
