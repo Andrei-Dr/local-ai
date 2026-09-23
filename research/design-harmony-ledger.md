@@ -55,6 +55,7 @@ the GPU (FA, mmvq) turns into idle unless it also shortens the miss phase.
 | upload/compute overlap for prefill | ~+15% prefill | +23% prefill at 9.3k, +19% at 2.2k, decode unchanged (after two fixes: plan-loop cost, plan gate) | PROMOTED (0024-0030) |
 | 5 q8_0 KV | small | KLD ok, -3.6% after 9.3k | not proven |
 | more cache slots (VRAM reclaim) | +2-3% | +2.2% at cache 30 (inside spread); the draft embedding cannot be moved by -ot; tune1 on the promo5b stack: c28 OOMs mid-bench, c30 at load, c24 at 9.3k | dead at today's footprint |
+| dense weights Q4_K from the Q6 source (k2q6/k2q6b) | accuracy | KLD -44%, specbench +4.2% at c21, 9.3k +2.1% at c18, prefill +3% | WIN (model file: Andrei's call) |
 | dense weights IQ2_S -> Q4_K (k2d) | ~1 ms/token off the ALU-bound mat-vecs | decode -0.2% (4 fewer cache slots, hit -4.4 pts), prefill +2.8%; KLD +5.8% (requantized from K2) | dead for decode; Q6-sourced variant = accuracy follow-up |
 | n3 draft at long context | 0 | 9.3k decode n3 53.4 vs n2 54.4 (noise) | parity: n3 may be the single default |
 | SMT threads | 0-8% | -t 8 +0.2%, -t 12 -8.5% | dead |

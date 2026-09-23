@@ -1476,3 +1476,12 @@ self-test on the MTP head = byte-identical round trip). Role/type table identica
   prompt (prefill mode compute buffer at the c22 edge; k2d c22 passed both passes = marginal); pass b 65.3 / 63.9 / 71.5 / 49.2 vs
   62.9 / 61.7 / 70.4 / 51.3. Pre-registered verdict NO only because of the OOM -> k2q6b re-measures at c20/c21 (+ 9.3k at c18/c20)
   and tests a Q6_K token_embd (host RAM only, 0 VRAM). lq2 paused (clean stop) to run k2q6b first.
+
+### 2026-09-24 00:34 — k2q6b: K2q6 is FASTER and MORE ACCURATE than K2 (c21 short ctx, c18 at 12k); Q6_K embedding not worth it
+- (A) specbench n3, 2 passes, no OOM in any arm: K2 c26 60.53 | K2q6 c20 61.92 (+2.3%) | K2q6 c21 63.06 (+4.2%), K2 spread 0.74 ->
+  PASS both (hit rate 48 -> 43-44%: the faster Q4_K dense mat-vecs more than pay for 5 fewer cache slots). 9.3k n2: K2 c22 53.74 /
+  54.80 | K2q6 c18 55.59 / 55.16 (+2.1% median) | K2q6 c20 54.82 / 54.43 -> PASS; prefill 9.3k 496 -> 511 (+3%).
+- With k2q6: KLD vs Q6 0.2039 -> 0.1146 (-44%), same-top 81.97 -> 86.76%.
+- (B) token_embd IQ3_S -> Q6_K (host RAM only): KLD 0.1146 -> 0.1123 (-2.0%, rule needs > 3%), same-top 86.76 -> 86.61 -> NO.
+- Recommendation (default model file = Andrei's call): serve K2q6 (`/ai/models/...-K2q6-denseQ4K.gguf`) at --moe-expert-cache 21
+  for -c 4096 and 18 for -c 12288 (c22 at -c 4096 is the OOM edge: k2q6 pass a). Every other flag unchanged.
