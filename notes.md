@@ -1252,3 +1252,16 @@ compute them on the idle GPU, take the bytes off the CPU/DDR4 critical path. Nex
 ### 2026-09-23 09:48 — ovl10: not the warm-up; the prompt pass's routing itself differs from layer 8 on (server only)
 warm-up off (--moe-expert-cache-warm 0): off vs plan still DIVERGES. Observer id-checksum trace: layers 0-7 identical, 8+ differ in
 the first prompt pass (n = 304 ids), no out-of-range ids. Callback mode (no CUDA fusion) was identical -> ovl11: fusion disabled.
+
+### 2026-09-23 09:54 — ovl11: the upload-overlap divergence is a CUDA OP FUSION that is layout-sensitive
+GGML_CUDA_DISABLE_FUSION=1 in both arms: off vs plan IDENTICAL x4 (with fusion: DIVERGES, ovl2-ovl10). Prime suspect: the MoE
+weighted-reduction fusion (the only fusion that registers alloc deps in graph_optimize: experts/weights kept alive until the fused
+node), interacting with the hoisted input copies in the down split. Parked behind the prefetch work; next step is a per-fusion
+bisection (the overlap is worth ~15% of prefill once exact).
+
+### 2026-09-23 09:57 — pg2: pre-gating on MISSES — top-8 covers 70% of them at 68% useful uploads
+Per decode pass and layer (union over the pass's tokens): 9.94 actual misses. Top-8 prediction from layer L: covers 70.3% of L+1's
+misses with 10.24 uploads (68.2% useful); top-16: 89.5% with 23.24 uploads (38.3% useful). Expert ~1.14 MB -> ~92 us over PCIe vs
+~42 us on the CPU (DDR4) -> in parallel the balance is ~2-3 useful uploads per layer (~-24% on the miss phase before DDR4
+contention). Built: branch pregate-prefetch bb65a4d (LLAMA_MOE_PREFETCH=N budget, _TOPK width, same-step publish on the compute
+stream, pinned table stage); pf1 = inert check + budget sweep + 9.3k decode.
