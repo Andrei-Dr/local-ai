@@ -28,7 +28,7 @@ Status: **STABLE** = in the stable build (/ai/src/llama.cpp-v2, promo1 07:47) ·
 | 0016 | tu116/0012 | MoE MMQ tile width per expert | STABLE (off) | `GGML_CUDA_MMQ_MOE_EXPERT_COLS=1`, off | tu1: ub128 prefill +8.8%; nothing at ubp 4096 | ✅ pmux5: bit-identical output (exact) |
 | 0017 | tu116/0013 | whole-tensor expert upload, no router readback (>= 8 tok/expert) | STABLE | ON; `GGML_SCHED_MOE_READBACK=1` = old | tu1: exact (IDENTICAL x4), prefill neutral | ships with the set (groundwork for upload overlap) |
 | 0018 | tu116/0014 | can skip the host sync before stream-ordered split input copies | STABLE (on via 0020) | see 0020 | exact (IDENTICAL x4); tu1 +3.4% (contaminated), tu2 -2.0% +- noise | superseded by 0020 |
-| 0020 | — | 0018 default-on (`GGML_SCHED_COPY_SYNC=1` restores the wait) | STABLE | ON | prof18 nsys: host overhead per MoE layer 89.5 / 79.4 -> 62.7 / 71.0 us, syncs per launch 5.2 -> 4.6, device phase unchanged (~1.8% of a round, under specbench noise) | **promo2** identity |
+| 0020 | — | 0018 default-on (`GGML_SCHED_COPY_SYNC=1` restores the wait) | STABLE | ON | prof18 nsys: host overhead per MoE layer 89.5 / 79.4 -> 62.7 / 71.0 us, syncs per launch 5.2 -> 4.6, device phase unchanged (~1.8% of a round, under specbench noise) | ✅ promo2 IDENTICAL x4 |
 | 0019 | tu116/0015 | FA tile kernel only for batches of N+ tokens | STABLE | `GGML_CUDA_FA_TILE_MIN_BATCH=32` for serving | expected: tu1's +29% prefill without the decode loss | ✅ pmux5 PASS (FA tile KLD 0.199801) + ✅ tu2 (prefill 446.9 t/s, decode -0.4% = same) |
 
 ## Promotion DONE 07:47 — promo1 (bench/box/promo1.sh), branch tu116-served 1c54372

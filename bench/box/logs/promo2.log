@@ -1,0 +1,19 @@
+    preflight: governor=performance thp=[always] mem_avail=14522MiB swap_used=286MiB gpu=17MiB,39,P8
+--- IDENTITY (LLAMA_MOE_CACHE_SYNC=1, serving config): default (no copy sync) vs GGML_SCHED_COPY_SYNC=1 | 07:53:22
+    preflight: governor=performance thp=[always] mem_avail=14331MiB swap_used=286MiB gpu=17MiB,38,P8
+promo2_id_sync code    277 tok | wall 45.38 t/s | decode 52.56 t/s | prefill   50.7 t/s | accept 175/204=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo2_id_sync reason  300 tok | wall 46.71 t/s | decode 53.97 t/s | prefill   68.2 t/s | accept 191/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+promo2_id_sync edit    300 tok | wall 36.14 t/s | decode 53.28 t/s | prefill  140.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo2_id_sync long    300 tok | wall 23.61 t/s | decode 42.07 t/s | prefill  390.0 t/s | accept 169/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo2_id_sync]: GPU util avg  76% max 100% | power avg  66W max  80W /100W | PCIe->GPU avg  2.94 max  9.53 GB/s (~13 cap) | CPU busy  449% of 1200% | DRAM read avg   8.5 max  11.0 GB/s (~38 cap)
+    preflight: governor=performance thp=[always] mem_avail=14531MiB swap_used=282MiB gpu=17MiB,46,P0
+promo2_id_nosync code    277 tok | wall 45.12 t/s | decode 52.76 t/s | prefill   49.5 t/s | accept 175/204=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo2_id_nosync reason  300 tok | wall 46.69 t/s | decode 54.17 t/s | prefill   67.8 t/s | accept 191/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+promo2_id_nosync edit    300 tok | wall 35.76 t/s | decode 53.41 t/s | prefill  139.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo2_id_nosync long    300 tok | wall 22.90 t/s | decode 41.54 t/s | prefill  386.4 t/s | accept 169/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo2_id_nosync]: GPU util avg  76% max 100% | power avg  69W max  81W /100W | PCIe->GPU avg  2.10 max  8.51 GB/s (~13 cap) | CPU busy  418% of 1200% | DRAM read avg   8.2 max  10.9 GB/s (~38 cap)
+    code  IDENTICAL
+    edit  IDENTICAL
+    long  IDENTICAL
+    reason  IDENTICAL
+PROMO2_DONE
