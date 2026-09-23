@@ -1173,3 +1173,12 @@ mode + LLAMA_MOE_WARM_TAIL=128): code 54.40 / 56.94 / 56.71, reason 56.00 / 58.1
 T recovers code / partly reason and has the best 9.3k decode (1 run). NOT PROVEN -> dec2 (P vs T, 5 rounds + 9.3k x3,
 pre-registered rule in the script). Mechanism noted: in prefill mode the warm-up counts span the whole prompt (step() is skipped
 while the cache is suspended); on the -b 256 path they span the last batch.
+
+### 2026-09-23 08:36 — dec2: NOT PROVEN under the pre-registered rule, and contaminated (dec3 re-runs it clean)
+P (prefill mode) vs T (prefill mode + LLAMA_MOE_WARM_TAIL=128), 5 interleaved specbench rounds, ov build. Mean decode (spread):
+code P 56.28 (3.37) / T 55.72 (3.80) -1.0% | reason 56.94 (3.04) / 56.08 (3.50) -1.5% | edit 60.63 (3.05) / 58.18 (2.98) -4.0% |
+long 47.24 (0.95) / 45.79 (4.54) -3.1% -> 4-prompt mean P 55.27, T 53.94 (-2.4%, P spread 2.60) -> rule's first leg fails.
+9,279-token prompt x3: decode P 47.32 / 49.65 / 49.01, T 50.10 / 49.96 / 50.11 -> T >= P in 3/3 (mean +2.9%); prefill 401.5-403.1 both.
+Contamination: kcompactd0 averaged 54-75% of a core in 4 of 10 specbench arms (T_b, T_c, T_d, P_d) -> 3 of 4 flags on T, the
+short-prompt comparison is biased against T. Not evidence either way; warm-tail stays OFF. Root cause and fix: c52fa30 (unmovable CUDA
+pinned host memory + proactive compaction + watermark boost; preflight now sets both sysctls to 0). dec3 = same job, clean box.
