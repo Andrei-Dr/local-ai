@@ -1265,3 +1265,13 @@ misses with 10.24 uploads (68.2% useful); top-16: 89.5% with 23.24 uploads (38.3
 ~42 us on the CPU (DDR4) -> in parallel the balance is ~2-3 useful uploads per layer (~-24% on the miss phase before DDR4
 contention). Built: branch pregate-prefetch bb65a4d (LLAMA_MOE_PREFETCH=N budget, _TOPK width, same-step publish on the compute
 stream, pinned table stage); pf1 = inert check + budget sweep + 9.3k decode.
+
+### 2026-09-23 10:11 — pf1: pre-gated prefetch is INERT when off, raises the hit rate, and is SLOWER (issue cost or DDR4)
+t2 @ bb65a4d. A: prefetch unset vs the STABLE binary, identity mode: IDENTICAL x4. B (specbench, 2 interleaved rounds, top-8):
+hit rate 48.1-48.5% (off) -> 59.6 / 63.3 / 66.5-67.1% (budget 2 / 3 / 4), prefetch 21 / 31 / 41 MiB/step; mean decode
+off 55.85 (spread 0.64) -> b2 54.14 (-3.1%), b3 51.42 (-7.9%), b4 49.01 (-12.2%), monotone. C (9,279-token prompt, cache 22):
+decode off 48.77 / 50.07 vs b3 45.33 / 45.30 (-8%). Two candidate causes: (1) the head op issued ~3 cudaMemcpyAsync per expert
+on CPU thread 0 under the cache lock (critical path) -> f43cd33 moves issue to a helper thread joined at the split tail (pf2 A/B
+async vs inline); (2) DDR4: a prefetch MOVES an expert read from the CPU to the DMA engine inside the same critical window
+(+ ~32% useless uploads) — only a win if the CPU phase is not bus-bound. Review (pf-review agent): 1 critical / 2 high / 3
+medium closed in 8bdf719 (MTP-draft backend takeover, pageable sources, multi-GPU asserts, ...); 4 lows left for the next commit.
