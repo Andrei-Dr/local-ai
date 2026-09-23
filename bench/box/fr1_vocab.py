@@ -31,7 +31,7 @@ for name, t in texts.items():
 special = set(tokenize("<|im_start|>system\nx<|im_end|>\n<|im_start|>user\nx<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n", special=True))
 total = sum(cnt.values())
 ranked = [t for t, _ in cnt.most_common()]
-for K in (16384, 32768, 65536):
+for K in (8192, 16384, 32768):
     top = ranked[:K]
     cov = sum(cnt[t] for t in top) / total
     ids = sorted(set(top) | special)
