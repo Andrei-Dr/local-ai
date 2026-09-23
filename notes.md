@@ -1485,3 +1485,7 @@ self-test on the MTP head = byte-identical round trip). Role/type table identica
 - (B) token_embd IQ3_S -> Q6_K (host RAM only): KLD 0.1146 -> 0.1123 (-2.0%, rule needs > 3%), same-top 86.76 -> 86.61 -> NO.
 - Recommendation (default model file = Andrei's call): serve K2q6 (`/ai/models/...-K2q6-denseQ4K.gguf`) at --moe-expert-cache 21
   for -c 4096 and 18 for -c 12288 (c22 at -c 4096 is the OOM edge: k2q6 pass a). Every other flag unchanged.
+
+### 2026-09-24 00:40 — STABLE = build d0fd493 + model K2q6 (Andrei approved)
+Serving command in research/patches/SERIES.md: K2q6, cache 21 (-c 4096) / 18 (-c 12288), draft n3. hq1.sh gained a k2q6 arm
+(cache 20 at -c 49152, same +203 MiB rule); hq1_k2q6 runs before hq1_k2 so the hard-reasoning read covers the served model first.

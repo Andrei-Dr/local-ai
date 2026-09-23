@@ -42,7 +42,9 @@ Status: **STABLE** = in the stable build (/ai/src/llama.cpp-v2, promo1 07:47) ·
 Result: unit 929 / 1297 / 3979 pass; IDENTICAL x4 vs the ov build; specbench old served config -> STABLE serving config:
 decode code +0.9 / reason +0.2 / edit -0.8 / long -6.1% (open item, see notes), prefill 1.55x / 1.91x / 2.99x / 8.13x;
 9,279-token prompt 47.3 -> 403.2 t/s (8.5x), wall 198.8 -> 25.6 s, decode after it 47.3 -> 49.8.
-**STABLE serving command (from promo5b, 13:59, commit d0fd493):** `GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 /ai/src/llama.cpp-v2/build75/bin/llama-server -m <K2> -ngl 999 -fa on -t 6 -ot exps=CPU --moe-expert-cache 26 -md <mtp head> --spec-type draft-mtp --spec-draft-n-max 2 -ub 128 -b 2048 -ubp 2048` (-c 4096; at -c 12288 use cache 22).
+**STABLE serving command (2026-09-24: build d0fd493 from promo5b + model K2q6 from k2q6b, approved by Andrei):** `GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 /ai/src/llama.cpp-v2/build75/bin/llama-server -m /ai/models/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf -ngl 999 -fa on -t 6 -ot exps=CPU --moe-expert-cache 21 -md /ai/models/mtp-Qwen3.6-35B-A3B-Q4_0.gguf --spec-type draft-mtp --spec-draft-n-max 3 -ub 128 -b 2048 -ubp 2048` (-c 4096; at -c 12288 use cache 18 and -b 4096). K2q6 = K2 with the dense roles at Q4_K from the Q6 source (KLD 0.204 -> 0.115); cache 22 at -c 4096 is the OOM edge. Draft n3 (tune1: parity with n2 at 9.3k, +4% on short prompts).
+
+Previous (promo5b, K2): same flags with `-m <K2> --moe-expert-cache 26` (22 at -c 12288), `--spec-draft-n-max 2`.
 Original plan:
 1. Clean full build at tu116-kernels in a NEW build dir (build75 stays for the queued accuracy jobs: race1 is pinned to it; hq1 / lq1 / opt2 use it) with `-DGGML_CUDA_MMQ_NO_MMA=ON` (drop the ov tree's local define).
 2. Identity smoke (LLAMA_MOE_CACHE_SYNC=1) vs the ov build, one specbench round.
