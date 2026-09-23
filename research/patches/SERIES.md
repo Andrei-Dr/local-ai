@@ -53,5 +53,8 @@ Original plan:
 - Next candidates: 0016 (only if a serving path runs ub 128 prefill).
 
 ## Not in the series (dead or parked; see research/opt-hunt-2026-09-23.md)
+Warm-tail prompt warm-up (LLAMA_MOE_WARM_TAIL, experimental/warm-tail.patch): dec3 clean box NOT PROVEN (-0.7%, 9.3k decode 1/3).
+Upload overlap (experimental/upload-overlap.patch): identity FAILS (ovl1); the hoist alone changes the main model's output (ovl2-4),
+under diagnosis (ovl5), OFF.
 Router F32 (lossy), state-gather skip (MTP rollback), per-layer slot allocation, alternative cache policies (incl. pure/global
 LFU, lfu_variants.py), -t 5, OMP pinning, experts on huge pages.

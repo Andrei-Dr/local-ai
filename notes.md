@@ -1190,3 +1190,30 @@ stream) and off vs on_block (CUDA_LAUNCH_BLOCKING=1) all DIVERGE at the same cha
 => moving the device copy of the host expert tensor changes the output by itself. Hypothesis: below 8 routed tokens/expert only the used
 experts are uploaded; the rest of the copy is whatever the region held (layout-dependent); something reads it. Diag switch
 GGML_SCHED_MOE_DIAG_FILL (1ea8e04, upload-overlap) + ovl3 (off vs plan with the copy zero-filled; fill 0x00 vs 0xFF). Overlap stays OFF.
+
+### 2026-09-23 08:55 — dec3 (clean box): warm-tail NOT PROVEN -> dead; the kcompactd fix alone lifted P
+Same arms as dec2, compaction off (preflight compact=0/0), no FOREIGN CPU flag in any arm. Mean decode (spread): code P 58.08 (1.91)
+/ T 58.04 (2.39) -0.1% | reason 58.68 (5.51) / 58.58 (2.74) -0.2% | edit 61.79 (1.04) / 60.90 (2.43) -1.4% | long 47.64 (2.53) /
+47.19 (1.94) -0.9% -> MEAN P 56.55, T 56.18 (-0.7%, P spread 2.75). 9,279-token decode P 50.17 / 49.99 / 50.14, T 50.10 / 49.07 / 50.17
+-> T >= P 1/3. NOT PROVEN: LLAMA_MOE_WARM_TAIL stays out of the series (research/patches/experimental/warm-tail.patch parked).
+dec2's T wins on the 9.3k decode were noise in a contaminated job. Cross-job (same build, same arms): P's 4-prompt mean 55.27 (dec2,
+kcompactd) -> 56.55 (dec3, clean) +2.3%, P's 9.3k decode 48.66 -> 50.10 +3.0% (inferred: the compaction fix, not a code change).
+dec1's "prefill mode costs short prompts 3-4.5%" is suspect for the same reason (its P_b arm was flagged).
+
+### 2026-09-23 09:00 — ovl3: stale expert bytes are NOT the overlap divergence; the baseline never reads unselected experts
+t2 @ 1ea8e04 (GGML_SCHED_MOE_DIAG_FILL). off_plain == ovl2_off_a (diag inert). off_z vs plan_z (copy zero-filled) still DIVERGES at the
+same chars -> not stale bytes. off_z vs off_n (fill 0x00 vs 0xFF) IDENTICAL, off_plain vs off_z IDENTICAL -> no kernel reads experts
+the router did not select (good news for STABLE/LEGACY). Tensor dump (llama-eval-callback, reason prompt, 55 tokens, one ubatch):
+off vs plan IDENTICAL over 2,747 tensors -> the prompt ubatch is not where it diverges. (eval-callback segfaults at exit after the
+dump; the dumps are complete, the off_a vs off_b last-block mismatch is the truncated final print.)
+
+### 2026-09-23 09:08 — ovl4: the divergence is in the MAIN model, not the MTP draft
+No draft (-md dropped): off vs off IDENTICAL, off vs plan DIVERGES (code at char 15, reason 205, long 318; edit IDENTICAL).
+The draft-on-GPU arm was void (-otd exps=CUDA0 left the draft's experts in CUDA_Host 272.81 MiB). ovl5 (t2 @ 4431c75: plan log +
+GGML_SCHED_MOE_PREFETCH_MIN_IDS) logs which graphs get planned splits and bisects by batch size. race1 held behind it (Andrei:
+optimization work may push race1).
+
+### 2026-09-23 09:30 — scoreboard: prefill + STABLE vs LEGACY vs TEST (2109a89)
+longpf runs now land in the ledger (kind longpf; 34 backfilled), every run records its GGML_*/LLAMA_* env, SCOREBOARD.md has prefill
+2.2k / 9.3k columns and a per-build section (best + median). K2, STABLE vs LEGACY, medians, identity runs excluded: decode code -0.5%,
+reason +2.2%, edit +1.3%, long -0.4%; prefill 2.2k 8.13x, 9.3k 8.52x.
