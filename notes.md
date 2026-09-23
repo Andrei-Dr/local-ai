@@ -1299,3 +1299,13 @@ gaps 94% (step) -> 36% (off 43%), idle 6.32 -> 5.97 ms/token — but GPU busy 14
 the pre-gating predictor stays an asset, prefetch parked (branch pregate-prefetch, review fixes 0b7a2ba). Follow-up for D:
 fakv1 = GGML_CUDA_FA_MMA_MAX_KV threshold sweep (tile only above N KV), queued after fr1.
 Leads status: A not proven (parked) | B fr1 queued | C dead (thr1) | D -> fakv1 | E ovl12 queued (fusion verdicts, KLD, speed).
+
+### 2026-09-23 11:15 — ovl12 (lead E): the upload overlap WINS prefill (+18% / +10%, KLD identical) but decode after it drops 6-9%
+t2 combo c27ac9e. Prefill KLD (-b 2048 -ub 2048, cache off, 6 chunks vs Q6): off 0.202770 / top 81.949 = on (identical to 6
+decimals) -> the overlap does not change prefill numerics; its server divergence (ovl2-11) lives in the decode-path cache/fusion
+verdicts. 9,279-token prompt: prefill ubp 2048 off 402.1 / 403.1 -> on 475.0 / 476.5 (+18.2%, spread 0.9) WIN; ubp 4096 off
+446.3 / 448.0 -> on 492.4 / 494.0 (+10.3%) WIN -> best 493 t/s vs STABLE's 403 (+22%). BUT decode right after: off 50.08 / 49.63
+(ubp 2048), 49.19 / 50.10 (4096) -> on 44.60 / 47.85, 46.44 / 45.00 (-6..-9%); peak VRAM +156 MiB. The fusion-verdict log printed
+nothing (open). Not promotable until the decode cost is explained -> ovl13 (nsys decode off/on in the same build + specbench).
+pfkld (A's gate): pf3 arm KLD == cache arm to 6 decimals -> prefetch most likely never engaged inside llama-perplexity; moot (A
+parked). Q6 truth logits now in /ai/bench/pfkld_q6.kld (c 2048, 6 chunks) for E/G.
