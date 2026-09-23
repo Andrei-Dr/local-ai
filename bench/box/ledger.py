@@ -91,6 +91,7 @@ rec = {
     "telemetry": load(f"{B}/runs/{label}.mon.json"), "moe_cache": cache, "quality": quality, "completed": bool(client.get("rows")) or bool(quality),
 }
 # the switches this run was measured under (GGML_* / LLAMA_*; e.g. LLAMA_MOE_CACHE_SYNC=1 = identity mode, not a speed row)
+rec["stable_since"] = os.environ.get("LEDGER_STABLE") or None  # the stable.env a STABLE-mode arm was built from
 rec["env"] = " ".join(sorted(f"{k}={v}" for k, v in os.environ.items() if k.startswith(("GGML_", "LLAMA_")) and k != "GGML_OP_OFFLOAD_MIN_BATCH")) or None
 if LONGPF:
     rec["fixed"] = "-fa on -t 6 --load-mode none --jinja --parallel 1 --cache-ram 0; longpf.py: 9,279-token prose prompt (40,000 chars), 128 tok decode, temp 0, thinking off"

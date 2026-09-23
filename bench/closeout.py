@@ -60,7 +60,8 @@ def script_drift():
     sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()  # noqa: E731
     shared = {p.name: sha(p) for p in sorted((ROOT / "bench").glob("*.sh")) + sorted((ROOT / "bench").glob("*.py"))}
     boxdir = {p.name: sha(p) for p in sorted(MIRROR.glob("*.sh")) + sorted(MIRROR.glob("*.py"))}
-    box = parse_sha256sum(ssh(f"cd {BENCH} && sha256sum *.sh *.py 2>/dev/null"))
+    box = parse_sha256sum(ssh(f"cd {BENCH} && sha256sum *.sh *.py stable.env 2>/dev/null"))
+    boxdir["stable.env"] = sha(ROOT / "stable" / "stable.env")  # the box's copy of THE STABLE definition (bench/box/stable.sh)
     d = hash_diff({**{n: h for n, h in shared.items() if n in box}, **boxdir}, box)
     return d
 
