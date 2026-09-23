@@ -1,0 +1,62 @@
+    preflight: governor=performance thp=[always] mem_avail=14532MiB swap_used=286MiB gpu=17MiB,47,P8
+--- 0. WORKTREE + BUILD | 07:25:08
+    built 1c54372ac with MMQ_NO_MMA=ON | 07:34:24
+--- 1. UNIT (test-backend-ops CUDA0 vs CPU) | 07:34:24
+    MUL_MAT_ID:   929/929 tests passed rc=0
+    MUL_MAT:   1297/1297 tests passed rc=0
+    FLASH_ATTN_EXT:   3979/3979 tests passed rc=0
+--- 2. IDENTITY v2 vs ov (LLAMA_MOE_CACHE_SYNC=1, serving config) | 07:36:58
+##### promo1_id_ov | build /ai/src/llama.cpp-ov/build75 | env: LLAMA_MOE_CACHE_SYNC=1 GGML_CUDA_FA_TILE_MIN_BATCH=32
+    preflight: governor=performance thp=[always] mem_avail=14481MiB swap_used=284MiB gpu=17MiB,38,P0
+promo1_id_ov   code    277 tok | wall 46.34 t/s | decode 53.57 t/s | prefill   52.5 t/s | accept 175/204=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo1_id_ov   reason  300 tok | wall 46.99 t/s | decode 54.39 t/s | prefill   67.7 t/s | accept 191/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+promo1_id_ov   edit    300 tok | wall 36.84 t/s | decode 55.02 t/s | prefill  139.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo1_id_ov   long    300 tok | wall 23.62 t/s | decode 42.33 t/s | prefill  387.5 t/s | accept 169/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo1_id_ov]: GPU util avg  75% max 100% | power avg  70W max  81W /100W | PCIe->GPU avg  2.72 max  7.58 GB/s (~13 cap) | CPU busy  430% of 1200% | DRAM read avg   8.5 max  11.2 GB/s (~38 cap)
+##### promo1_id_new | build /ai/src/llama.cpp-v2/build75 | env: LLAMA_MOE_CACHE_SYNC=1 GGML_CUDA_FA_TILE_MIN_BATCH=32
+    preflight: governor=performance thp=[always] mem_avail=14521MiB swap_used=285MiB gpu=17MiB,45,P0
+promo1_id_new  code    277 tok | wall 44.06 t/s | decode 51.56 t/s | prefill   48.5 t/s | accept 175/204=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo1_id_new  reason  300 tok | wall 44.31 t/s | decode 51.05 t/s | prefill   67.0 t/s | accept 191/216=0.88    | vram 3434 MiB | 'To determine when the second train catches the f'
+promo1_id_new  edit    300 tok | wall 34.60 t/s | decode 51.07 t/s | prefill  138.1 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo1_id_new  long    300 tok | wall 22.28 t/s | decode 39.06 t/s | prefill  387.0 t/s | accept 169/258=0.66    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo1_id_new]: GPU util avg  71% max 100% | power avg  67W max  81W /100W | PCIe->GPU avg  2.26 max 10.19 GB/s (~13 cap) | CPU busy  462% of 1200% | DRAM read avg   8.0 max  11.1 GB/s (~38 cap)
+    code  IDENTICAL
+    edit  IDENTICAL
+    long  IDENTICAL
+    reason  IDENTICAL
+--- 3. HEADLINE: old served config vs v2 serving config (2 interleaved rounds) | 07:38:40
+##### promo1_old_a | build /ai/src/llama.cpp-mainline/build75 | env: none
+    preflight: governor=performance thp=[always] mem_avail=14511MiB swap_used=289MiB gpu=17MiB,49,P0
+promo1_old_a   code    300 tok | wall 45.52 t/s | decode 55.76 t/s | prefill   35.0 t/s | accept 190/218=0.87    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo1_old_a   reason  300 tok | wall 44.57 t/s | decode 57.69 t/s | prefill   38.8 t/s | accept 187/222=0.84    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+promo1_old_a   edit    300 tok | wall 23.72 t/s | decode 61.98 t/s | prefill   48.2 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo1_old_a   long    300 tok | wall  5.88 t/s | decode 49.07 t/s | prefill   48.6 t/s | accept 173/249=0.69    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo1_old_a]: GPU util avg  91% max 100% | power avg  54W max  88W /100W | PCIe->GPU avg  2.33 max  5.08 GB/s (~13 cap) | CPU busy  267% of 1200% | DRAM read avg   5.0 max  12.3 GB/s (~38 cap)
+##### promo1_new_a | build /ai/src/llama.cpp-v2/build75 | env: GGML_CUDA_FA_TILE_MIN_BATCH=32
+    preflight: governor=performance thp=[always] mem_avail=14550MiB swap_used=286MiB gpu=17MiB,52,P0
+promo1_new_a   code    272 tok | wall 48.98 t/s | decode 57.09 t/s | prefill   53.9 t/s | accept 168/208=0.81    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo1_new_a   reason  300 tok | wall 49.67 t/s | decode 57.10 t/s | prefill   74.9 t/s | accept 184/229=0.80    | vram 3434 MiB | 'To determine when the second train catches the f'
+promo1_new_a   edit    300 tok | wall 39.98 t/s | decode 61.21 t/s | prefill  144.2 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo1_new_a   long    300 tok | wall 24.75 t/s | decode 45.27 t/s | prefill  395.9 t/s | accept 173/252=0.69    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo1_new_a]: GPU util avg  77% max 100% | power avg  74W max  85W /100W | PCIe->GPU avg  2.54 max 10.58 GB/s (~13 cap) | CPU busy  495% of 1200% | DRAM read avg   9.0 max  12.2 GB/s (~38 cap)
+##### promo1_old_b | build /ai/src/llama.cpp-mainline/build75 | env: none
+    preflight: governor=performance thp=[always] mem_avail=14508MiB swap_used=287MiB gpu=17MiB,54,P0
+promo1_old_b   code    300 tok | wall 43.89 t/s | decode 53.31 t/s | prefill   35.3 t/s | accept 188/220=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo1_old_b   reason  300 tok | wall 43.66 t/s | decode 56.35 t/s | prefill   38.4 t/s | accept 188/222=0.85    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+promo1_old_b   edit    300 tok | wall 23.65 t/s | decode 61.35 t/s | prefill   48.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo1_old_b   long    300 tok | wall  5.88 t/s | decode 49.14 t/s | prefill   48.6 t/s | accept 175/248=0.71    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo1_old_b]: GPU util avg  91% max 100% | power avg  54W max  90W /100W | PCIe->GPU avg  2.40 max  5.49 GB/s (~13 cap) | CPU busy  287% of 1200% | DRAM read avg   5.0 max  12.3 GB/s (~38 cap)
+##### promo1_new_b | build /ai/src/llama.cpp-v2/build75 | env: GGML_CUDA_FA_TILE_MIN_BATCH=32
+    preflight: governor=performance thp=[always] mem_avail=14499MiB swap_used=287MiB gpu=17MiB,55,P0
+promo1_new_b   code    272 tok | wall 46.01 t/s | decode 52.96 t/s | prefill   55.2 t/s | accept 168/208=0.81    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+promo1_new_b   reason  300 tok | wall 49.57 t/s | decode 57.22 t/s | prefill   72.8 t/s | accept 188/220=0.85    | vram 3434 MiB | 'To determine when the second train catches the f'
+promo1_new_b   edit    300 tok | wall 39.95 t/s | decode 61.18 t/s | prefill  144.0 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+promo1_new_b   long    300 tok | wall 25.20 t/s | decode 46.95 t/s | prefill  394.4 t/s | accept 168/261=0.64    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[promo1_new_b]: GPU util avg  79% max 100% | power avg  74W max  90W /100W | PCIe->GPU avg  2.13 max  7.47 GB/s (~13 cap) | CPU busy  489% of 1200% | DRAM read avg   9.0 max  12.3 GB/s (~38 cap)
+  code   decode  54.53 ->  55.03 ( +0.9%) | prefill   35.1 ->   54.5 t/s (1.55x)
+  reason decode  57.02 ->  57.16 ( +0.2%) | prefill   38.6 ->   73.8 t/s (1.91x)
+  edit   decode  61.66 ->  61.20 ( -0.8%) | prefill   48.2 ->  144.1 t/s (2.99x)
+  long   decode  49.11 ->  46.11 ( -6.1%) | prefill   48.6 ->  395.1 t/s (8.13x)
+    [old] promo1_pf_old: prompt 9279 tok @ 47.3 t/s | decode 128 tok @ 47.27 t/s | wall 198.8 s
+    [new] promo1_pf_new: prompt 9279 tok @ 403.2 t/s | decode 128 tok @ 49.78 t/s | wall 25.6 s
+PROMO1_DONE

@@ -1147,3 +1147,12 @@ tu2 (3 interleaved rounds, memory compacted per arm): 0019 GGML_CUDA_FA_TILE_MIN
 commit reworded on tu116-served 1c54372). ent1 (K2 experts, 8 layers): entropy-coder ideal 90.1% (gate Q2_K) / 90.4% (up) /
 93.8% (down Q3_K) of stored size, lzma 93.2 / 93.7 / 98.4% -> no kind below 0.85: lossless expert compression DEAD. Next: promo1
 builds tu116-served in a new worktree (/ai/src/llama.cpp-v2) with -DGGML_CUDA_MMQ_NO_MMA=ON, unit + identity vs ov + headline.
+
+### 2026-09-23 07:47 — PROMOTED: STABLE = /ai/src/llama.cpp-v2 (tu116-served 1c54372: prefill mode + dp4a MMQ + FA tile >= 32)
+promo1: fresh worktree + build with -DGGML_CUDA_MMQ_NO_MMA=ON (9 min); unit MUL_MAT_ID 929 / MUL_MAT 1297 / FLASH_ATTN_EXT 3979
+pass; IDENTICAL x4 vs the ov build under LLAMA_MOE_CACHE_SYNC=1. Old served config (build75, -ub 128 -b 256) -> STABLE serving
+config (-b 2048 -ubp 2048, FA_TILE_MIN_BATCH=32), 2 interleaved rounds: decode code +0.9 / reason +0.2 / edit -0.8 / long -6.1%
+(long: 49.07 49.14 -> 45.27 46.95, both rounds below — open item: cache state after a prefill-mode switch vs a token-by-token
+warm cache; the 9,279-token run shows the opposite, 47.3 -> 49.8), prefill 1.55x / 1.91x / 2.99x / 8.13x. 9,279-token prompt:
+47.3 -> 403.2 t/s, wall 198.8 -> 25.6 s. LEGACY build75 stays for race1 (pinned) and the accuracy series. opt2 (confidence-gated
+MTP drafting): no arm beats the n-max-2 base beyond its spread (best n3 p0.6 +2.6% vs spread 3.05; n4 -12..-14%) -> dead.

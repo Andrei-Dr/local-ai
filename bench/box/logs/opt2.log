@@ -1,0 +1,73 @@
+    preflight: governor=performance thp=[always] mem_avail=14572MiB swap_used=285MiB gpu=17MiB,48,P8
+##### opt2_base_a | --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14580MiB swap_used=285MiB gpu=17MiB,48,P8
+opt2_base_a    code    300 tok | wall 44.80 t/s | decode 54.61 t/s | prefill   35.3 t/s | accept 190/218=0.87    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_base_a    reason  300 tok | wall 43.11 t/s | decode 55.22 t/s | prefill   38.9 t/s | accept 187/224=0.83    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt2_base_a    edit    300 tok | wall 23.33 t/s | decode 59.22 t/s | prefill   48.3 t/s | accept 198/202=0.98    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_base_a    long    300 tok | wall  5.87 t/s | decode 48.23 t/s | prefill   48.6 t/s | accept 171/255=0.67    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_base_a]: GPU util avg  90% max 100% | power avg  53W max  85W /100W | PCIe->GPU avg  2.21 max  5.43 GB/s (~13 cap) | CPU busy  283% of 1200% | DRAM read avg   5.0 max  12.1 GB/s (~38 cap)
+    1.29.954.050 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    450    450, #gen drafts =    450, #acc drafts =   400, #gen tokens =    899, #acc t
+##### opt2_n3p06 | --spec-draft-n-max 3 --spec-draft-p-min 0.6
+    preflight: governor=performance thp=[always] mem_avail=14523MiB swap_used=283MiB gpu=17MiB,53,P0
+opt2_n3p06     code    300 tok | wall 47.67 t/s | decode 59.47 t/s | prefill   35.0 t/s | accept 208/223=0.93    | vram 3496 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_n3p06     reason  300 tok | wall 43.68 t/s | decode 56.48 t/s | prefill   38.6 t/s | accept 198/212=0.93    | vram 3496 MiB | 'To solve this problem, we will use the formula f'
+opt2_n3p06     edit    300 tok | wall 23.61 t/s | decode 62.69 t/s | prefill   48.1 t/s | accept 223/224=1.00    | vram 3496 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_n3p06     long    300 tok | wall  5.72 t/s | decode 45.97 t/s | prefill   48.5 t/s | accept 167/190=0.88    | vram 3496 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_n3p06]: GPU util avg  89% max 100% | power avg  52W max  82W /100W | PCIe->GPU avg  2.37 max 11.49 GB/s (~13 cap) | CPU busy  242% of 1200% | DRAM read avg   4.7 max  11.8 GB/s (~38 cap)
+    1.32.589.998 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    400    331, #gen drafts =    331, #acc drafts =   316, #gen tokens =    849, #acc t
+##### opt2_n3p08 | --spec-draft-n-max 3 --spec-draft-p-min 0.8
+    preflight: governor=performance thp=[always] mem_avail=14512MiB swap_used=284MiB gpu=17MiB,54,P0
+opt2_n3p08     code    277 tok | wall 42.08 t/s | decode 52.12 t/s | prefill   34.4 t/s | accept 171/180=0.95    | vram 3496 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_n3p08     reason  300 tok | wall 42.23 t/s | decode 54.18 t/s | prefill   38.5 t/s | accept 190/192=0.99    | vram 3496 MiB | 'To solve this problem, we will use the formula:\n'
+opt2_n3p08     edit    300 tok | wall 23.35 t/s | decode 60.51 t/s | prefill   48.2 t/s | accept 222/224=0.99    | vram 3496 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_n3p08     long    300 tok | wall  5.76 t/s | decode 42.74 t/s | prefill   48.6 t/s | accept 143/151=0.95    | vram 3496 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_n3p08]: GPU util avg  89% max 100% | power avg  53W max  83W /100W | PCIe->GPU avg  2.67 max 11.72 GB/s (~13 cap) | CPU busy  260% of 1200% | DRAM read avg   4.7 max  12.0 GB/s (~38 cap)
+    1.32.846.823 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    448    322, #gen drafts =    322, #acc drafts =   314, #gen tokens =    747, #acc t
+##### opt2_base_b | --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14484MiB swap_used=285MiB gpu=17MiB,55,P0
+opt2_base_b    code    300 tok | wall 46.90 t/s | decode 58.50 t/s | prefill   34.4 t/s | accept 189/220=0.86    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_base_b    reason  300 tok | wall 44.74 t/s | decode 58.23 t/s | prefill   38.7 t/s | accept 189/220=0.86    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt2_base_b    edit    300 tok | wall 23.23 t/s | decode 60.24 t/s | prefill   47.9 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_base_b    long    300 tok | wall  5.79 t/s | decode 47.03 t/s | prefill   48.2 t/s | accept 171/253=0.68    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_base_b]: GPU util avg  91% max 100% | power avg  53W max  92W /100W | PCIe->GPU avg  2.42 max  5.72 GB/s (~13 cap) | CPU busy  260% of 1200% | DRAM read avg   5.0 max  12.5 GB/s (~38 cap)
+    1.32.116.354 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    447    447, #gen drafts =    447, #acc drafts =   400, #gen tokens =    893, #acc t
+##### opt2_n4p07 | --spec-draft-n-max 4 --spec-draft-p-min 0.7
+    preflight: governor=performance thp=[always] mem_avail=14509MiB swap_used=286MiB gpu=17MiB,55,P0
+opt2_n4p07     code    276 tok | wall 37.97 t/s | decode 45.79 t/s | prefill   35.1 t/s | accept 190/214=0.89    | vram 3560 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_n4p07     reason  300 tok | wall 39.89 t/s | decode 50.37 t/s | prefill   38.6 t/s | accept 212/218=0.97    | vram 3560 MiB | 'To solve this problem, we will use the formula:\n'
+opt2_n4p07     edit    300 tok | wall 21.61 t/s | decode 50.02 t/s | prefill   48.2 t/s | accept 238/238=1.00    | vram 3560 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_n4p07     long    300 tok | wall  5.74 t/s | decode 41.99 t/s | prefill   48.5 t/s | accept 166/191=0.87    | vram 3560 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_n4p07]: GPU util avg  82% max 100% | power avg  49W max  76W /100W | PCIe->GPU avg  1.99 max  5.16 GB/s (~13 cap) | CPU busy  264% of 1200% | DRAM read avg   5.2 max  13.6 GB/s (~38 cap)
+    1.35.233.884 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    368    287, #gen drafts =    287, #acc drafts =   276, #gen tokens =    861, #acc t
+##### opt2_n4p085 | --spec-draft-n-max 4 --spec-draft-p-min 0.85
+    preflight: governor=performance thp=[always] mem_avail=14495MiB swap_used=288MiB gpu=17MiB,54,P0
+opt2_n4p085    code    300 tok | wall 41.75 t/s | decode 49.70 t/s | prefill   36.7 t/s | accept 186/192=0.97    | vram 3560 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_n4p085    reason  300 tok | wall 39.47 t/s | decode 49.46 t/s | prefill   38.6 t/s | accept 194/198=0.98    | vram 3560 MiB | 'To solve this problem, we will use the formula:\n'
+opt2_n4p085    edit    300 tok | wall 22.07 t/s | decode 51.90 t/s | prefill   48.2 t/s | accept 234/239=0.98    | vram 3560 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_n4p085    long    300 tok | wall  5.73 t/s | decode 40.47 t/s | prefill   48.5 t/s | accept 139/150=0.93    | vram 3560 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_n4p085]: GPU util avg  85% max 100% | power avg  49W max  83W /100W | PCIe->GPU avg  2.05 max  4.75 GB/s (~13 cap) | CPU busy  269% of 1200% | DRAM read avg   5.1 max  13.7 GB/s (~38 cap)
+    1.33.003.501 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    439    298, #gen drafts =    298, #acc drafts =   292, #gen tokens =    779, #acc t
+##### opt2_n2p05 | --spec-draft-n-max 2 --spec-draft-p-min 0.5
+    preflight: governor=performance thp=[always] mem_avail=14533MiB swap_used=286MiB gpu=17MiB,54,P0
+opt2_n2p05     code    300 tok | wall 48.41 t/s | decode 59.93 t/s | prefill   35.8 t/s | accept 189/201=0.94    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_n2p05     reason  300 tok | wall 44.54 t/s | decode 57.67 t/s | prefill   38.8 t/s | accept 188/205=0.92    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt2_n2p05     edit    300 tok | wall 23.63 t/s | decode 61.88 t/s | prefill   47.9 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_n2p05     long    300 tok | wall  5.75 t/s | decode 42.68 t/s | prefill   48.3 t/s | accept 156/193=0.81    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_n2p05]: GPU util avg  90% max 100% | power avg  53W max  85W /100W | PCIe->GPU avg  2.51 max 11.48 GB/s (~13 cap) | CPU busy  277% of 1200% | DRAM read avg   4.9 max  12.5 GB/s (~38 cap)
+    1.30.108.187 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    462    422, #gen drafts =    422, #acc drafts =   392, #gen tokens =    799, #acc t
+##### opt2_base_c | --spec-draft-n-max 2
+    preflight: governor=performance thp=[always] mem_avail=14525MiB swap_used=285MiB gpu=17MiB,55,P0
+opt2_base_c    code    300 tok | wall 44.66 t/s | decode 54.05 t/s | prefill   36.3 t/s | accept 188/220=0.85    | vram 3434 MiB | '```python\nfrom collections import OrderedDict\nfr'
+opt2_base_c    reason  300 tok | wall 42.18 t/s | decode 53.81 t/s | prefill   38.6 t/s | accept 189/218=0.87    | vram 3434 MiB | 'To solve this problem, we will use the formula:\n'
+opt2_base_c    edit    300 tok | wall 23.52 t/s | decode 61.05 t/s | prefill   48.0 t/s | accept 199/200=0.99    | vram 3434 MiB | '```python\ndef parse_records(path, sep=",", skip_'
+opt2_base_c    long    300 tok | wall  5.82 t/s | decode 46.72 t/s | prefill   48.3 t/s | accept 168/261=0.64    | vram 3434 MiB | 'Here is the 6-bullet summary of the document:\n\n*'
+    telemetry[opt2_base_c]: GPU util avg  91% max 100% | power avg  54W max  87W /100W | PCIe->GPU avg  2.29 max  5.69 GB/s (~13 cap) | CPU busy  281% of 1200% | DRAM read avg   4.9 max  12.1 GB/s (~38 cap)
+    1.30.387.275 I spec common_specu: statistics        draft-mtp: #calls(b,g,a) =    4    450    450, #gen drafts =    450, #acc drafts =   396, #gen tokens =    899, #acc t
+--- READ
+  base       mean  54.74 (spread 3.05)
+  opt2_n3p06  mean  56.15 ( +2.6%) | code +6.7% reason +1.3% edit +4.2% long -2.9% | accept code 0.933 reason 0.934 edit 0.996 long 0.879 | no
+  opt2_n3p08  mean  52.39 ( -4.3%) | code -6.5% reason -2.8% edit +0.6% long -9.7% | accept code 0.95 reason 0.99 edit 0.991 long 0.947 | no
+  opt2_n4p07  mean  47.04 (-14.1%) | code -17.8% reason -9.7% edit -16.9% long -11.3% | accept code 0.888 reason 0.972 edit 1.0 long 0.869 | no
+  opt2_n4p085 mean  47.88 (-12.5%) | code -10.8% reason -11.3% edit -13.7% long -14.5% | accept code 0.969 reason 0.98 edit 0.979 long 0.927 | no
+  opt2_n2p05  mean  55.54 ( +1.5%) | code +7.6% reason +3.4% edit +2.8% long -9.8% | accept code 0.94 reason 0.917 edit 0.995 long 0.808 | no
+OPT2_DONE
