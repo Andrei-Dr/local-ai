@@ -30,3 +30,5 @@ venv/
 *.kld
 *.bundle
 *.safetensors
+# session state for the agent (local only)
+research/RESUME.md
