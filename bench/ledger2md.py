@@ -188,6 +188,7 @@ def scoreboard(recs):
     if any(r["speed_tag"] for r in rows):
         o += ["", "- `~` speed = the quality run's in-run mean decode tok/s (no specbench row for that model); not the tuned best."]
 
+    o += served_arc(recs)
     o += build_roles(recs)
 
     # --- Top 5 leaderboards (detail views; the matrix above stays canonical) ---
@@ -342,10 +343,8 @@ def build_roles(recs):
     def best(xs):  # (best value, its label, median over all xs, n)
         if not xs:
             return None
-        v = sorted(t[0] for t in xs)
-        med = v[len(v) // 2] if len(v) % 2 else (v[len(v) // 2 - 1] + v[len(v) // 2]) / 2
         b = max(xs, key=lambda t: t[0])
-        return (b[0], b[1], med, len(v))
+        return (b[0], b[1], median([t[0] for t in xs]), len(xs))
     cell = lambda b: "-" if b is None else f"{b[0]:.1f} (`{b[1]}`)" + (f" · med {b[2]:.1f} n={b[3]}" if b[3] > 1 else "")
     for m in models:
         kinds = [k for k in PROMPT_ORDER if any(p.get("prompt") == k for r in spec if r["model"] == m for p in r["prompts"])]
@@ -378,6 +377,55 @@ def build_roles(recs):
             o += ["", "**STABLE vs LEGACY (median vs median):** " + ", ".join(parts)]
     return o
 
+
+# The served configuration over time = (build, model file). Update when a promotion changes either (research/patches/SERIES.md).
+_K2 = "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2-expQ2K-downQ3K.gguf"
+SERVED_STEPS = [("LEGACY", "/ai/src/llama.cpp-mainline/build75", _K2),
+                ("STABLE build, K2", "/ai/src/llama.cpp-v2/build75", _K2),
+                ("STABLE", "/ai/src/llama.cpp-v2/build75", "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf")]
+
+
+def median(v):
+    v = sorted(v)
+    return None if not v else v[len(v) // 2] if len(v) % 2 else (v[len(v) // 2 - 1] + v[len(v) // 2]) / 2
+
+
+def served_arc(recs, steps=SERVED_STEPS):
+    """The served configuration's arc across build AND model promotions: one row per (build, model) step, medians over its
+    completed non-identity runs, then the last step vs the first. Other trees and other models never enter a step."""
+    spec = [r for r in recs if r.get("kind") == "specbench" and r.get("completed") and r.get("prompts") and not identity_mode(r)]
+    lpf = [r for r in recs if longpf_ok(r) and not identity_mode(r)]
+    at = lambda xs, b, m: [r for r in xs if (r.get("build") or "").rstrip("/") == b and os.path.basename(r.get("model") or "") == m]
+    rows = []
+    for name, b, m in steps:
+        sr, lr = at(spec, b, m), at(lpf, b, m)
+        st = {"name": name, "role": BUILD_ROLES.get(b, "TEST"), "model": smodel(m), "n": len(sr) + len(lr), "spec": sr}
+        st["pf22"] = median([long_prefill(r) for r in sr if long_prefill(r)])
+        st["pf93"] = median([r["longpf"]["prefill_tps"] for r in lr])
+        st["dec93"] = median([r["longpf"]["decode_tps"] for r in lr if r["longpf"].get("decode_tps")])
+        rows.append(st)
+    kinds = [k for k in PROMPT_ORDER if any(p.get("prompt") == k for st in rows for r in st["spec"] for p in r["prompts"])]
+    for st in rows:
+        for k in kinds:
+            st[k] = median([p["decode_tps"] for r in st["spec"] for p in r["prompts"]
+                            if p.get("prompt") == k and isinstance(p.get("decode_tps"), (int, float))])
+    f = lambda v: "-" if v is None else f"{v:.1f}"
+    o = ["", "## Served arc: LEGACY -> STABLE (build + model)", "",
+         "The served configuration is a (build, model file) pair; each step is one promotion (research/patches/SERIES.md).",
+         "Cells are medians over every completed, non-identity run of exactly that build and model (diagnostic arms included).", "",
+         "| step | build | model | " + " | ".join(f"decode {k}" for k in kinds) + " | prefill 2.2k | prefill 9.3k | decode after 9.3k | runs |",
+         "|---|---|---|" + "---|" * (len(kinds) + 4)]
+    for st in rows:
+        o.append(f"| {st['name']} | {st['role']} | {st['model']} | " + " | ".join(f(st[k]) for k in kinds)
+                 + f" | {f(st['pf22'])} | {f(st['pf93'])} | {f(st['dec93'])} | {st['n']} |")
+    a, z = rows[0], rows[-1]
+    pct = lambda x: f"{100 * (z[x] / a[x] - 1):+.1f}%"
+    parts = [f"decode {k} {pct(k)}" for k in kinds if a[k] and z[k]]
+    parts += [f"prefill {n} {z[x] / a[x]:.2f}x" for n, x in (("2.2k", "pf22"), ("9.3k", "pf93")) if a[x] and z[x]]
+    parts += [f"decode after 9.3k {pct('dec93')}"] if a["dec93"] and z["dec93"] else []
+    if parts:
+        o += ["", f"**{z['name']} vs {a['name']} (median vs median):** " + ", ".join(parts)]
+    return o
 
 def longpf_md(recs):
     """LEDGER.md section: one row per long-prompt prefill run (kind longpf), newest first."""

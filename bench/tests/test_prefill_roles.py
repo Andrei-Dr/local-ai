@@ -99,3 +99,32 @@ class LongpfLedgerCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ServedArcCase(unittest.TestCase):
+    """The served configuration is a (build, model) pair: the arc table follows it across build AND model changes."""
+    STEPS = [("LEGACY", OLD, "k2.gguf"), ("STABLE build", V2, "k2.gguf"), ("STABLE", V2, "k2q6.gguf")]
+    RECS = [sbp("old_a", OLD, [("code", 50.0, 40.0), ("long", 40.0, 48.0)]),
+            sbp("new_a", V2, [("code", 58.0, 60.0), ("long", 47.0, 390.0)]),
+            sbp("new_b", V2, [("code", 60.0, 60.0), ("long", 49.0, 400.0)]),
+            sbp("q6_a", V2, [("code", 64.0, 60.0), ("long", 49.0, 480.0)], model="k2q6.gguf"),
+            sbp("q6_ov", OV, [("code", 99.0, 60.0)], model="k2q6.gguf"),  # other tree: not part of the arc
+            lp("pf_old", OLD, 47.0, 47.0), lp("pf_q6", V2, 510.0, 55.0, model="k2q6.gguf")]
+
+    def arc(self):
+        return "\n".join(ledger2md.served_arc(self.RECS, self.STEPS))
+
+    def test_one_row_per_step_with_medians(self):
+        md = self.arc()
+        self.assertIn("## Served arc", md)
+        self.assertRegex(md, r"\| LEGACY \| LEGACY \| k2 \| 50\.0 \| 40\.0 \| 48\.0 \| 47\.0 \| 47\.0 \| 2 \|")
+        self.assertRegex(md, r"\| STABLE build \| STABLE \| k2 \| 59\.0 \| 48\.0 \| 395\.0 \| - \| - \| 2 \|")
+        self.assertRegex(md, r"\| STABLE \| STABLE \| k2q6 \| 64\.0 \| 49\.0 \| 480\.0 \| 510\.0 \| 55\.0 \| 2 \|")
+        self.assertNotIn("99.0", md)
+
+    def test_last_step_vs_first_step(self):
+        self.assertIn("**STABLE vs LEGACY (median vs median):** decode code +28.0%, decode long +22.5%, prefill 2.2k 10.00x, "
+                      "prefill 9.3k 10.85x, decode after 9.3k +17.0%", self.arc())
+
+    def test_scoreboard_includes_the_arc(self):
+        self.assertIn("## Served arc", ledger2md.scoreboard(self.RECS))
