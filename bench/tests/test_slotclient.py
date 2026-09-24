@@ -37,7 +37,7 @@ class H(BaseHTTPRequestHandler):
             self.send_response(500)
             self.send_header("Content-Length", "2")
             self.end_headers()
-            self.wfile.write(b("{}"[0:2]))
+            self.wfile.write(b"{}")
             return
         if kind == "chat":
             out = {"choices": [{"message": {"content": "ok"}}], "usage": {"completion_tokens": 64},

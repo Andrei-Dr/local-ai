@@ -2,7 +2,7 @@
 """Render bench/LEDGER.md (full per-run telemetry) AND bench/SCOREBOARD.md (per-axis model comparison)
 from box/ledger.jsonl (written by the harness) + ledger_backfill.jsonl.
 usage: ledger2md.py   (sync first: rsync root@i5.local:/ai/bench/ledger.jsonl box/)"""
-import json, os, re
+import json, os, re, sys
 from pathlib import Path
 
 HERE = Path(__file__).parent
