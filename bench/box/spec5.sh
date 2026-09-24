@@ -7,13 +7,13 @@
 #   decode t/s per pass. R1: P2 WINS if T3 - S3 > spread(S3) OR T2 - S2 > spread(S2), AND neither TEST arm is below its STABLE arm
 #   by more than that arm's spread. Otherwise NOT PROVEN.
 # - Report: T2 vs T3.
-# TEST = /ai/src/llama.cpp-t4 at ba0d5f708 (branch spec5 = spec3 + P2). Void: dead server, OOM, FOREIGN CPU.
+# TEST = /ai/src/llama.cpp-t4 at a6465069d (branch spec5 = spec3 + P2). Void: dead server, OOM, FOREIGN CPU.
 # RUNTIME (est.): incremental build ~6 min (ggml-cuda.cu + libllama) | identity 4 x ~1.5 = 6 | speed 8 x ~1.2 = 10 => ~22 min.
 source /ai/bench/preflight.sh || exit 1
 cd /ai/bench || exit 1
 source /ai/bench/stable.sh || { echo "SPEC5_FAILED: stable.sh"; exit 1; }
 PY=/ai/.venv/bin/python
-SRC=/ai/src/llama.cpp-mainline; T4=/ai/src/llama.cpp-t4; B4=$T4/build75; SHA=ba0d5f708
+SRC=/ai/src/llama.cpp-mainline; T4=/ai/src/llama.cpp-t4; B4=$T4/build75; SHA=a6465069d
 OUT=/ai/bench/runs/spec5; mkdir -p $OUT/logs
 export STABLE_LOGDIR=$OUT/logs  # server logs kept with the results
 GEN=400

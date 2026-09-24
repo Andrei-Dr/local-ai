@@ -214,7 +214,7 @@ mul_mat_id, dense mul_mat, flash attention, norms / elementwise, copies), and th
 ## 12. P2: skip the cache chain's dummy-slot mat-vecs (pre-registered 2026-09-25 00:30, before the run)
 spec4: the cache chain is 53% of the verify's GPU growth per position. Uncached ids map to slot n_slots, which is all zeros, and the
 MMVQ kernels still run a full dot product against it for every one of the 8 (token, expert) pairs; at ~48% hits about half of
-the chain's work multiplies zeros. P2 (branch spec5 ba0d5f708): the cache's weight tensors carry the dummy slot in op_params[0]
+the chain's work multiplies zeros. P2 (branch spec5 a6465069d; ba0d5f708 + a struct fix): the cache's weight tensors carry the dummy slot in op_params[0]
 (leaf tensors: unused by every backend), and both MMVQ kernels skip the dot-product loop for that id. The partial sums stay 0,
 the same value the all-zero blocks produce, so outputs cannot change.
 spec5 (bench/box/spec5.sh):
