@@ -1549,3 +1549,21 @@ TEST = STABLE + 0032 + 0033 (t3 e6961075b). Rules pre-registered in bench/box/le
 - Exploratory 32k F16 KV, cache 6: TEST 34.1 t/s; TEST + GGML_CUDA_FA_VEC_GQA_F16=1 14.1 (-59%) -> the F16 GQA vec route is dead.
   Also: F16 KV at 32k (34.1, cache 6) beat q4_0 KV + both patches (32.5, cache 12) -> the long-context KV type (Andrei's call)
   needs a measured F16 vs q4_0 comparison at 32k / 64k.
+
+### 2026-09-24 09:50 — lead2: lead1's 9.3k gain is an artifact; F16 KV beats q4_0 on decode at 32k and 64k, but 64k F16 costs 2.6x prefill
+TEST = STABLE + 0032 + 0033 (t3 e6961075b). Rules pre-registered in bench/box/lead2.sh.
+- RA1 identity at 9.3k (-c 12288, LLAMA_MOE_CACHE_SYNC=1, F16 KV -> TILE path): S vs T IDENTICAL -> PASS (closes lead1's owed
+  identity on the >4096 path).
+- RA2 9.3k, order S T T S S T T S: decode S [52.65, 53.86, 52.13, 52.09] T [51.37, 51.04, 52.50, 51.76], median T/S -1.6%,
+  ranges overlap -> lead1's +5.2% = ARTIFACT (it ran S first every time); R2 no-regression PASS. Prefill 512 / 512 (+0.0%).
+  My lead1 codegen theory is withdrawn: F16 at KV >= 4096 runs TILE, not vec, and neither patch touches it.
+- RB KV type at depth on TEST, no speculation (decode after the prompt; prefill):
+  32k: F16 cache 6 [34.07, 34.13] vs q4_0 cache 12 [32.45, 32.60] -> F16 WIN +4.8%; prefill 390 vs 384.
+  64k: F16 OOMs at cache 4 and 2, fits at cache 0: [28.90, 28.32] vs q4_0 cache 12 [26.34, 25.37] -> F16 WIN +10.7% by the rule
+  (decode only), BUT prefill 106 vs 274 t/s (-61%, wall 616 s vs 243 s): with zero expert-cache slots every prefill expert runs
+  on the CPU. Break-even: 373 s extra prefill / (1/26.3 - 1/28.6 s per token) ~ 124k generated tokens -> q4_0 cache 12 wins end
+  to end for any realistic 64k request. The rule scored decode only; the prefill cost is outside it and decides this case.
+- Recommendation (Andrei's call, long-context config): F16 KV where it fits with cache >= 6 (measured to 32k); q4_0 KV cache 12
+  at 64k. The 32k-64k crossover (the largest -c where F16 keeps a usable cache) is unmeasured.
+- Promotion: 0033 (+ 0032, its host) now only matters for the q4_0 path, i.e. 64k. There it gave +18% (lead1 KROW) with identity
+  held; 0032 alone stays NOT PROVEN at 64k. Decision waits on the KV-type call.

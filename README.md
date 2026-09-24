@@ -29,7 +29,7 @@ Cells are medians over every completed, non-identity run of exactly that build a
 |---|---|---|---|---|---|---|---|---|---|---|
 | LEGACY | LEGACY | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 56.1 | 56.4 | 60.6 | 46.8 | 48.5 | 47.4 | 47.5 | 43 |
 | STABLE build, K2 | STABLE | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 60.7 | 59.4 | 63.1 | 48.8 | 394.0 | 404.3 | 52.3 | 112 |
-| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 65.5 | 65.1 | 70.7 | 49.4 | 480.4 | 510.6 | 52.5 | 19 |
+| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 65.5 | 65.1 | 70.7 | 49.4 | 480.4 | 510.8 | 52.5 | 23 |
 
 **STABLE vs LEGACY (median vs median):** decode code +16.7%, decode reason +15.4%, decode edit +16.7%, decode long +5.7%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +10.4%
 <!-- END GENERATED: served-arc -->
