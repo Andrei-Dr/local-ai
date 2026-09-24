@@ -1,0 +1,24 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14728MiB swap_used=245MiB gpu=17MiB,42,P8
+--- SPEC1CAL: order A B C D E E D C B A (A..D = draft n 1..4, E = no speculation) | 22:47:56
+    spec1cal_n1_1 code: 400 tok, 61.25 t/s, draft 206 accepted 193, verify steps 206
+    spec1cal_n1_1 reason: 400 tok, 58.88 t/s, draft 207 accepted 192, verify steps 207
+    spec1cal_n2_2 code: 400 tok, 68.72 t/s, draft 283 accepted 257, verify steps 142
+    spec1cal_n2_2 reason: 400 tok, 64.38 t/s, draft 293 accepted 252, verify steps 147
+    spec1cal_n3_3 code: 400 tok, 67.42 t/s, draft 352 accepted 281, verify steps 118
+    spec1cal_n3_3 reason: 400 tok, 65.76 t/s, draft 333 accepted 287, verify steps 111
+    spec1cal_n4_4 code: 400 tok, 47.66 t/s, draft 398 accepted 299, verify steps 100
+    spec1cal_n4_4 reason: 400 tok, 48.39 t/s, draft 387 accepted 302, verify steps 97
+    spec1cal_n0_5 code: 400 tok, 47.53 t/s, draft 0 accepted 0, verify steps 0
+    spec1cal_n0_5 reason: 400 tok, 46.01 t/s, draft 0 accepted 0, verify steps 0
+    spec1cal_n0_6 code: 400 tok, 47.11 t/s, draft 0 accepted 0, verify steps 0
+    spec1cal_n0_6 reason: 400 tok, 45.49 t/s, draft 0 accepted 0, verify steps 0
+    spec1cal_n4_7 code: 400 tok, 47.50 t/s, draft 398 accepted 299, verify steps 100
+    spec1cal_n4_7 reason: 400 tok, 47.99 t/s, draft 387 accepted 302, verify steps 97
+    spec1cal_n3_8 code: 400 tok, 67.56 t/s, draft 349 accepted 282, verify steps 117
+    spec1cal_n3_8 reason: 400 tok, 65.13 t/s, draft 345 accepted 283, verify steps 115
+    spec1cal_n2_9 code: 400 tok, 68.92 t/s, draft 283 accepted 257, verify steps 142
+    spec1cal_n2_9 reason: 400 tok, 65.50 t/s, draft 278 accepted 259, verify steps 139
+    spec1cal_n1_10 code: 400 tok, 60.99 t/s, draft 206 accepted 193, verify steps 206
+    spec1cal_n1_10 reason: 400 tok, 57.98 t/s, draft 204 accepted 195, verify steps 204
+    results: 10 of 10 arms | fit: spec1_sim.py --cal /ai/bench/runs/spec1cal
+SPEC1CAL_DONE

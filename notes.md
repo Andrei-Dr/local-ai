@@ -1606,3 +1606,13 @@ research/spec-design-2026-09-24.md section 5 and bench/box/spec0.sh. Build 8.5 m
   0.469) for ~0.58 of a token of CPU experts on every step -> a loss. Siblings only pay where the draft is unsure; the shape has to
   follow the draft's confidence (L2 + L4 together).
 - Cosmetic: spec0.sh line 124 prints "No such file" for the dump-less arms S / O (harmless).
+
+### 2026-09-24 23:05 — spec1cal: speculation lengths measured directly; n = 4 falls off a cliff (our cache's 4-token cap); the simulator's fit fails
+STABLE, -c 4096, specbench code + reason, greedy 400 tokens, order A B C D E E D C B A (bench/box/spec1cal.sh). t/s code / reason:
+no spec 47.3 / 45.8 | n1 61.1 / 58.4 | n2 68.8 / 65.0 | n3 67.5 / 65.4 | n4 47.6 / 48.2 (pass spreads <= 1.2 t/s).
+- n4 = no-spec speed: a 5-token verify batch exceeds `mc_max_tokens = 4` (src/llama-graph.cpp), the expert cache is bypassed and
+  every expert runs on the CPU. The cap was sized for IQ3_S; our K2q6 experts allow 5 (Q3_K down) on Turing's MMVQ table.
+- n2 ~ n3 on these prompts (+1.9% code, -0.6% reason).
+- spec1_sim.py calibrated fit: errors +24 / +2 / -10 / -15 / +12% (n0..n4) -> fails the pre-registered 3% rule: NO VERDICT on
+  the tree / sibling line or the confidence stop from the simulator. Phase 2 measures on the box instead
+  (research/spec-design-2026-09-24.md section 8).
