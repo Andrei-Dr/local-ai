@@ -49,9 +49,9 @@ Cells are medians over every completed, non-identity run of exactly that build a
 |---|---|---|---|---|---|---|---|---|---|---|
 | LEGACY | LEGACY | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 56.1 | 56.4 | 60.6 | 46.8 | 48.5 | 47.4 | 47.5 | 43 |
 | STABLE build, K2 | STABLE | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 60.7 | 59.4 | 63.1 | 48.8 | 394.0 | 404.3 | 52.3 | 112 |
-| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 64.3 | 65.4 | 70.4 | 49.2 | 480.1 | 510.7 | 55.0 | 9 |
+| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 64.8 | 65.1 | 70.2 | 49.4 | 480.3 | 510.8 | 55.0 | 11 |
 
-**STABLE vs LEGACY (median vs median):** decode code +14.5%, decode reason +15.9%, decode edit +16.1%, decode long +5.2%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +15.7%
+**STABLE vs LEGACY (median vs median):** decode code +15.4%, decode reason +15.4%, decode edit +15.8%, decode long +5.7%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +15.7%
 
 ## Builds: STABLE vs LEGACY vs TEST
 
@@ -124,7 +124,7 @@ MEDIANS, and the authoritative comparison is the paired A/B of the promotion job
 
 | build | decode code | decode reason | decode edit | decode long | prefill 2.2k | prefill 9.3k | decode after 9.3k | runs |
 |---|---|---|---|---|---|---|---|---|
-| STABLE | 66.5 (`k2q6b_q6c21_b`) · med 64.3 n=5 | 66.9 (`k2q6b_q6c21_b`) · med 65.4 n=5 | 71.5 (`k2q6_k2q6c22_b`) · med 70.4 n=5 | 49.8 (`k2q6b_q6c21_a`) · med 49.2 n=5 | 481.5 (`k2q6b_q6c20_a`) · med 480.1 n=5 | 510.8 (`k2q6b_pf_q6c20_b`) · med 510.7 n=4 | 55.6 (`k2q6b_pf_q6c18_a`) · med 55.0 n=4 | 9 |
+| STABLE | 66.5 (`k2q6b_q6c21_b`) · med 64.8 n=6 | 66.9 (`k2q6b_q6c21_b`) · med 65.1 n=6 | 71.5 (`k2q6_k2q6c22_b`) · med 70.2 n=6 | 49.8 (`k2q6b_q6c21_a`) · med 49.4 n=6 | 481.5 (`k2q6b_q6c20_a`) · med 480.3 n=6 | 514.6 (`stable1_pf`) · med 510.8 n=5 | 55.6 (`k2q6b_pf_q6c18_a`) · med 55.0 n=5 | 11 |
 
 ### Qwen3.8-27B-i1-IQ3_M
 

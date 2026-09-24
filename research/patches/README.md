@@ -5,7 +5,7 @@ GPU has only 4 GB of memory (GTX 1650 SUPER, no tensor cores) and a 6-core CPU w
 ledger):
 
 <!-- BEGIN GENERATED: headline (bench/docgen.py; edit the source, not this block) -->
-prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing 55-70 tokens/s (64-70 on short prompts, 55 after a 9.3k-token prompt)
+prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing 55-70 tokens/s (65-70 on short prompts, 55 after a 9.3k-token prompt)
 <!-- END GENERATED: headline -->
 
 This page explains the patches in plain language. `SERIES.md` is the lab ledger: the status of each patch, the switch that turns

@@ -10,7 +10,7 @@ building with the listed cmake flags. `dirty` builds without a diff sha are from
 - source: `/ai/src/llama.cpp-v2` branch `tu116-served` commit `d0fd493f61e93c6c7f526b92b08320eac23ea79b`
 - cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
 - toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
-- 61 runs (61 labels): `final4_STABLE0_a`, `final4_STABLE0_b`, `final4_STABLE1_a`, `final4_STABLE1_b`, `final4_STABLE2_a`, `final4_STABLE2_b`, `final4_pf_STABLE0_a`, `final4_pf_STABLE0_b`, `final4_pf_STABLE1_a`, `final4_pf_STABLE1_b`, `final4_pf_STABLE2_a`, `final4_pf_STABLE2_b`, `k2d_k2c26_a`, `k2d_k2c26_b`, `k2d_k2dc22_a`, `k2d_k2dc22_b`, `k2d_k2dc24_a`, `k2d_k2dc24_b`, `k2d_pf_k2c22_a`, `k2d_pf_k2c22_b` ...
+- 63 runs (63 labels): `final4_STABLE0_a`, `final4_STABLE0_b`, `final4_STABLE1_a`, `final4_STABLE1_b`, `final4_STABLE2_a`, `final4_STABLE2_b`, `final4_pf_STABLE0_a`, `final4_pf_STABLE0_b`, `final4_pf_STABLE1_a`, `final4_pf_STABLE1_b`, `final4_pf_STABLE2_a`, `final4_pf_STABLE2_b`, `k2d_k2c26_a`, `k2d_k2c26_b`, `k2d_k2dc22_a`, `k2d_k2dc22_b`, `k2d_k2dc24_a`, `k2d_k2dc24_b`, `k2d_pf_k2c22_a`, `k2d_pf_k2c22_b` ...
 
 ## `/ai/src/llama.cpp-mainline/build75` @ b11056-10-g21ef88a05
 

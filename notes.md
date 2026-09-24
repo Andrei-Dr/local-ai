@@ -1508,3 +1508,14 @@ Full table: research/dave-mi210-2026-09-24.md. Stock e613ef2 vs + 0001-0030, HIP
   decode 11.5 -> 16.2 (+40%, WIN), prefill 9.3k 125 -> 226 (+81%, WIN), after 9.3k 11.9 -> 13.8 (patched reps 17.4 / 10.1: not
   proven); texts differ 3/4 (cache-hit rounding class) -> accuracy not proven without KLD.
 - 0031 status TEST: joins STABLE after a CUDA build on the i5 (no timing job running) + the identity check.
+
+### 2026-09-24 03:10 — lq2: FA4 row-owning K walk (GGML_CUDA_FA_VEC_KROW=1) is NON-INFERIOR at depth -> PASS
+RULER-style needles + variable tracking, one prefill per depth (4k / 16k / 32k / 64k / 128k), q4_0 KV, FA build, KROW 0 vs 1.
+Needles 100% in both arms at every depth; vt mean identical except 32k (KROW 0.1875 vs 0.125, +1 item of 16, better); kill
+(worse by > 1 item in 10 at any depth) not hit. Per the pre-registered rule KROW becomes the code default at the next build:
+it is not in the STABLE series yet (fa1 branch) -> owed: port into the series + a STABLE speed/identity arm.
+
+### 2026-09-24 03:10 — stable1: the STABLE-mode harness end to end -> PASS
+Both runs complete; the ledger records stable_since; stable_args present in specbench args and the 9.3k server argv; speed
+specbench 62.29 vs 63.06 (-1.2%, rule 5%), 9.3k 54.99 vs 55.4 (-0.7%). `STABLE=1 specbench.sh` / `stable_server` are the way
+to write a job's STABLE arm from now on.

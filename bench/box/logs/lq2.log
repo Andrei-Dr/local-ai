@@ -1,0 +1,167 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14747MiB swap_used=274MiB gpu=17MiB,50,P8
+##### lq2_q4_fa1 ctx=131072 ub=512 krow=0 depths=4096,16384,32768,65536,131072 | -ctk q4_0 -ctv q4_0
+  4096 needle0 ok pn 4137 cn 0
+  4096 needle1 ok pn 512 cn 3625
+  4096 needle2 ok pn 512 cn 3625
+  4096 needle3 ok pn 512 cn 3625
+  4096 needle4 ok pn 512 cn 3625
+  4096 needle5 ok pn 512 cn 3625
+  4096 needle6 ok pn 512 cn 3625
+  4096 needle7 ok pn 512 cn 3625
+  4096 needle8 ok pn 512 cn 3625
+  4096 needle9 ok pn 512 cn 3625
+  4096 vt0 MISS pn 511 cn 3625
+  4096 vt1 MISS pn 511 cn 3625
+  4096 vt2 MISS pn 511 cn 3625
+  4096 vt3 MISS pn 511 cn 3625
+  16384 needle0 ok pn 15537 cn 0
+  16384 needle1 ok pn 512 cn 15025
+  16384 needle2 ok pn 512 cn 15025
+  16384 needle3 ok pn 512 cn 15025
+  16384 needle4 ok pn 512 cn 15025
+  16384 needle5 ok pn 512 cn 15025
+  16384 needle6 ok pn 512 cn 15025
+  16384 needle7 ok pn 512 cn 15025
+  16384 needle8 ok pn 512 cn 15025
+  16384 needle9 ok pn 512 cn 15025
+  16384 vt0 MISS pn 511 cn 15025
+  16384 vt1 MISS pn 511 cn 15025
+  16384 vt2 MISS pn 511 cn 15025
+  16384 vt3 MISS pn 511 cn 15025
+  32768 needle0 ok pn 30729 cn 0
+  32768 needle1 ok pn 512 cn 30217
+  32768 needle2 ok pn 512 cn 30217
+  32768 needle3 ok pn 512 cn 30217
+  32768 needle4 ok pn 512 cn 30217
+  32768 needle5 ok pn 512 cn 30217
+  32768 needle6 ok pn 512 cn 30217
+  32768 needle7 ok pn 512 cn 30217
+  32768 needle8 ok pn 512 cn 30217
+  32768 needle9 ok pn 512 cn 30217
+  32768 vt0 MISS pn 511 cn 30217
+  32768 vt1 MISS pn 511 cn 30217
+  32768 vt2 MISS pn 511 cn 30217
+  32768 vt3 MISS pn 511 cn 30217
+  65536 needle0 ok pn 61113 cn 0
+  65536 needle1 ok pn 512 cn 60601
+  65536 needle2 ok pn 512 cn 60601
+  65536 needle3 ok pn 512 cn 60601
+  65536 needle4 ok pn 512 cn 60601
+  65536 needle5 ok pn 512 cn 60601
+  65536 needle6 ok pn 512 cn 60601
+  65536 needle7 ok pn 512 cn 60601
+  65536 needle8 ok pn 512 cn 60601
+  65536 needle9 ok pn 512 cn 60601
+  65536 vt0 ok pn 511 cn 60601
+  65536 vt1 MISS pn 511 cn 60601
+  65536 vt2 ok pn 511 cn 60601
+  65536 vt3 MISS pn 511 cn 60601
+  131072 needle0 ok pn 121905 cn 0
+  131072 needle1 ok pn 512 cn 121393
+  131072 needle2 ok pn 512 cn 121393
+  131072 needle3 ok pn 512 cn 121393
+  131072 needle4 ok pn 512 cn 121393
+  131072 needle5 ok pn 512 cn 121393
+  131072 needle6 ok pn 512 cn 121393
+  131072 needle7 ok pn 512 cn 121393
+  131072 needle8 ok pn 512 cn 121393
+  131072 needle9 ok pn 512 cn 121393
+  131072 vt0 ok pn 511 cn 121393
+  131072 vt1 MISS pn 511 cn 121393
+  131072 vt2 MISS pn 511 cn 121393
+  131072 vt3 MISS pn 511 cn 121393
+longctx lq2_q4_fa1     4096 needle 100.0% ±0.0 vt 0.0625 n=14
+longctx lq2_q4_fa1    16384 needle 100.0% ±0.0 vt 0.1875 n=14
+longctx lq2_q4_fa1    32768 needle 100.0% ±0.0 vt 0.125 n=14
+longctx lq2_q4_fa1    65536 needle 100.0% ±0.0 vt 0.25 n=14
+longctx lq2_q4_fa1   131072 needle 100.0% ±0.0 vt 0.125 n=14
+    vram: 2484 MiB
+    llama_kv_cache: attn_rot_k = 1, n_embd_head_k_all = 256
+    slot   operator(): id  0 | task 998 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see https
+    slot   operator(): id  0 | task 308 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see https:
+    slot   operator(): id  0 | task 1417 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see http
+    slot   operator(): id  0 | task 638 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see https:
+##### lq2_q4_krow ctx=131072 ub=512 krow=1 depths=4096,16384,32768,65536,131072 | -ctk q4_0 -ctv q4_0
+  4096 needle0 ok pn 4137 cn 0
+  4096 needle1 ok pn 512 cn 3625
+  4096 needle2 ok pn 512 cn 3625
+  4096 needle3 ok pn 512 cn 3625
+  4096 needle4 ok pn 512 cn 3625
+  4096 needle5 ok pn 512 cn 3625
+  4096 needle6 ok pn 512 cn 3625
+  4096 needle7 ok pn 512 cn 3625
+  4096 needle8 ok pn 512 cn 3625
+  4096 needle9 ok pn 512 cn 3625
+  4096 vt0 MISS pn 511 cn 3625
+  4096 vt1 MISS pn 511 cn 3625
+  4096 vt2 MISS pn 511 cn 3625
+  4096 vt3 MISS pn 511 cn 3625
+  16384 needle0 ok pn 15537 cn 0
+  16384 needle1 ok pn 512 cn 15025
+  16384 needle2 ok pn 512 cn 15025
+  16384 needle3 ok pn 512 cn 15025
+  16384 needle4 ok pn 512 cn 15025
+  16384 needle5 ok pn 512 cn 15025
+  16384 needle6 ok pn 512 cn 15025
+  16384 needle7 ok pn 512 cn 15025
+  16384 needle8 ok pn 512 cn 15025
+  16384 needle9 ok pn 512 cn 15025
+  16384 vt0 MISS pn 511 cn 15025
+  16384 vt1 MISS pn 511 cn 15025
+  16384 vt2 MISS pn 511 cn 15025
+  16384 vt3 MISS pn 511 cn 15025
+  32768 needle0 ok pn 30729 cn 0
+  32768 needle1 ok pn 512 cn 30217
+  32768 needle2 ok pn 512 cn 30217
+  32768 needle3 ok pn 512 cn 30217
+  32768 needle4 ok pn 512 cn 30217
+  32768 needle5 ok pn 512 cn 30217
+  32768 needle6 ok pn 512 cn 30217
+  32768 needle7 ok pn 512 cn 30217
+  32768 needle8 ok pn 512 cn 30217
+  32768 needle9 ok pn 512 cn 30217
+  32768 vt0 MISS pn 511 cn 30217
+  32768 vt1 MISS pn 511 cn 30217
+  32768 vt2 MISS pn 511 cn 30217
+  32768 vt3 MISS pn 511 cn 30217
+  65536 needle0 ok pn 61113 cn 0
+  65536 needle1 ok pn 512 cn 60601
+  65536 needle2 ok pn 512 cn 60601
+  65536 needle3 ok pn 512 cn 60601
+  65536 needle4 ok pn 512 cn 60601
+  65536 needle5 ok pn 512 cn 60601
+  65536 needle6 ok pn 512 cn 60601
+  65536 needle7 ok pn 512 cn 60601
+  65536 needle8 ok pn 512 cn 60601
+  65536 needle9 ok pn 512 cn 60601
+  65536 vt0 ok pn 511 cn 60601
+  65536 vt1 MISS pn 511 cn 60601
+  65536 vt2 ok pn 511 cn 60601
+  65536 vt3 MISS pn 511 cn 60601
+  131072 needle0 ok pn 121905 cn 0
+  131072 needle1 ok pn 512 cn 121393
+  131072 needle2 ok pn 512 cn 121393
+  131072 needle3 ok pn 512 cn 121393
+  131072 needle4 ok pn 512 cn 121393
+  131072 needle5 ok pn 512 cn 121393
+  131072 needle6 ok pn 512 cn 121393
+  131072 needle7 ok pn 512 cn 121393
+  131072 needle8 ok pn 512 cn 121393
+  131072 needle9 ok pn 512 cn 121393
+  131072 vt0 ok pn 511 cn 121393
+  131072 vt1 MISS pn 511 cn 121393
+  131072 vt2 MISS pn 511 cn 121393
+  131072 vt3 MISS pn 511 cn 121393
+longctx lq2_q4_krow     4096 needle 100.0% ±0.0 vt 0.0625 n=14
+longctx lq2_q4_krow    16384 needle 100.0% ±0.0 vt 0.1875 n=14
+longctx lq2_q4_krow    32768 needle 100.0% ±0.0 vt 0.1875 n=14
+longctx lq2_q4_krow    65536 needle 100.0% ±0.0 vt 0.25 n=14
+longctx lq2_q4_krow   131072 needle 100.0% ±0.0 vt 0.125 n=14
+    vram: 2484 MiB
+    llama_kv_cache: attn_rot_k = 1, n_embd_head_k_all = 256
+    slot   operator(): id  0 | task 998 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see https
+    slot   operator(): id  0 | task 308 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see https:
+    slot   operator(): id  0 | task 1417 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see http
+    slot   operator(): id  0 | task 638 | forcing full prompt re-processing due to lack of cache data (likely due to SWA or hybrid/recurrent memory, see https:
+--- verdict input: qual/results/lq2_*.longctx.summary.json (needle pct + vt mean per depth, by position bucket, prefix re-use)
+LQ2_DONE

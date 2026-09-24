@@ -1,0 +1,17 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14694MiB swap_used=260MiB gpu=17MiB,48,P8
+##### stable1_spec | 02:59:26
+    stable1_spec   code    300 tok | wall 57.07 t/s | decode 66.14 t/s | prefill   59.7 t/s | accept 210/266=0.79 
+    stable1_spec   reason  300 tok | wall 54.86 t/s | decode 63.99 t/s | prefill   75.6 t/s | accept 211/263=0.80 
+    stable1_spec   edit    300 tok | wall 43.55 t/s | decode 69.39 t/s | prefill  146.3 t/s | accept 223/227=0.98 
+    stable1_spec   long    300 tok | wall 28.40 t/s | decode 49.63 t/s | prefill  481.4 t/s | accept 190/326=0.58 
+    hit rate 44.1% 
+##### stable1_pf | 03:00:09
+    stable1_pf: prompt 9279 tok @ 514.6 t/s | decode 128 tok @ 54.99 t/s | wall 20.4 s | 
+  PASS completed
+  PASS stable_since
+  PASS specbench args
+  PASS 9.3k server argv
+  PASS speed specbench 62.29 vs 63.06
+  PASS speed 9.3k 54.99 vs 55.4
+  STABLE1_VERDICT PASS
+STABLE1_DONE

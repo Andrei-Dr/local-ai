@@ -32,18 +32,16 @@ runs beside a job). Per-job decision rules: `research/HANDOFF-2026-09-21-queue-w
 **A. Box queue**
 
 <!-- BEGIN GENERATED: box-queue (bench/docgen.py; edit the source, not this block) -->
-As of the last `bench/closeout.py` sync (latest queue event 2026-09-24 00:35).
+As of the last `bench/closeout.py` sync (latest queue event 2026-09-24 03:00).
 
 | state | job | started | what it measures (first line of its script) |
 |---|---|---|---|
-| running | `lq2` | 2026-09-24 00:35 | LQ2: is the FA4 row-owning K walk (GGML_CUDA_FA_VEC_KROW=1, +17-22% decode at depth) NON-INFERIOR where it matters — retrieval at |
-| pending | `stable1` | - | STABLE1: end-to-end check of the STABLE-mode harness (bench/box/stable.sh, specbench.sh STABLE=1) against stable/stable.env. |
 | pending | `hq1_k2q6` | - | HQ1: the HARD quality sets, thinking ON — the first measurement that can see a reasoning collapse. Scouts (2026-09-20) report |
 | pending | `hq1_k2` | - | HQ1: the HARD quality sets, thinking ON — the first measurement that can see a reasoning collapse. Scouts (2026-09-20) report |
 | pending | `bonsai1_easy` | - | BONSAI1: the accuracy run we dropped. On 2026-09-19 Ternary-Bonsai-2-27B (PrismML QAT ternary of Qwen3.8-27B, PQ2_0 2.13 bpw) |
 | pending | `bonsai1_hard` | - | BONSAI1: the accuracy run we dropped. On 2026-09-19 Ternary-Bonsai-2-27B (PrismML QAT ternary of Qwen3.8-27B, PQ2_0 2.13 bpw) |
 
-Last finished: `k2q6b` done 2026-09-24 00:34; `k2q6` done 2026-09-24 00:16; `lq1` done 2026-09-24 00:02; `k2d` done 2026-09-23 18:45; `tune1` done 2026-09-23 18:34; `mv1` done 2026-09-23 18:26; `qx3` failed (rc 1) 2026-09-23 18:23; `race1` done 2026-09-23 18:06
+Last finished: `stable1` done 2026-09-24 03:00; `lq2` done 2026-09-24 02:58; `k2q6b` done 2026-09-24 00:34; `k2q6` done 2026-09-24 00:16; `lq1` done 2026-09-24 00:02; `k2d` done 2026-09-23 18:45; `tune1` done 2026-09-23 18:34; `mv1` done 2026-09-23 18:26
 <!-- END GENERATED: box-queue -->
 
 Done 2026-09-21/23 (numbers in `notes.md`): HAND1 levers PROMOTED (+5.4% decode, bit-identical); `hq1_stock` => served fine-tune WORSE than stock IQ2_M on hard reasoning (paired ALL +10.4 for stock, CI [+1.5, +19.3]; MATH-L5 80.0 vs 57.5, p 0.012) => C2 is ready for Andrei; `hand1` done => B1 unblocked; `qx3` first run failed on an `expert_mix.py` byte-vs-element shape check (fixed, re-queued). `whittle1` KILLED (GSM8K 81.5 / MMLU-Pro 43.6 vs 96.0 / 71.4, 34.8 t/s; judges that
