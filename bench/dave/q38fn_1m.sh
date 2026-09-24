@@ -15,6 +15,10 @@
 # 4 x 262,144 = 1,048,576 rows. vLLM 0.27's get_rope builds YaRN on mrope (rotary_embedding/__init__.py, rope_type "yarn").
 # Checked elsewhere: the override JSON is accepted by vLLM 0.28 (the MI210 attempt got past config and failed only on FP8
 # weights, which gfx90a cannot run).
+# Extra mounts / env for tuning rounds (appended to the copied ones; a mount whose container path or an env var whose name
+# already exists is replaced, so re-running from an already-patched container does not duplicate them):
+#   EXTRA_BINDS='host:container[:ro] ...'   (space-separated; e.g. patched vLLM files under /mnt/llm-storage/localai/...)
+#   EXTRA_ENV='NAME=value ...'
 # Caveats: static YaRN applies to every request (Qwen warns short-context quality can dip: spot-check); decode may slow a
 # little from the extra 3 GB/GPU offload; LiteLLM's model_info (max_input_tokens) may still say 262144.
 set -euo pipefail
@@ -46,13 +50,19 @@ setarg("--hf-overrides", json.dumps({"text_config": {"rope_parameters": {
 run = ["docker", "run", "-d", "--name", "q38fn-lru", "--ipc", h["IpcMode"], "--shm-size", str(h["ShmSize"])]
 if h["RestartPolicy"]["Name"] not in ("", "no"): run += ["--restart", h["RestartPolicy"]["Name"]]
 if h["NetworkMode"] not in ("default", "bridge"): run += ["--network", h["NetworkMode"]]
-for b in h["Binds"] or []: run += ["-v", b]
+binds = {b.split(":")[1]: b for b in h["Binds"] or []}
+for b in os.environ.get("EXTRA_BINDS", "").split():
+    binds[b.split(":")[1]] = b
+for b in binds.values(): run += ["-v", b]
 for p, bs in (h["PortBindings"] or {}).items():
     for b in bs: run += ["-p", (b["HostIp"] + ":" if b["HostIp"] else "") + b["HostPort"] + ":" + p.split("/")[0]]
 for g in h["GroupAdd"] or []: run += ["--group-add", g]
 for s in h["SecurityOpt"] or []: run += ["--security-opt", s]
 for d in h["Devices"] or []: run += ["--device", d["PathOnHost"] + ":" + d["PathInContainer"]]
-for e in cfg["Env"]: run += ["-e", e]
+env = {e.split("=", 1)[0]: e for e in cfg["Env"]}
+for e in os.environ.get("EXTRA_ENV", "").split():
+    env[e.split("=", 1)[0]] = e
+for e in env.values(): run += ["-e", e]
 if cfg.get("Entrypoint"): run += ["--entrypoint", cfg["Entrypoint"][0]]
 run += [cfg["Image"]] + args
 print("#!/bin/bash\n" + " ".join(shlex.quote(x) for x in run))
