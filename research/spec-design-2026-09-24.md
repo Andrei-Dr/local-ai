@@ -170,3 +170,31 @@ spec2b (T = 0, SYNC=1, the same 3 prompts, 400 tokens; LLAMA_SPEC_DUMP on for th
   <= the largest margin at which a D1 flip or (a) difference occurs, AND max|delta|(b) <= 2 x max|delta|(a). Otherwise P1 is
   SUSPECT and goes to a KLD-vs-Q6 test before any speed claim.
 - If P1 clears: rerun spec2's speed arms (R1-R3 unchanged) with R0 reduced to its first clause (TEST n3 = STABLE n3).
+
+## 10. Correction + the waterfall view (2026-09-24 23:45, pre-registered before any code)
+**Correction.** "Every rejected draft token costs about a full token of CPU expert work" (notes, spec2b) was wrong. The 3.50 NEW /
+layer for rejected tokens was counted against the LRU only, not de-duplicated against the rest of the verify batch (the H3
+number that is de-duplicated is 2.40). Measured directly (spec1cal, code prompt): step time n1 31.7 / n2 40.8 / n3 50.1 ms, a
+no-spec token 21.1 ms -> **each extra draft position adds ~9.2 ms = ~0.44 of a token**, and that 9.2 ms has two halves on two
+different resources:
+- CPU: the position's de-duplicated expert misses (~2.4-2.6 NEW / layer x 40 x ~1.2 MiB at ~27 GB/s ~= 4.5 ms, inferred);
+- GPU / serial: one more MTP draft decode (a full attention + MoE block, run BEFORE the verify, while the CPU idles) plus the
+  verify position's dense work.
+The waterfall is misaligned: the draft runs on the GPU while the CPU waits, then the verify's expert phase runs on the CPU while
+the GPU waits (5.8-6.3 ms / token of GPU idle, measured earlier). Every design so far added positions in series.
+
+**M1 (the move): draft inside the verify's CPU window.** While the CPU computes step k's experts, the GPU (idle) runs the MTP
+head for step k+1 from the last draft token (assume step k is fully accepted; PEARL-style, arXiv 2408.11850 "post-verify").
+If step k accepts everything (P ~ 0.82 x 0.80 x 0.77 ~ 0.5 at n3), step k+1's drafts are ready at zero serial cost; otherwise
+they are discarded (the GPU was idle anyway). With the draft hidden, a draft position costs only its CPU half, so n3 / n4,
+siblings (drawn from the same draft distribution: no extra decode) and the hybrid tree all get re-priced.
+**M2 (killed on arithmetic):** a cache-only target pass as a second-stage filter costs a full GPU forward (~11 ms) per candidate
+to save ~4.5 ms of CPU on the ~20% that get rejected.
+
+spec3 (measure before building M1):
+- Instrument (behind LLAMA_SPEC_DUMP): wall time of the draft phase per step and per depth, of the verify llama_decode, and the
+  GPU busy fraction inside the verify (CUDA events around the graph vs the host wait).
+- Arms: STABLE n1 / n2 / n3, SYNC off, the 3 prompts, 400 tokens, 2 passes.
+- H4: the draft phase is >= 30% of the marginal step cost per extra position (i.e. >= 2.8 ms of the ~9.2 ms per depth). If < 15%,
+  M1 is dead (nothing to hide); between: report and decide.
+- H5: GPU idle inside the verify at n3 >= the n3 draft phase time (the window can hold the draft). If not, M1 hides only part.
