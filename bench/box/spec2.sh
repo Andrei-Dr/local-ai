@@ -36,9 +36,11 @@ cd /ai/bench || exit 1
 source /ai/bench/stable.sh || { echo "SPEC2_FAILED: stable.sh"; exit 1; }
 PY=/ai/.venv/bin/python
 SRC=/ai/src/llama.cpp-mainline; T4=/ai/src/llama.cpp-t4; B4=$T4/build75; SHA=e16838c6d
-OUT=/ai/bench/runs/spec2; mkdir -p $OUT/logs
+OUT=${SPEC2_OUT:-/ai/bench/runs/spec2}; mkdir -p $OUT/logs
 export STABLE_LOGDIR=$OUT/logs  # server logs kept with the results
 GEN=400
+# SPEC2_R0=clause1 (set by spec2b.sh after a "batch-shape class" verdict, design section 9): R0 = TEST n3 vs STABLE n3 only
+R0=${SPEC2_R0:-full}
 
 echo "--- BUILD $SHA in $T4 | $(date +%T)"
 [ -d $T4 ] || { echo "SPEC2_REFUSED: $T4 missing (spec0 creates it)"; exit 1; }
@@ -113,21 +115,22 @@ run() {
   return 0
 }
 
-echo "--- R0 IDENTITY (T = 0, LLAMA_MOE_CACHE_SYNC=1): I_S3 STABLE n3 | I_T3 TEST n3 | I_T4 TEST n4 | $(date +%T)"
+echo "--- R0 IDENTITY ($R0; T = 0, LLAMA_MOE_CACHE_SYNC=1): I_S3 STABLE n3 | I_T3 TEST n3 | I_T4 TEST n4 (full only) | $(date +%T)"
 run spec2_I_S3 "$STABLE_BUILD" 3 "" 1
 run spec2_I_T3 "$B4" 3 "" 1
-run spec2_I_T4 "$B4" 4 "" 1
-$PY - "$OUT" <<'PY' || { echo "SPEC2_VERDICT FAIL (R0)"; echo SPEC2_DONE; exit 0; }
+[ "$R0" = clause1 ] || run spec2_I_T4 "$B4" 4 "" 1
+$PY - "$OUT" "$R0" <<'PY' || { echo "SPEC2_VERDICT FAIL (R0)"; echo SPEC2_DONE; exit 0; }
 import json, os, sys
-out = sys.argv[1]
+out, r0 = sys.argv[1], sys.argv[2]
+arms = ("S3", "T3") if r0 == "clause1" else ("S3", "T3", "T4")
 runs = {}
-for a in ("S3", "T3", "T4"):
+for a in arms:
     p = f"{out}/spec2_I_{a}.json"
     if not os.path.exists(p):
         print(f"    R0 FAIL: identity arm {a} void"); sys.exit(1)
     runs[a] = {r["prompt"]: r["tokens"] for r in json.load(open(p))}
 ok = True
-for x, y in (("S3", "T3"), ("S3", "T4")):
+for x, y in (("S3", "T3"), ("S3", "T4"))[:len(arms) - 1]:
     for k, a in runs[x].items():
         b = runs[y].get(k, [])
         if a == b:
