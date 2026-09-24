@@ -126,3 +126,31 @@ Gate: a policy goes to a box prototype only if its predicted tokens/s beats STAB
 at BOTH T = 0 and the card sampler, AND the calibration fit predicts STABLE's measured n = 1..4 speeds within 3%.
 Kill: no policy >= +5% -> the tree / sibling line is closed for this box; the confidence stop alone is kept if >= +2% (it is a
 one-line change).
+
+## 8. Phase 1 result and Phase 2 (pre-registered 2026-09-24 23:05, before any code or job exists)
+spec1cal (STABLE, -c 4096, specbench code + reason, greedy, 400 tokens, 2 interleaved passes; t/s code / reason):
+no spec 47.3 / 45.8 | n1 61.1 / 58.4 | n2 68.8 / 65.0 | n3 67.5 / 65.4 | **n4 47.6 / 48.2**. The simulator's linear fit fails
+the pre-registered 3% rule (errors +24 / +2 / -10 / -15 / +12%) -> NO VERDICT from the simulator; its confidence-stop "KEEP"
+line is not a verdict either (it should have been gated by the fit too). Two mechanisms the model does not contain:
+- **The n = 4 cliff is a hard cap in our code, not a cost curve.** src/llama-graph.cpp `mc_max_tokens = 4`: the expert cache
+  chain only serves batches of 1-4 tokens (it must stay inside the CUDA MMVQ mul_mat_id window, the one path that tolerates
+  the repeated dummy slot id). n = 4 verifies 5 tokens, the cache is bypassed and every expert runs on the CPU -> no-spec speed.
+  The window was set for IQ3_S (6); for our experts it is Q2_K 7 (gate/up) and Q3_K 5 (down) on Turing
+  (ggml/src/ggml-cuda/mmvq.cu `get_mmvq_mmid_max_batch_turing_plus`), so the true limit for K2q6 is 5 tokens.
+- n2 ~ n3 on code / reason (+1.9% / -0.6%): depth 3 buys almost nothing there.
+
+Phase 2 = direct box measurement (spec2), replacing the simulator gate:
+- **P1 patch (0034 candidate):** the cache chain's token cap = min over the layer's expert tensors of
+  get_mmvq_mmid_max_batch(type, cc) (host-side query), capped at 8; unchanged behavior for batches <= 4.
+- Arms, STABLE config at -c 4096, specbench code + reason + the spec0 prose prompt, greedy 400 tokens, order ABC..CBA,
+  2 passes: S3 = STABLE n3 (baseline); S2 = STABLE n2; P3a / P3b = STABLE n3 --spec-draft-p-min 0.6 / 0.75;
+  T3 = TEST (P1) n3; T4 = TEST n4; T4p = TEST n4 --spec-draft-p-min 0.6.
+- R0 identity: TEST vs STABLE at n3, LLAMA_MOE_CACHE_SYNC=1, T = 0, token ids IDENTICAL on all prompts (batches <= 4 must be
+  untouched); and T4 vs S3 token ids IDENTICAL (speculation length cannot change greedy output; a difference = the batch-5
+  cache chain computes wrong) -> else FAIL and stop.
+- R1 (P1 worth it): T4 or T4p beats S3 by more than the S3 spread on the 3-prompt mean decode t/s, AND T3 is within the S3
+  spread of S3 (no regression at n3).
+- R2 (confidence stop): P3a or P3b beats S3 by more than the S3 spread on the 3-prompt mean -> recommend that p-min (a
+  serving flag: Andrei's call via STABLE promotion rules). Prose reported separately (its 44% acceptance is where a stop
+  should pay).
+- R3 (depth): S2 vs S3 reported; no rule (informational for the draft-length default).
