@@ -1647,3 +1647,22 @@ Rules: research/spec-design-2026-09-24.md section 9 (diagnosis) + section 8 (spe
   at T = 0 up to the batch-shape class above).
 - Accuracy note (new): the served build's greedy output depends on the verify batch shape (D1); the KLD / quality gates were
   always run at the served shape, so they stand, but "IDENTICAL" tests are only meaningful at equal draft n.
+
+### 2026-09-24 23:55 — spec3: where the ~9-13 ms per draft position goes. The draft is only ~19% of it; the verify's GPU busy time grows +5.2 ms per position
+Rules: research/spec-design-2026-09-24.md section 10 / bench/box/spec3.sh. R0: TEST n3 dump on vs STABLE n3 dump off, SYNC=1:
+ids IDENTICAL, draft / accepted EQUAL on all 3 prompts.
+Per step, mean over steps that drafted exactly n (dump ON; the dump costs -19.6% t/s: T3 49.1 vs S3 61.1, so absolute ms are
+inflated, mostly outside the verify):
+| n | step | draft (per depth) | MTP catch-up | verify wall | verify GPU busy | verify GPU idle | other host | tokens/step |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 37.6 | 2.96 (1.11) | 0.79 | 27.9 | 20.2 | 7.7 | 6.0 | 1.86 |
+| 2 | 50.6 | 5.33 (1.15 / 0.83) | 0.93 | 35.9 | 25.1 | 10.7 | 8.4 | 2.52 |
+| 3 | 63.2 | 7.81 (1.17 / 0.83 / 0.82) | 1.10 | 43.6 | 30.5 | 13.2 | 10.7 | 3.03 |
+Marginal per extra position: step +12.8 ms = draft +2.4 (19%) + verify GPU busy +5.2 (41%) + verify GPU idle (waiting on the
+CPU experts) +2.7 (21%) + other host +2.4 (19%; host sampling over the 248k vocab + the dump's own full softmax, inferred).
+- H4 draft share 19.0% -> BETWEEN (report and decide). H5 TRUE: at n3 the verify's GPU idle (13.2 ms) holds the draft (7.8 ms).
+- Reading: M1 (draft inside the CPU window) can remove at most the draft share (~2.4 ms / position, <= ~12% of the n3 step with
+  the dump; less without its syncs). The largest per-position item is GPU compute inside the verify, which I had assumed was idle.
+  GPU busy "counts launch gaps" (spec3 method), so part of it may be host launch time. What grows with n_tokens on the GPU is
+  the next question: (inferred candidates) the 30 Gated DeltaNet layers' per-token recurrence, the cache chain's mul_mat_id reads,
+  attention. If it is the GDN recurrence, the queued "chunked GDN" lead now has a measured target for decode, not only prefill.

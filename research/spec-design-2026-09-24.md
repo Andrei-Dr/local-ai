@@ -198,3 +198,15 @@ spec3 (measure before building M1):
 - H4: the draft phase is >= 30% of the marginal step cost per extra position (i.e. >= 2.8 ms of the ~9.2 ms per depth). If < 15%,
   M1 is dead (nothing to hide); between: report and decide.
 - H5: GPU idle inside the verify at n3 >= the n3 draft phase time (the window can hold the draft). If not, M1 hides only part.
+
+## 11. spec3 result and spec4 (pre-registered 2026-09-24 23:55)
+spec3 (notes.md): marginal cost per draft position ~12.8 ms with the dump on = draft 19% / verify GPU busy 41% / verify GPU idle
+21% / host 19%. H4 BETWEEN, H5 TRUE. M1 is worth at most the draft share; the biggest per-position cost is GPU work that grows
+with the verify's token count.
+spec4: attribute the verify's GPU time per op with nsys (on the box: /usr/bin/nsys), STABLE build (no dump), n1 and n3, the code
+prompt, 200 tokens each; per-kernel time summed per verify step, grouped by op class (GDN / gated delta rule + conv, cache-chain
+mul_mat_id, dense mul_mat, flash attention, norms / elementwise, copies), and the CUDA API launch time on the host.
+- H6: the op classes whose GPU time grows from n1 to n3 account for >= 80% of the busy growth (attribution complete).
+- H7: the GDN layers are >= 50% of the per-position GPU growth -> the chunked / parallel GDN form for small batches becomes the top
+  lead (it serves the verify AND prefill). If < 25%, GDN is not the target; the top grower is.
+- H8: host launch time per verify grows >= 1.5 ms per position -> launch overhead is a real share (CUDA graphs / fusion lead).

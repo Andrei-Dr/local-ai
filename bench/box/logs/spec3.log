@@ -1,0 +1,54 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14776MiB swap_used=248MiB gpu=17MiB,51,P8
+--- BUILD 11d392591 in /ai/src/llama.cpp-t4 | 23:43:31
+    built 11d392591 | 23:43:58
+--- R0 IDENTITY (T = 0, SYNC=1): I_S3 STABLE n3 dumps off | I_T3 TEST n3 dump on | 23:43:58
+    spec3_I_S3 code: 400 tok, 60.95 t/s, draft 348 accepted 283
+    spec3_I_S3 reason: 400 tok, 59.67 t/s, draft 333 accepted 287
+    spec3_I_S3 prose: 400 tok, 43.34 t/s, draft 525 accepted 223
+    spec3_I_T3 code: 400 tok, 48.17 t/s, draft 348 accepted 283
+    spec3_I_T3 reason: 400 tok, 48.21 t/s, draft 333 accepted 287
+    spec3_I_T3 prose: 400 tok, 33.63 t/s, draft 525 accepted 223
+    spec3_I_T3: speculative dump -> /ai/bench/runs/spec3/spec3_I_T3.jsonl (GPU split timing: CUDA)
+    R0 code: ids IDENTICAL (400 tokens) | draft / accepted 348 / 283 vs 348 / 283 EQUAL
+    R0 reason: ids IDENTICAL (400 tokens) | draft / accepted 333 / 287 vs 333 / 287 EQUAL
+    R0 prose: ids IDENTICAL (400 tokens) | draft / accepted 525 / 223 vs 525 / 223 EQUAL
+--- TIMING (SYNC off): order A B C D D C B A (A T1, B T2, C T3 dump on; D S3 STABLE dump off) | 23:45:31
+    spec3_T1_1 code: 400 tok, 51.53 t/s, draft 206 accepted 193
+    spec3_T1_1 reason: 400 tok, 47.55 t/s, draft 204 accepted 195
+    spec3_T1_1 prose: 400 tok, 48.28 t/s, draft 229 accepted 169
+    spec3_T1_1: speculative dump -> /ai/bench/runs/spec3/spec3_T1_1.jsonl (GPU split timing: CUDA)
+    spec3_T2_2 code: 400 tok, 55.03 t/s, draft 285 accepted 256
+    spec3_T2_2 reason: 400 tok, 52.46 t/s, draft 286 accepted 255
+    spec3_T2_2 prose: 400 tok, 42.68 t/s, draft 387 accepted 204
+    spec3_T2_2: speculative dump -> /ai/bench/runs/spec3/spec3_T2_2.jsonl (GPU split timing: CUDA)
+    spec3_T3_3 code: 400 tok, 53.19 t/s, draft 351 accepted 282
+    spec3_T3_3 reason: 400 tok, 54.99 t/s, draft 323 accepted 291
+    spec3_T3_3 prose: 400 tok, 39.03 t/s, draft 509 accepted 229
+    spec3_T3_3: speculative dump -> /ai/bench/runs/spec3/spec3_T3_3.jsonl (GPU split timing: CUDA)
+    spec3_S3_4 code: 400 tok, 67.44 t/s, draft 351 accepted 282
+    spec3_S3_4 reason: 400 tok, 68.82 t/s, draft 320 accepted 292
+    spec3_S3_4 prose: 400 tok, 50.77 t/s, draft 511 accepted 228
+    spec3_S3_5 code: 400 tok, 64.35 t/s, draft 358 accepted 279
+    spec3_S3_5 reason: 400 tok, 62.27 t/s, draft 366 accepted 277
+    spec3_S3_5 prose: 400 tok, 52.86 t/s, draft 485 accepted 237
+    spec3_T3_6 code: 400 tok, 53.23 t/s, draft 351 accepted 282
+    spec3_T3_6 reason: 400 tok, 54.94 t/s, draft 323 accepted 291
+    spec3_T3_6 prose: 400 tok, 39.08 t/s, draft 509 accepted 229
+    spec3_T3_6: speculative dump -> /ai/bench/runs/spec3/spec3_T3_6.jsonl (GPU split timing: CUDA)
+    spec3_T2_7 code: 400 tok, 55.11 t/s, draft 283 accepted 257
+    spec3_T2_7 reason: 400 tok, 52.38 t/s, draft 284 accepted 256
+    spec3_T2_7 prose: 400 tok, 44.06 t/s, draft 369 accepted 213
+    spec3_T2_7: speculative dump -> /ai/bench/runs/spec3/spec3_T2_7.jsonl (GPU split timing: CUDA)
+    spec3_T1_8 code: 400 tok, 51.88 t/s, draft 206 accepted 193
+    spec3_T1_8 reason: 400 tok, 49.89 t/s, draft 207 accepted 191
+    spec3_T1_8 prose: 400 tok, 47.50 t/s, draft 233 accepted 165
+    spec3_T1_8: speculative dump -> /ai/bench/runs/spec3/spec3_T1_8.jsonl (GPU split timing: CUDA)
+--- ANALYSIS | 23:51:14
+  T1 (n 1, 1301 steps): step 37.63 ms | draft 2.96 ms (per depth 1.11) | process 0.79 | verify 27.91 (GPU 20.17, idle 7.74) | tokens/step 1.86 | decode t/s per pass [49.12, 49.76]
+  T2 (n 2, 959 steps): step 50.57 ms | draft 5.33 ms (per depth 1.15 / 0.83) | process 0.93 | verify 35.88 (GPU 25.14, idle 10.74) | tokens/step 2.52 | decode t/s per pass [50.05, 50.52]
+  T3 (n 3, 796 steps): step 63.17 ms | draft 7.81 ms (per depth 1.17 / 0.83 / 0.82) | process 1.10 | verify 43.63 (GPU 30.47, idle 13.16) | tokens/step 3.03 | decode t/s per pass [49.07, 49.09]
+  dump overhead: T3 (dump on) [49.07, 49.09] vs S3 (STABLE build, dump off) [62.34, 59.82] t/s -> -19.6%
+  H4 marginal cost per position: step 12.77 ms, draft phase 2.42 ms -> draft share 19.0% -> BETWEEN (15-30%: report and decide)
+  H5 n3: GPU idle inside the verify 13.16 ms vs draft phase 7.81 ms -> TRUE (the verify's GPU idle holds the n3 draft)
+  SPEC3 H4: BETWEEN (15-30%: report and decide) | H5: TRUE (the verify's GPU idle holds the n3 draft)
+SPEC3_DONE
