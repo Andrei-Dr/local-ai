@@ -25,6 +25,7 @@ used to wait, or picks GPU code that suits a card without tensor cores.
 | path | what it is | status |
 |---|---|---|
 | `mainline-series/0001-0030` | **the current patch series**, one linear chain on upstream llama.cpp (`git am` in order) | what we build and serve |
+| fork | [Andrei-Dr/llama.cpp](https://github.com/Andrei-Dr/llama.cpp): `tu116-served` = STABLE as git history, `combo` = TEST, experiment branches, `dave/mi210` = davetha's MI210 patches | browse / cherry-pick |
 | `SERIES.md` | status, switches, evidence and the serving command for every patch in `mainline-series/` | read with this page |
 | `experimental/` | parked or superseded work: pre-gated expert prefetch, its diagnostics, a cache warm-up variant, and the first cuts of patches that later landed as 0021 and 0024 | not served |
 | `box-series/` | the earlier series on the PrismML fork of llama.cpp, now used only for the ternary Bonsai model that mainline cannot load | history |
