@@ -22,7 +22,7 @@ cd "$(dirname "$0")"
 C=q38fn-lru; OLD=${OLD:-q38fn-lru-262k}; PORT=8057   # OLD=<name> for tuning rounds: the original 262k container stays untouched
 if [ "${1:-}" = --rollback ]; then
   docker rm -f $C >/dev/null 2>&1 || true
-  docker rename $OLD $C && docker start $C && echo "rolled back: $C (262k) started"; exit 0
+  docker rename $OLD $C && docker start $C && echo "rolled back: $C (from $OLD) started"; exit 0
 fi
 [ "$(docker inspect -f '{{.Name}}' $C 2>/dev/null)" = "/$C" ] || { echo "no container $C"; exit 1; }
 [ "${1:-}" != --apply ] || ! docker inspect $OLD >/dev/null 2>&1 || { echo "$OLD already exists: pick another OLD= name"; exit 1; }
@@ -65,5 +65,5 @@ echo "waiting for the 1M server on :$PORT (model load takes minutes)"
 for i in $(seq 1 120); do
   curl -sf http://127.0.0.1:$PORT/v1/models >/dev/null && { echo "UP: $(curl -s http://127.0.0.1:$PORT/v1/models | grep -o '"max_model_len":[0-9]*')"; exit 0; }
   docker ps -q -f name=^$C$ | grep -q . || break; sleep 15; done
-docker logs --tail 40 $C > q38fn-1m.fail.log 2>&1 || true
-echo "1M server did not come up (tail in $(pwd)/q38fn-1m.fail.log) -> rollback"; exec bash "$0" --rollback
+docker logs $C > q38fn-1m.fail.full.log 2>&1 || true; tail -40 q38fn-1m.fail.full.log > q38fn-1m.fail.log
+echo "1M server did not come up (full log: $(pwd)/q38fn-1m.fail.full.log) -> rollback"; exec bash "$0" --rollback
