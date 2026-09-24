@@ -8,8 +8,8 @@
 # What changes (everything else, binds / env / ports / devices / image / other flags, is copied from `docker inspect`):
 #   --hf-overrides  YaRN factor 4 over the native 262,144 positions (keeps mrope_section / interleaved / partial rotary 0.25)
 #   --max-model-len 1010000
-#   --kv-cache-memory 6900000000   (was 3.9e9 per GPU = ~585k tokens incl. the MTP layer; 1.01M x ~6.6 KiB per GPU needs ~6.7 GB)
-#   --cpu-offload-gb 43            (was 40: +3 GB of experts to host RAM per GPU pays for the bigger KV; the R9700s are full)
+#   --kv-cache-memory 8300000000   (KV=; was 3.9e9 per GPU; vLLM needs 7.63 GiB per GPU at 1.01M incl. mamba page padding + MTP)
+#   --cpu-offload-gb 45            (OFF=; was 40: +5 GB of experts per GPU to host RAM pays for the bigger KV)
 # Why it can work: 12 of 48 layers are full attention (2 KV heads x 256, fp8) -> ~12 KiB / token total; the 36 linear-attention
 # layers keep a fixed state. The patched mrope.py (bind-mounted) supports scaling_factor and sizes its cos/sin table at
 # 4 x 262,144 = 1,048,576 rows. vLLM 0.27's get_rope builds YaRN on mrope (rotary_embedding/__init__.py, rope_type "yarn").
@@ -34,7 +34,8 @@ args = list(cfg["Cmd"])
 def setarg(k, v):
     if k in args: args[args.index(k) + 1] = v
     else: args.extend([k, v])
-setarg("--max-model-len", "1010000"); setarg("--kv-cache-memory", "6900000000"); setarg("--cpu-offload-gb", "43")
+import os
+setarg("--max-model-len", "1010000"); setarg("--kv-cache-memory", os.environ.get("KV", "8300000000")); setarg("--cpu-offload-gb", os.environ.get("OFF", "45"))
 setarg("--hf-overrides", json.dumps({"text_config": {"rope_parameters": {
     "rope_type": "yarn", "factor": 4.0, "original_max_position_embeddings": 262144, "rope_theta": 10000000,
     "partial_rotary_factor": 0.25, "mrope_section": [11, 11, 10], "mrope_interleaved": True},

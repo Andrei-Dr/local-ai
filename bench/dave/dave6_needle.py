@@ -13,20 +13,25 @@ def post(port, path, body, timeout=7200):
         return json.loads(r.read())
 
 
+MODEL = 'm'
+
+
 def ntok(port, text):
-    return len(post(port, '/tokenize', {'model': 'm', 'prompt': text})['tokens'])
+    return len(post(port, '/tokenize', {'model': MODEL, 'prompt': text})['tokens'])
 
 
 def chat(port, content, max_tokens=32):
     t0 = time.time()
-    r = post(port, '/v1/chat/completions', {'model': 'm', 'messages': [{'role': 'user', 'content': content}],
+    r = post(port, '/v1/chat/completions', {'model': MODEL, 'messages': [{'role': 'user', 'content': content}],
              'max_tokens': max_tokens, 'temperature': 0, 'chat_template_kwargs': {'enable_thinking': False}})
     return r['choices'][0]['message'].get('content') or '', r['usage'], time.time() - t0
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--port', type=int, default=8099); ap.add_argument('--src'); ap.add_argument('--out')
+    ap = argparse.ArgumentParser(); ap.add_argument('--port', type=int, default=8099); ap.add_argument('--src'); ap.add_argument('--out'); ap.add_argument('--model', default='m')
     a = ap.parse_args()
+    global MODEL
+    MODEL = a.model
     files = sorted(os.path.join(d, f) for d, _, fs in os.walk(a.src) for f in fs if f.endswith(('.c', '.cpp', '.h', '.cu', '.cuh', '.py')))
     text = ''.join(open(f, errors='replace').read() for f in files)
     chars_per_tok = len(text[:400000]) / ntok(a.port, text[:400000])
