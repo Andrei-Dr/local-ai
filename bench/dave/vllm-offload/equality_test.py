@@ -1,32 +1,41 @@
 """equality_test.py -- does vLLM's native CPU KV offload (patched for the QSA ring) leave q38fn's outputs unchanged?
 
 Runs on Dave's box (stdlib only) against the q38fn server on :8057 (/v1/completions, raw prompts, return_token_ids).
-  python3 equality_test.py e0 LABEL            # E0: 3 prompts x 2 runs, greedy, 256 tokens -> results/LABEL.e0.json
-  python3 equality_test.py e1 LABEL REF.e0.json [--external]
-                                               # E1: preempt-and-restore mid-decode -> results/LABEL.e1.json
+  python3 equality_test.py e0 LABEL            # E0 + E0h, any server           -> results/LABEL.e0.json
+  python3 equality_test.py e2 LABEL            # E2, needs VLLM_SERVER_DEV_MODE=1 -> results/LABEL.e2.json
+  python3 equality_test.py e1 LABEL REF.e0.json [--external]   # E1, dev mode -> results/LABEL.e1.json
   python3 equality_test.py cmp A.e0.json B.e0.json   # first divergence per prompt between two E0 files (e.g. two servers)
 
-PRE-REGISTERED RULES (written before any run; 2026-09-25)
-Hypothesis: excluding the CircularBufferSpec ring group from offloading is exact: a request restored from the CPU tier after
-preemption produces the same greedy token ids as an undisturbed run.
-Prompts: code (argparse.py source), prose (license texts), reasoning (seeded ledger puzzle); ~15k tokens each, raw completion
+PRE-REGISTERED RULES (2026-09-25; revision 2, written before any run on the offload server)
+Hypothesis: excluding the CircularBufferSpec ring group from offloading is exact: KV restored from the CPU tier gives the same
+greedy token ids as the same restore served from the GPU prefix cache, and a preempted request restored from CPU completes.
+Prompts: code (argparse.py source), prose (license texts), reasoning (seeded ledger puzzle); 13-24k tokens, raw completion
   prompts, temperature 0, max_tokens 256, ignore_eos. Deviation from the brief's ~2k tokens: with the default hash unit the
   offload chunk is 3216 tokens (the hybrid layout's block size) and a restore needs >= 2 complete chunks (MTP drops the
-  trailing chunk; the mamba groups need a 2-chunk window), so a 2k prompt can never be restored from CPU. ~15k tokens gives
-  4 complete chunks.
-E0 (determinism): each prompt twice, sequentially, alone on the server. With --reset (dev-mode servers) the GPU prefix cache
-  AND the CPU tier are wiped before every run, so both runs are cold. Pass = identical ids for every prompt.
-E1 (restore): stream the code prompt; after 64 generated tokens POST /reset_prefix_cache?reset_running_requests=true
-  (reset_external=false): every running request is preempted (Scheduler._preempt_request) and the GPU prefix cache is wiped
-  while the CPU tier is kept, so the request can only resume by recomputing or by loading from CPU. Evidence required:
-  vllm:num_preemptions_total delta >= 1 AND vllm:kv_offload_load_bytes delta > 0 (a CPU->GPU load happened).
-  Pass = the 256 ids equal the E0 reference ids of the same prompt.
+  trailing chunk; the mamba groups need a 2-chunk window), so a 2k prompt can never be restored from CPU.
+Cache isolation: every run carries a cache_salt; a new salt = a cold run (no GPU or CPU prefix hit), a reused salt = a hit.
+Why revision 2: revision 1 (commit e4a4ab8) ran E0 once on the unpatched 1M server as run1 cold / run2 same prompt. Run 2
+  diverged from run 1 at tokens 0 / 4 / 43, but run 2 was a GPU prefix-cache hit, so cold-vs-cold determinism and
+  hit-vs-cold were confounded. Revision 2 separates them, and adds E2 (same restore boundary, GPU vs CPU source).
+E0 (determinism): each prompt twice cold (two fresh salts), sequential, alone. Pass = identical ids for every prompt.
+E0h (diagnostic): a third run reusing the first salt = a GPU prefix-cache hit; first divergence vs cold is reported.
+E2 (offload exactness, dev mode): per prompt, fresh salt: cold run; G = same salt again (GPU prefix hit); then
+  /reset_prefix_cache (GPU only: reset_external=false, no running requests) and C = same salt again (restore from CPU).
+  Evidence: vllm:kv_offload_load_bytes delta > 0 during C, and C's external (CPU) hit tokens equal G's GPU hit tokens
+  (same boundary, so both runs recompute the same tail). Pass = C ids == G ids for all 3 prompts.
+E1 (preempt-and-restore, dev mode): stream the code prompt (fresh salt); after 64 generated tokens POST
+  /reset_prefix_cache?reset_running_requests=true (reset_external=false): every running request is preempted
+  (Scheduler._preempt_request), the GPU prefix cache is wiped, the CPU tier is kept. Run twice (E1a, E1b; fresh salts).
+  Evidence: vllm:num_preemptions delta >= 1 AND vllm:kv_offload_load_bytes delta > 0 in each.
+  Pass = E1a ids == E0 cold ids if E0h == cold (a restore is then expected to be bit-exact end to end); otherwise (the GPU
+  prefix cache itself changes outputs, so no restore path can match a cold run) Pass = E1a ids == E1b ids, with the
+  divergence from cold reported next to E1 --external.
 E1 --external (control, diagnostic only): the same with reset_external=true, so the CPU tier is wiped too and the restore is
   a full recompute. It separates preemption-recompute numerics from the offload path.
-Verdict: PASS = E0 deterministic AND E1 identical with >= 1 preemption and a CPU load. If E0 itself is not deterministic,
-  no PASS: report the first-divergence position (tolerance: E1 must not diverge earlier than E0's own first divergence).
+Verdict: PASS = E0 deterministic AND E2 pass AND E1 pass with its evidence. If E0 itself is not deterministic: no PASS;
+  report first-divergence positions (tolerance: a restore may not diverge earlier than E0's own first divergence).
 Kill: any mismatch, missing evidence, or server error -> roll back to the plain 1M config (q38fn_1m.sh --rollback).
-Safety: E1 refuses to reset while any request other than ours is running (Dave's traffic shares the server).
+Safety: resets refuse to run while any request other than ours is running (Dave's traffic shares the server).
 """
 import hashlib, json, os, random, re, sys, threading, time, urllib.request
 
@@ -83,15 +92,37 @@ def metrics():
     return out
 
 
-def body(prompt, stream):
+def body(prompt, stream, salt):
     return {"model": MODEL, "prompt": prompt, "max_tokens": GEN, "temperature": 0, "ignore_eos": True,
-            "return_token_ids": True, "stream": stream, "stream_options": {"include_usage": True} if stream else None}
+            "return_token_ids": True, "stream": stream, "cache_salt": salt,
+            "stream_options": {"include_usage": True} if stream else None}
 
 
-def run_once(prompt):
-    r = post("/v1/completions", {k: v for k, v in body(prompt, False).items() if v is not None})
+WATCH = ("prefix_cache", "kv_offload_load_bytes", "kv_offload_store_bytes", "num_preemptions", "prompt_tokens")
+
+
+def deltas(m0, m1):
+    return {k: round(m1.get(k, 0) - m0.get(k, 0), 1) for k in sorted(set(m0) | set(m1))
+            if any(w in k for w in WATCH) and not k.endswith(("_created", "_bucket", "_count", "_sum"))}
+
+
+def run_once(prompt, salt):
+    idle()
+    m0 = metrics(); t0 = time.time()
+    r = post("/v1/completions", {k: v for k, v in body(prompt, False, salt).items() if v is not None})
+    wall = round(time.time() - t0, 1)
+    time.sleep(12)  # stats loggers publish per step; let the last step land before diffing
     c = r["choices"][0]
-    return {"ids": c["token_ids"], "prompt_tokens": r["usage"]["prompt_tokens"], "text_head": c["text"][:120]}
+    return {"salt": salt, "ids": c["token_ids"], "prompt_tokens": r["usage"]["prompt_tokens"], "wall_s": wall,
+            "text_head": c["text"][:120], "metric_delta": deltas(m0, metrics())}
+
+
+def idle():
+    for _ in range(600):
+        if metrics().get("vllm:num_requests_running", 0) == 0:
+            return
+        time.sleep(1)
+    sys.exit("server never went idle (other traffic); stopping")
 
 
 def reset(running, external):
@@ -110,20 +141,38 @@ def first_divergence(a, b):
     return next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), None if len(a) == len(b) else min(len(a), len(b)))
 
 
-def e0(label, do_reset):
-    res = {"label": label, "reset_between_runs": do_reset, "prompts": {}}
+def e0(label):
+    res = {"label": label, "prompts": {}}
     for name, fn in PROMPTS.items():
-        p = fn(); runs = []
-        for _ in range(2):
-            if do_reset and not reset(False, True):
-                sys.exit("E0: reset_prefix_cache failed")
-            t0 = time.time(); r = run_once(p); r["wall_s"] = round(time.time() - t0, 1); runs.append(r)
-        fd = first_divergence(runs[0]["ids"], runs[1]["ids"])
-        res["prompts"][name] = {"prompt_sha256": hashlib.sha256(p.encode()).hexdigest(), "runs": runs,
-                                "identical": fd is None, "first_divergence": fd}
-        print(f"E0 {name:9s} prompt {runs[0]['prompt_tokens']} tok | identical={fd is None} first_div={fd} | "
-              f"{runs[0]['wall_s']}s/{runs[1]['wall_s']}s | {runs[0]['text_head'][:60]!r}", flush=True)
+        p = fn()
+        a = run_once(p, f"{label}-{name}-a"); b = run_once(p, f"{label}-{name}-b"); h = run_once(p, f"{label}-{name}-a")
+        fd, fh = first_divergence(a["ids"], b["ids"]), first_divergence(a["ids"], h["ids"])
+        res["prompts"][name] = {"prompt_sha256": hashlib.sha256(p.encode()).hexdigest(), "runs": [a, b], "hit": h,
+                                "identical": fd is None, "first_divergence": fd, "hit_first_divergence": fh}
+        print(f"E0 {name:9s} prompt {a['prompt_tokens']} tok | cold==cold {fd is None} (div {fd}) | hit==cold {fh is None} "
+              f"(div {fh}) hit delta {h['metric_delta']} | {a['text_head'][:50]!r}", flush=True)
     res["deterministic"] = all(v["identical"] for v in res["prompts"].values())
+    res["hit_equals_cold"] = all(v["hit_first_divergence"] is None for v in res["prompts"].values())
+    return res
+
+
+def e2(label):
+    res = {"label": label, "prompts": {}}
+    for name, fn in PROMPTS.items():
+        p = fn(); salt = f"{label}-{name}"
+        cold = run_once(p, salt); g = run_once(p, salt)
+        idle()
+        if not reset(False, False):
+            sys.exit("E2: GPU-only reset failed")
+        c = run_once(p, salt)
+        fd = first_divergence(g["ids"], c["ids"])
+        res["prompts"][name] = {"prompt_sha256": hashlib.sha256(p.encode()).hexdigest(), "cold": cold, "gpu_hit": g,
+                                "cpu_restore": c, "identical": fd is None, "first_divergence": fd,
+                                "cold_vs_gpu_hit": first_divergence(cold["ids"], g["ids"])}
+        print(f"E2 {name:9s} C==G {fd is None} (div {fd}) | cold vs G div {res['prompts'][name]['cold_vs_gpu_hit']} | "
+              f"G {g['metric_delta']} | C {c['metric_delta']}", flush=True)
+    res["pass"] = all(v["identical"] and v["cpu_restore"]["metric_delta"].get("vllm:kv_offload_load_bytes", 0) > 0
+                      for v in res["prompts"].values())
     return res
 
 
@@ -131,10 +180,8 @@ def e1(label, ref_path, external):
     ref = json.load(open(ref_path))["prompts"]["code"]
     p = code_prompt()
     assert hashlib.sha256(p.encode()).hexdigest() == ref["prompt_sha256"], "prompt drifted from the E0 reference"
-    m0 = metrics()
-    if m0.get("vllm:num_requests_running", 0) > 0:
-        sys.exit("E1: other requests are running; refusing to preempt Dave's traffic")
-    ids, done, reset_info = [], threading.Event(), {}
+    idle(); m0 = metrics()
+    ids, reset_info = [], {}
 
     def do_reset():
         m = metrics()
@@ -142,7 +189,7 @@ def e1(label, ref_path, external):
             reset_info["refused"] = "other requests running"; return
         reset_info["at_token"] = len(ids); reset_info["ok"] = reset(True, external)
 
-    req = urllib.request.Request(HOST + "/v1/completions", json.dumps(body(p, True)).encode(),
+    req = urllib.request.Request(HOST + "/v1/completions", json.dumps(body(p, True, f"{label}-code")).encode(),
                                  {"Content-Type": "application/json"})
     t0 = time.time(); resetter = None
     with urllib.request.urlopen(req, timeout=3600) as r:
@@ -159,12 +206,12 @@ def e1(label, ref_path, external):
         resetter.join()
     time.sleep(12)  # let the stats loggers publish the step that carried the load
     m1 = metrics()
-    delta = {k: m1.get(k, 0) - m0.get(k, 0) for k in ("vllm:num_preemptions", "vllm:kv_offload_load_bytes",
-                                                     "vllm:kv_offload_store_bytes", "vllm:prompt_tokens")}
+    delta = deltas(m0, m1)
     fd = first_divergence(ref["runs"][0]["ids"], ids)
     res = {"label": label, "external_reset": external, "reset": reset_info, "wall_s": round(time.time() - t0, 1),
            "ids": ids, "metric_delta": delta, "identical_to_e0": fd is None, "first_divergence": fd,
-           "evidence_ok": delta["vllm:num_preemptions"] >= 1 and (external or delta["vllm:kv_offload_load_bytes"] > 0)}
+           "evidence_ok": delta.get("vllm:num_preemptions", 0) >= 1
+           and (external or delta.get("vllm:kv_offload_load_bytes", 0) > 0)}
     print(f"E1 external={external} reset={reset_info} tokens={len(ids)} identical={fd is None} first_div={fd} "
           f"delta={delta}", flush=True)
     return res
@@ -180,7 +227,9 @@ if __name__ == "__main__":
         sys.exit(0)
     os.makedirs(OUT, exist_ok=True)
     if mode == "e0":
-        out = e0(label, "--reset" in sys.argv)
+        out = e0(label)
+    elif mode == "e2":
+        out = e2(label)
     elif mode == "e1":
         out = e1(label, sys.argv[3], "--external" in sys.argv)
     else:
