@@ -98,6 +98,13 @@ pass. Cutting the draft's vocabulary made writing 5-10% faster with the output u
 
 - **0022** The draft head scores only the ~49k most common tokens instead of all 248k. The full model still checks every guess against the full vocabulary, so the output is unchanged; only the draft gets cheaper. Switch: ``LLAMA_MTP_VOCAB_FILE=/ai/models/mtp-Qwen3.6-35B-A3B-vocab49k.bin` for serving (unset = full head)`. Status: STABLE.
 - **0023** Fix: the cut-down draft head skips graphs built over weights that are not allocated yet (startup memory-fit pass). Switch: `with 0022`. Status: STABLE.
+
+### 6. Long context: attention over a quantized KV cache (0032-0033)
+At 100k+ tokens of context the attention kernel, not the experts, sets the writing speed, and the KV cache is stored at
+4 bits to fit. These patches make the one-token attention kernel cheaper for that case; the default F16 cache does not use them.
+
+- **0032** With a quantized KV cache (long context), writing one token reads each stored key/value once for the 8 query heads that share it, instead of 8 times. Inert with the default F16 cache. Switch: ``GGML_CUDA_FA_VEC_GQA` 1 (default) = single-token decode, 0 = off, 2 = also 2-4 token batches; F16 KV only with `GGML_CUDA_FA_VEC_GQA_F16=1``. Status: TEST.
+- **0033** In the same kernel each GPU thread computes whole key rows against all 8 heads, so the key walk (2/3 of attention at depth) does about a third of the instructions. Switch: ``GGML_CUDA_FA_VEC_KROW=0` turns it off (default on where 0032 applies, 1 token, K q4_0 / q8_0)`. Status: TEST.
 <!-- END GENERATED: patch-guide -->
 
 ## How accuracy is protected

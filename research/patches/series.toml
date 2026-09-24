@@ -345,6 +345,28 @@ evidence = "dave2 (MI210): DeepSeek-V4 REAP 145B with -ubp 2048 died on the long
 gate = "exact on Qwen by construction (only window-cache sizes change); crash repro on DSV4"
 was = "—"
 
+[[patch]]
+file = "0032-perf-GGML_CUDA_FA_VEC_GQA-FlashAttention-vec-kernel-.patch"
+theme = "longctx"
+title = "FA vec kernel: one K/V walk per head group (GQA, quantized KV decode)"
+status = "TEST"
+switch = "`GGML_CUDA_FA_VEC_GQA` 1 (default) = single-token decode, 0 = off, 2 = also 2-4 token batches; F16 KV only with `GGML_CUDA_FA_VEC_GQA_F16=1`"
+plain = "With a quantized KV cache (long context), writing one token reads each stored key/value once for the 8 query heads that share it, instead of 8 times. Inert with the default F16 cache."
+evidence = "fa1: decode at 131k q4_0 KV 12.68 -> 13.99 t/s (+10.3%), byte-identical reply; pending lead1"
+gate = "test-backend-ops FLASH_ATTN_EXT 4079/4079 (fa1); lead1 R1 (identical at the STABLE config) + R2 + R3"
+was = "fa-gqa-vec / fa-gqa-dispatch (fa1 tree)"
+
+[[patch]]
+file = "0033-perf-GGML_CUDA_FA_VEC_KROW-row-owning-K-walk-in-the-.patch"
+theme = "longctx"
+title = "FA vec kernel: row-owning K walk (KROW), default on"
+status = "TEST"
+switch = "`GGML_CUDA_FA_VEC_KROW=0` turns it off (default on where 0032 applies, 1 token, K q4_0 / q8_0)"
+plain = "In the same kernel each GPU thread computes whole key rows against all 8 heads, so the key walk (2/3 of attention at depth) does about a third of the instructions."
+evidence = "fa4: decode +17% at 120k, +22% at 239k over 0032 (IQ2_M); lq2 non-inferior 4k-128k; pending lead1"
+gate = "test-backend-ops 4079/4079 with KROW 0 and 1 (fa4); lq2 PASS; lead1 R1 + R2 + R3"
+was = "fa-krow (fa1 tree)"
+
 [themes.cache]
 heading = "1. A GPU cache for the experts"
 intro = """The core idea. The GPU keeps a least-recently-used cache of expert weights ("slots", ~20-26 per layer). An expert in the
@@ -370,3 +392,8 @@ are slow here. Writing after a 9k-token prompt got +6-7% from 0021 alone."""
 heading = "5. Cheaper speculative decoding"
 intro = """The model has a small built-in draft head (MTP) that guesses the next tokens; the full model checks the guesses in one
 pass. Cutting the draft's vocabulary made writing 5-10% faster with the output unchanged."""
+
+[themes.longctx]
+heading = "6. Long context: attention over a quantized KV cache"
+intro = """At 100k+ tokens of context the attention kernel, not the experts, sets the writing speed, and the KV cache is stored at
+4 bits to fit. These patches make the one-token attention kernel cheaper for that case; the default F16 cache does not use them."""

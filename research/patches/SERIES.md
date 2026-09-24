@@ -44,6 +44,8 @@ Generated from `series.toml` (edit that file; `bench/docgen.py` rewrites this ta
 | 0029 | — | overlap plan: op test first, per-backend CUDA verdict cached (fix) | STABLE | with 0024 | ovl19/20: the per-split device queries cost ~7% of decode whenever the mode was on | with 0024 |
 | 0030 | — | overlap plan only for graphs >= the whole-tensor threshold (fix) | STABLE | with 0024 | promo5: the planned reserve graph kept 290 MiB through decode, the cache could not re-allocate (-20%) | ✅ promo5b |
 | 0031 | — | size window (SWA) KV caches for the prefill-mode ubatch | TEST | with 0011 | dave2 (MI210): DeepSeek-V4 REAP 145B with -ubp 2048 died on the long prompt (find_slot 1348 > 256, GPU fault) before, completes after | exact on Qwen by construction (only window-cache sizes change); crash repro on DSV4 |
+| 0032 | fa-gqa-vec / fa-gqa-dispatch (fa1 tree) | FA vec kernel: one K/V walk per head group (GQA, quantized KV decode) | TEST | `GGML_CUDA_FA_VEC_GQA` 1 (default) = single-token decode, 0 = off, 2 = also 2-4 token batches; F16 KV only with `GGML_CUDA_FA_VEC_GQA_F16=1` | fa1: decode at 131k q4_0 KV 12.68 -> 13.99 t/s (+10.3%), byte-identical reply; pending lead1 | test-backend-ops FLASH_ATTN_EXT 4079/4079 (fa1); lead1 R1 (identical at the STABLE config) + R2 + R3 |
+| 0033 | fa-krow (fa1 tree) | FA vec kernel: row-owning K walk (KROW), default on | TEST | `GGML_CUDA_FA_VEC_KROW=0` turns it off (default on where 0032 applies, 1 token, K q4_0 / q8_0) | fa4: decode +17% at 120k, +22% at 239k over 0032 (IQ2_M); lq2 non-inferior 4k-128k; pending lead1 | test-backend-ops 4079/4079 with KROW 0 and 1 (fa4); lq2 PASS; lead1 R1 + R2 + R3 |
 <!-- END GENERATED: series-table -->
 
 ## Promotion DONE 07:47 — promo1 (bench/box/promo1.sh), branch tu116-served 1c54372
