@@ -1,0 +1,66 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14695MiB swap_used=239MiB gpu=17MiB,43,P8
+--- BUILD 7488986d5 in /ai/src/llama.cpp-t4 | 22:18:33
+    built 7488986d5 | 22:26:58
+--- 0. IDENTITY (R0 ids, R0b draft counts) T = 0, LLAMA_MOE_CACHE_SYNC=1: S (STABLE) | O (TEST, dumps unset) | D (TEST, dumps on) | 22:26:58
+    spec0_S code seed 0: 42 prompt tok, 768 generated, draft 656 accepted 548
+    spec0_S reason seed 0: 60 prompt tok, 690 generated, draft 588 accepted 495
+    spec0_S prose seed 0: 48 prompt tok, 740 generated, draft 960 accepted 421
+/ai/bench/spec0.sh: line 124: /ai/bench/runs/spec0/spec0_S.jsonl: No such file or directory
+    spec0_S:  dump - steps, route - B
+    spec0_O code seed 0: 42 prompt tok, 768 generated, draft 656 accepted 548
+    spec0_O reason seed 0: 60 prompt tok, 690 generated, draft 588 accepted 495
+    spec0_O prose seed 0: 48 prompt tok, 740 generated, draft 960 accepted 421
+/ai/bench/spec0.sh: line 124: /ai/bench/runs/spec0/spec0_O.jsonl: No such file or directory
+    spec0_O:  dump - steps, route - B
+    spec0_D code seed 0: 42 prompt tok, 768 generated, draft 656 accepted 548
+    spec0_D reason seed 0: 60 prompt tok, 690 generated, draft 588 accepted 495
+    spec0_D prose seed 0: 48 prompt tok, 740 generated, draft 960 accepted 421
+    spec0_D:  dump 735 steps, route 4008880 B
+    R0 S vs O code: IDENTICAL (768 tokens)
+    R0 S vs O reason: IDENTICAL (690 tokens)
+    R0 S vs O prose: IDENTICAL (740 tokens)
+    R0 O vs D code: IDENTICAL (768 tokens)
+    R0 O vs D reason: IDENTICAL (690 tokens)
+    R0 O vs D prose: IDENTICAL (740 tokens)
+    R0b S vs O code: draft_n / accepted 656 / 548 vs 656 / 548 -> EQUAL
+    R0b S vs O reason: draft_n / accepted 588 / 495 vs 588 / 495 -> EQUAL
+    R0b S vs O prose: draft_n / accepted 960 / 421 vs 960 / 421 -> EQUAL
+    R0b O vs D code: draft_n / accepted 656 / 548 vs 656 / 548 -> EQUAL
+    R0b O vs D reason: draft_n / accepted 588 / 495 vs 588 / 495 -> EQUAL
+    R0b O vs D prose: draft_n / accepted 960 / 421 vs 960 / 421 -> EQUAL
+--- 1. CARD SAMPLER (T 0.7, top_p 0.8, top_k 20, presence 1.5), seeds 1 2, dumps on | 22:30:31
+    spec0_C code seed 1: 42 prompt tok, 768 generated, draft 644 accepted 552
+    spec0_C reason seed 1: 60 prompt tok, 666 generated, draft 582 accepted 473
+    spec0_C prose seed 1: 48 prompt tok, 768 generated, draft 978 accepted 441
+    spec0_C code seed 2: 42 prompt tok, 395 generated, draft 360 accepted 276
+    spec0_C reason seed 2: 60 prompt tok, 705 generated, draft 642 accepted 492
+    spec0_C prose seed 2: 48 prompt tok, 768 generated, draft 1035 accepted 421
+    spec0_C:  dump 1415 steps, route 7715120 B
+--- 2. SIBLINGS over prompt + D's generation (every 4th generated position, 3 alternatives) | 22:32:50
+    sib code: exit 0 | spec-sibling: 810 path tokens, 192 sampled positions, 576 alternatives decoded, path token in the target top-4 at 192
+    sib reason: exit 0 | spec-sibling: 750 path tokens, 173 sampled positions, 519 alternatives decoded, path token in the target top-4 at 173
+    sib prose: exit 0 | spec-sibling: 788 path tokens, 185 sampled positions, 555 alternatives decoded, path token in the target top-4 at 185
+--- 3. ANALYSIS | 22:35:12
+  == T0: 735 verify steps (replays excluded)
+    H1 depth 1: acc 0.823 (n 735, all earlier accepted) | given depth 1 accepted 0.823 (n 735)
+    H1 depth 2: acc 0.802 (n 605, all earlier accepted) | given depth 1 accepted 0.802 (n 605)
+    H1 depth 3: acc 0.773 (n 484, all earlier accepted) | given depth 1 accepted 0.619 (n 604)
+    H1 ratio to depth 1: d2 0.974 d3 0.939 (threshold 0.8) -> FALSE (no collapse: L1 demoted)
+    H2 depth 1: rejected 130, target token in draft top-2..4 0.646 (by rank 2: 0.469, 3: 0.108, 4: 0.069), top-5..10 0.185
+       (same at first rejection depth 2: n 120, top-2..4 0.617)
+       (same at first rejection depth 3: n 110, top-2..4 0.636)
+  == card: 1415 verify steps (replays excluded)
+    H1 depth 1: acc 0.809 (n 1415, all earlier accepted) | given depth 1 accepted 0.809 (n 1415)
+    H1 depth 2: acc 0.768 (n 1144, all earlier accepted) | given depth 1 accepted 0.768 (n 1144)
+    H1 depth 3: acc 0.719 (n 878, all earlier accepted) | given depth 1 accepted 0.552 (n 1143)
+    H1 ratio to depth 1: d2 0.950 d3 0.888 (threshold 0.8) -> FALSE (no collapse: L1 demoted)
+    H2 depth 1: rejected 270, target token in draft top-2..4 0.689 (by rank 2: 0.441, 3: 0.167, 4: 0.081), top-5..10 0.119
+       (same at first rejection depth 2: n 265, top-2..4 0.528)
+       (same at first rejection depth 3: n 247, top-2..4 0.599)
+    H2 VERDICT: TRUE at T = 0 (L3 / L4 open)
+  == routing (T0 verify batches): 735 steps, 0 misaligned with the dump | NEW experts / layer vs an LRU 21 over earlier batches: accepted draft tokens 4.06 (n 1464), rejected 3.50 (n 740)
+  == H3 siblings: 1647 | NEW experts / layer (not in batch, not in LRU 21): 2.40 | vs batch only 2.99 | vs LRU only 4.47 | one full path token vs LRU 4.15
+    by target rank: 1: 1.43, 2: 2.25, 3: 2.43, 4: 2.52
+    H3 VERDICT: NOT DECIDED (2.0 < new < 3.5)
+  SPEC0 H1 T0: FALSE (no collapse: L1 demoted) | card: FALSE (no collapse: L1 demoted)
+SPEC0_DONE

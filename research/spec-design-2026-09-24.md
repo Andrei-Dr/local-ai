@@ -105,3 +105,24 @@ Hypotheses and kill rules:
 - Offline simulator on the dump: expected accepted tokens per CPU miss for chain n = 1..5, L2, L3 (K = 2..4) and L4 shapes,
   using the measured step cost split. A lever proceeds to a box prototype only if the simulator shows >= +5% tokens/s over
   STABLE's chain n = 3.
+
+## 6. Phase 0 results (spec0, 2026-09-24; full entry in notes.md)
+H1 FALSE (0.82 / 0.80 / 0.77 per depth at T = 0: no collapse, L1 demoted); H2 TRUE (target in draft top-2..4 after a depth-1 miss:
+0.65 at T = 0, 0.69 card; rank 2 alone 0.47); H3 NOT DECIDED (sibling 2.40 NEW experts / layer vs 4.15 for a full token).
+Rejected draft tokens cost 3.50 NEW / layer. Prose accepts 44% of drafts vs 84% on code / reasoning.
+
+## 7. Phase 1: the offline simulator (pre-registered 2026-09-24, before it is written)
+Input: the spec0 dumps (T = 0 and card), H3 sibling costs by rank, per-token NEW costs. Step time model
+t_step = t_fixed + t_draft x depth + c x (sum of NEW experts over the batch), with t_fixed / t_draft / c fitted on the box from a
+short calibration run (STABLE, draft n = 1..4 and no speculation, specbench prompts) and reported with their fit error.
+Counterfactuals are exact within the dumped information: a chain's acceptance at depth <= 3 follows from the draft top-1 vs the
+target's token; a sibling at depth d is accepted iff the target's token equals that sibling; nothing after an accepted sibling is
+credited (conservative: no dumped drafts beyond it).
+Policies: chain n = 1..3; chain with a confidence stop (p_top1 < theta); L3 siblings at depth 1 (rank 2, ranks 2-3), always and
+only when p_top1 < theta; L4 = at each depth, if p_top1 >= theta continue the chain, else add ranks 2..k as siblings and stop.
+theta and k are swept on the code+reason+prose T = 0 dump and scored on the card dump (and vice versa); a policy is reported on
+the dump it was NOT tuned on.
+Gate: a policy goes to a box prototype only if its predicted tokens/s beats STABLE's chain n = 3 by >= 5% on the held-out dump
+at BOTH T = 0 and the card sampler, AND the calibration fit predicts STABLE's measured n = 1..4 speeds within 3%.
+Kill: no policy >= +5% -> the tree / sibling line is closed for this box; the confidence stop alone is kept if >= +2% (it is a
+one-line change).

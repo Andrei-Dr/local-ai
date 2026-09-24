@@ -120,6 +120,7 @@ stable1	done	1	2026-09-24 02:59:26	2026-09-24 03:00:46	0	bash /ai/bench/stable1.
 lead1	done	1	2026-09-24 04:37:08	2026-09-24 05:32:09	0	bash /ai/bench/lead1.sh > lead1.log 2>&1; grep -q LEAD1_DONE lead1.log
 lead2	done	1	2026-09-24 09:03:36	2026-09-24 09:47:08	0	bash /ai/bench/lead2.sh > lead2.log 2>&1; grep -q LEAD2_DONE lead2.log
 hq1_k2q6	done	1	2026-09-24 09:48:38	2026-09-24 17:43:06	0	bash /ai/bench/hq1.sh k2q6 > hq1_k2q6.log 2>&1; grep -q "HQ1_DONE k2q6" hq1_k2q6.log
-hq1_k2	pending	0	-	-	-	bash /ai/bench/hq1.sh k2 > hq1_k2.log 2>&1; grep -q "HQ1_DONE k2" hq1_k2.log
+spec0	done	1	2026-09-24 22:18:33	2026-09-24 22:35:14	0	bash /ai/bench/spec0.sh > spec0.log 2>&1; grep -q SPEC0_DONE spec0.log
+hq1_k2	pending	0	2026-09-24 17:44:36	-	-	bash /ai/bench/hq1.sh k2 > hq1_k2.log 2>&1; grep -q "HQ1_DONE k2" hq1_k2.log
 bonsai1_easy	pending	0	-	-	-	bash /ai/bench/bonsai1.sh easy > bonsai1_easy.log 2>&1; grep -q "BONSAI1_DONE easy" bonsai1_easy.log
 bonsai1_hard	pending	0	-	-	-	bash /ai/bench/bonsai1.sh hard > bonsai1_hard.log 2>&1; grep -q "BONSAI1_DONE hard" bonsai1_hard.log

@@ -1586,3 +1586,23 @@ t/s (stock run 32.0; different build and file, not a like-for-like speed read). 
   significant difference in either pair.
 - Settles for C2 (Andrei's call): the served K2q6 file is not a hard-reasoning regression vs stock at 2.5-bit class; no need to
   serve stock for reasoning. hq1_k2 (next) isolates the dense-from-Q6 splice (K2 vs K2q6, paired).
+
+### 2026-09-24 22:40 — spec0: Phase 0 of the speculation work. The MTP head does not collapse with depth; when it misses, the target's token is usually its 2nd guess; a sibling costs ~58% of a token in CPU experts
+TEST = tu116-served + 3 instrumentation commits (branch spec0, 7488986d5, build /ai/src/llama.cpp-t4). Rules pre-registered in
+research/spec-design-2026-09-24.md section 5 and bench/box/spec0.sh. Build 8.5 min, job 17 min.
+- R0 identity (T = 0, LLAMA_MOE_CACHE_SYNC=1, 3 prompts x ~700-768 tokens): S = O = D token ids IDENTICAL; R0b draft / accepted
+  counts EQUAL for S vs O and O vs D on every prompt (code 656 / 548, reason 588 / 495, prose 960 / 421) -> the dumps measure the
+  served drafter.
+- H1 per-depth acceptance, all earlier depths accepted: T = 0 0.823 / 0.802 / 0.773 (ratio to depth 1: 0.97 / 0.94); card
+  sampler 0.809 / 0.768 / 0.719 (0.95 / 0.89) -> FALSE, no collapse: L1 (self-distilled head) demoted. The early "0.75 -> 0.18"
+  numbers were overall acceptance at large n on an older head / file, not per depth.
+- H2 target token in the draft's top-2..4 when depth 1 is rejected: T = 0 0.646 (rank 2 alone 0.469) of 130; card 0.689 of 270;
+  same at depths 2 / 3 (0.53-0.64) -> TRUE, L3 / L4 open.
+- H3 NEW experts per layer for a depth-1 sibling (not in the verify batch, not in a 21-slot LRU): 2.40 vs 4.15 for a full path
+  token (rank 2: 2.25, rank 4: 2.52) -> NOT DECIDED (between 2.0 and 3.5): a sibling costs ~58% of a token.
+- Routing dump: 0 records misaligned; rejected draft tokens cost 3.50 NEW / layer, accepted 4.06.
+- Per-prompt acceptance: code 84%, reason 84%, prose 44% (T = 0) -> prose wastes most of its drafts; draft length matters there.
+- Reading (inferred, the simulator decides): an unconditional sibling at depth 1 gains ~0.083 tokens per step (17.7% rejected x
+  0.469) for ~0.58 of a token of CPU experts on every step -> a loss. Siblings only pay where the draft is unsure; the shape has to
+  follow the draft's confidence (L2 + L4 together).
+- Cosmetic: spec0.sh line 124 prints "No such file" for the dump-less arms S / O (harmless).
