@@ -13,6 +13,8 @@
 #  Caveat recorded up front: the checkpoints differ (GPTQ-Int4 of base Qwen3.6 vs Q4_K_M of the HauhauCS finetune; ~4.4 vs
 #  ~4.8 bits/weight), so this is engine+format vs engine+format, and texts are not compared.
 set -u
+# dave3c (like-for-like, no draft model) runs first: it was added while dave3b was running, and this script had not started.
+[ -f "$(dirname "$0")/dave3c.sh" ] && bash "$(dirname "$0")/dave3c.sh" > "$(dirname "$0")/dave3c.log" 2>&1
 W=/mnt/llm-storage/localai; A=renderD128
 VIMG=local/vllm-mi210:rocm10-mi210.7-aiter-jitwarm; LIMG=llama-rocm714-rpc:tune
 QWEN=/models/qwen36-35b-a3b/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf
