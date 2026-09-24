@@ -1,0 +1,69 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14757MiB swap_used=245MiB gpu=17MiB,41,P8
+--- BUILD a6465069d in /ai/src/llama.cpp-t4 | 00:12:06
+    built a6465069d | 00:18:50
+--- R0 IDENTITY (T = 0, LLAMA_MOE_CACHE_SYNC=1): STABLE vs TEST at n3 and n2 | 00:18:50
+    spec5_I_S3 code: 400 tok, 60.87 t/s, draft 348 accepted 283
+    spec5_I_S3 reason: 400 tok, 59.65 t/s, draft 333 accepted 287
+    spec5_I_S3 prose: 400 tok, 43.47 t/s, draft 525 accepted 223
+    spec5_I_S3: cache chain 
+    spec5_I_T3 code: 400 tok, 60.24 t/s, draft 348 accepted 283
+    spec5_I_T3 reason: 400 tok, 58.42 t/s, draft 333 accepted 287
+    spec5_I_T3 prose: 400 tok, 42.67 t/s, draft 525 accepted 223
+    spec5_I_T3: cache chain serves batches of up to 5-5 tokens
+    spec5_I_S2 code: 400 tok, 60.22 t/s, draft 281 accepted 258
+    spec5_I_S2 reason: 400 tok, 55.99 t/s, draft 296 accepted 251
+    spec5_I_S2 prose: 400 tok, 49.48 t/s, draft 375 accepted 211
+    spec5_I_S2: cache chain 
+    spec5_I_T2 code: 400 tok, 58.80 t/s, draft 281 accepted 258
+    spec5_I_T2 reason: 400 tok, 54.70 t/s, draft 296 accepted 251
+    spec5_I_T2 prose: 400 tok, 48.79 t/s, draft 375 accepted 211
+    spec5_I_T2: cache chain serves batches of up to 5-5 tokens
+    R0 T3 vs S3 code: ids IDENTICAL | draft / accepted 348 / 283 vs 348 / 283 EQUAL
+    R0 T3 vs S3 reason: ids IDENTICAL | draft / accepted 333 / 287 vs 333 / 287 EQUAL
+    R0 T3 vs S3 prose: ids IDENTICAL | draft / accepted 525 / 223 vs 525 / 223 EQUAL
+    R0 T2 vs S2 code: ids IDENTICAL | draft / accepted 281 / 258 vs 281 / 258 EQUAL
+    R0 T2 vs S2 reason: ids IDENTICAL | draft / accepted 296 / 251 vs 296 / 251 EQUAL
+    R0 T2 vs S2 prose: ids IDENTICAL | draft / accepted 375 / 211 vs 375 / 211 EQUAL
+--- SPEED: order A B C D D C B A (A S3, B T3, C S2, D T2) | 00:21:44
+    spec5_S3_1 code: 400 tok, 67.18 t/s, draft 351 accepted 282
+    spec5_S3_1 reason: 400 tok, 66.63 t/s, draft 333 accepted 287
+    spec5_S3_1 prose: 400 tok, 50.31 t/s, draft 508 accepted 229
+    spec5_S3_1: cache chain 
+    spec5_T3_2 code: 400 tok, 64.93 t/s, draft 357 accepted 280
+    spec5_T3_2 reason: 400 tok, 67.84 t/s, draft 320 accepted 292
+    spec5_T3_2 prose: 400 tok, 49.89 t/s, draft 510 accepted 228
+    spec5_T3_2: cache chain serves batches of up to 5-5 tokens
+    spec5_S2_3 code: 400 tok, 67.58 t/s, draft 283 accepted 257
+    spec5_S2_3 reason: 400 tok, 64.65 t/s, draft 278 accepted 259
+    spec5_S2_3 prose: 400 tok, 56.88 t/s, draft 355 accepted 220
+    spec5_S2_3: cache chain 
+    spec5_T2_4 code: 400 tok, 67.35 t/s, draft 283 accepted 257
+    spec5_T2_4 reason: 400 tok, 62.63 t/s, draft 286 accepted 255
+    spec5_T2_4 prose: 400 tok, 54.94 t/s, draft 370 accepted 214
+    spec5_T2_4: cache chain serves batches of up to 5-5 tokens
+    spec5_T2_5 code: 400 tok, 68.55 t/s, draft 280 accepted 258
+    spec5_T2_5 reason: 400 tok, 64.16 t/s, draft 288 accepted 255
+    spec5_T2_5 prose: 400 tok, 56.81 t/s, draft 364 accepted 216
+    spec5_T2_5: cache chain serves batches of up to 5-5 tokens
+    spec5_S2_6 code: 400 tok, 68.06 t/s, draft 283 accepted 257
+    spec5_S2_6 reason: 400 tok, 65.43 t/s, draft 276 accepted 260
+    spec5_S2_6 prose: 400 tok, 55.66 t/s, draft 369 accepted 213
+    spec5_S2_6: cache chain 
+    spec5_T3_7 code: 400 tok, 66.53 t/s, draft 354 accepted 281
+    spec5_T3_7 reason: 400 tok, 65.77 t/s, draft 342 accepted 285
+    spec5_T3_7 prose: 400 tok, 50.45 t/s, draft 502 accepted 230
+    spec5_T3_7: cache chain serves batches of up to 5-5 tokens
+    spec5_S3_8 code: 400 tok, 66.49 t/s, draft 354 accepted 281
+    spec5_S3_8 reason: 400 tok, 66.51 t/s, draft 336 accepted 286
+    spec5_S3_8 prose: 400 tok, 51.09 t/s, draft 492 accepted 233
+    spec5_S3_8: cache chain 
+--- VERDICTS | 00:26:59
+  S3 3-prompt mean t/s per pass [61.37, 61.37] | per prompt pass 1 [('code', 67.18), ('reason', 66.63), ('prose', 50.31)]
+  T3 3-prompt mean t/s per pass [60.89, 60.92] | per prompt pass 1 [('code', 64.93), ('reason', 67.84), ('prose', 49.89)]
+  S2 3-prompt mean t/s per pass [63.04, 63.05] | per prompt pass 1 [('code', 67.58), ('reason', 64.65), ('prose', 56.88)]
+  T2 3-prompt mean t/s per pass [61.64, 63.17] | per prompt pass 1 [('code', 67.35), ('reason', 62.63), ('prose', 54.94)]
+  T3 vs S3: 60.91 vs 61.37 t/s (-0.8%), spread 0.00
+  T2 vs S2: 62.41 vs 63.05 t/s (-1.0%), spread 0.01
+  R1 P2: NOT PROVEN (beats beyond spread: [False, False]; no regression: [False, False])
+  (report) T2 vs T3: 62.41 vs 60.91 t/s
+SPEC5_DONE

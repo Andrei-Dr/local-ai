@@ -127,6 +127,7 @@ spec2	done	1	2026-09-24 23:01:03	2026-09-24 23:03:30	0	bash /ai/bench/spec2.sh >
 spec2b	done	1	2026-09-24 23:10:42	2026-09-24 23:25:01	0	bash /ai/bench/spec2b.sh > spec2b.log 2>&1; grep -q SPEC2B_DONE spec2b.log
 spec3	done	1	2026-09-24 23:43:31	2026-09-24 23:51:14	0	bash /ai/bench/spec3.sh > spec3.log 2>&1; grep -q SPEC3_DONE spec3.log
 spec4	done	1	2026-09-24 23:58:43	2026-09-25 00:00:01	0	bash /ai/bench/spec4.sh > spec4.log 2>&1; grep -q SPEC4_DONE spec4.log
-hq1_k2	running	1	2026-09-25 00:01:01	-	-	bash /ai/bench/hq1.sh k2 > hq1_k2.log 2>&1; grep -q "HQ1_DONE k2" hq1_k2.log
+spec5	done	1	2026-09-25 00:12:06	2026-09-25 00:26:59	0	bash /ai/bench/spec5.sh > spec5.log 2>&1; grep -q SPEC5_DONE spec5.log
+hq1_k2	running	1	2026-09-25 00:28:00	-	-	bash /ai/bench/hq1.sh k2 > hq1_k2.log 2>&1; grep -q "HQ1_DONE k2" hq1_k2.log
 bonsai1_easy	pending	0	-	-	-	bash /ai/bench/bonsai1.sh easy > bonsai1_easy.log 2>&1; grep -q "BONSAI1_DONE easy" bonsai1_easy.log
 bonsai1_hard	pending	0	-	-	-	bash /ai/bench/bonsai1.sh hard > bonsai1_hard.log 2>&1; grep -q "BONSAI1_DONE hard" bonsai1_hard.log

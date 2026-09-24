@@ -69,6 +69,7 @@ the GPU (FA, mmvq) turns into idle unless it also shortens the miss phase.
 | draft length n2 vs n3 | 0 | n2 +3.2% (spec2b), n2 >= n3 (spec1cal) | WIN candidate (serving flag: Andrei's call) |
 | M1 draft inside the verify's CPU window | the draft share of ~9-13 ms / position | draft = 19% of the marginal position cost; verify GPU busy +5.2 ms / position = 41% (spec3) | BETWEEN; spec4 attributes the GPU growth per op |
 | verify GPU growth attribution (spec4) | GDN >= 50% (H7) | cache chain 53% / dense 30% / GDN 10% per extra position | GDN not the decode target; next: skip the dummy-slot mat-vecs (P2) |
+| P2 skip the cache chain's zero-slot mat-vecs (spec5) | ~half the chain's GPU time | exact (R0 6/6); speed -0.8% / -1.0% vs STABLE (build carries other patches at ~-1%) | the chain overlaps the CPU misses: GPU-only, not on the critical link |
 Lesson: on this box the winners removed WORK (fewer draft-head rows, a faster kernel for the long-KV scan, a hidden upload) or
 reordered it into idle windows on the SAME resource; every move that shifted bytes between DDR4, PCIe and VRAM lost to the shared
 bottleneck it created.

@@ -1682,3 +1682,13 @@ H6 TRUE (100% attributed), H7 FALSE (GDN 10%: chunked GDN is not the decode targ
   of the cache-chain GPU time multiplies zeros. Dense mat-vecs grow +1.5 ms per extra column (Q4_K MMVQ on TU116 at 2-4 columns).
 - Whether GPU time is on the critical path depends on the per-layer overlap: the cache chain runs concurrently with the CPU
   misses, so cutting it pays only where the device side is the longer one (inferred: measure, do not assume).
+
+### 2026-09-25 00:30 — spec5: P2 (skip the cache chain's zero-slot mat-vecs) is exact but not faster: the cache chain's GPU time is hidden behind the CPU misses
+TEST = spec5 a6465069d (spec3 + P2; ba0d5f708 failed to compile: skip_id landed in the host fusion struct). Rules: design section 12.
+- R0 (SYNC=1): TEST vs STABLE at n3 AND n2: ids IDENTICAL, draft / accepted EQUAL on all 6 -> PASS.
+- Speed (2 passes, spreads ~0): S3 61.37 | T3 60.91 (-0.8%) | S2 63.05 | T2 62.41 (-1.0%) -> R1 NOT PROVEN. The TEST build also
+  carries the spec0 instrumentation + P1 and ran -1.1% vs STABLE in spec2b without P2, so P2's own effect is ~0 (inferred).
+- Reading: the cache chain runs concurrently with the CPU expert misses (the device chain is built first, llama-graph.cpp), and the
+  CPU side is the longer one per layer, so removing half of the chain's GPU work turned into GPU idle. Same lesson as the ledger:
+  GPU-only savings do not move the critical link. spec3/spec4's "verify GPU busy +5.2 ms per position" is off the critical path.
+- n2 vs n3 a third time: S2 63.05 vs S3 61.37 = +2.7% (spec2b +3.2%, spec1cal code +1.9%) -> the draft-length recommendation holds.
