@@ -1,10 +1,10 @@
 #!/bin/bash
-# DAVE3B: the COMBO build (ours 0001-0031 + Dave's 04,06,09,10,11,13-16, tree f8130ba, Dave's cmake flags) on dave3's
-# scenarios, with one stock arm per scenario as the drift anchor against dave3's numbers. Written before any run.
-#  S1 combo+MTP -ub 512 -b 2048 | combo+MTP -ub 2048 -b 4096      S2 combo+MTP cache 128 + prefill mode | combo+MTP no cache -ub 2048 -b 4096
-#  S3 combo cache 96 + prefill mode | combo no cache -ub 2048 -b 4096. 2 reps each (stock anchor: 1).
-#  Rule: combo WINS a metric vs the best dave3 arm (ours or dave) if it beats it by more than the larger a/b spread, with the
-#  stock anchor within its dave3 spread (else the session drifted and the comparison is void).
+# DAVE3B: dave3 re-run in ONE session with a fourth build, COMBO = ours 0001-0031 + Dave's 04,06,09,10,11,13-16 (tree f8130ba;
+# 08 superseded upstream, 12 = 2-GPU state restore, not exercised), Dave's cmake flags. Every dave3 arm is repeated (same
+# session = no cross-session drift) and the combo arms are interleaved with them. Written before any run.
+#  combo arms: S1 +MTP -ub 512 -b 2048 and +MTP -ub 2048 -b 4096 | S2 +MTP cache 128 + prefill mode, and +MTP no cache
+#  -ub 2048 -b 4096 | S3 cache 96 + prefill mode, and no cache -ub 2048 -b 4096 | S4 -sm layer -ub 2048 -b 4096.
+#  Rule as dave3: a build WINS a metric vs another if it beats it by more than the larger of the two a/b spreads.
 # (dave3 header follows)
 # DAVE3: four llama.cpp builds head to head on the MI210s, each at its recommended config.
 #   stock    = ggml-org e613ef2, default HIP flags (dave1's base)
@@ -51,31 +51,57 @@ arm() { # arm LABEL BUILD "devices" "docker env" CTX "server args"
   echo "    running=$(docker inspect -f '{{.State.Running}}' localai-srv) $(grep -oE 'hit rate [0-9.]+%' runs/logs/$label.server.log | tail -1)"
   docker rm -f localai-srv >/dev/null 2>&1
 }
-arm d3b_s1_stock  stock "$A" "" 12288 "-ngl 999 -ub 512 -b 2048 -m $QWEN $HEAD"
-arm d3b_s2_stock  stock "$A" "" 12288 "-ngl 999 -ot exps=CPU -lm none -ub 512 -b 2048 -m $QWEN $HEAD"
-arm d3b_s3_stock  stock "$A" "" 12288 "-ngl 999 -ot exps=CPU -lm none -ub 512 -b 2048 -m $DSV4"
 for r in a b; do
+  arm d3b_s1_stock_$r    stock "$A" ""          12288 "-ngl 999 -ub 512 -b 2048 -m $QWEN $HEAD"
+  arm d3b_s1_dave_$r     dave  "$A" "$DAVE_ENV" 12288 "-ngl 999 -ub 2048 -b 4096 -m $QWEN"
+  arm d3b_s1_ours_$r     ours  "$A" "$OURS_ENV" 12288 "-ngl 999 -ub 512 -b 2048 -m $QWEN $HEAD"
+  arm d3b_s1_oursub_$r   ours  "$A" "$OURS_ENV" 12288 "-ngl 999 -ub 2048 -b 4096 -m $QWEN $HEAD"
+  arm d3b_s1_oursnm_$r   ours  "$A" "$OURS_ENV" 12288 "-ngl 999 -ub 512 -b 2048 -m $QWEN"
   arm d3b_s1_combo_$r    combo "$A" "$OURS_ENV" 12288 "-ngl 999 -ub 512 -b 2048 -m $QWEN $HEAD"
   arm d3b_s1_comboub_$r  combo "$A" "$OURS_ENV" 12288 "-ngl 999 -ub 2048 -b 4096 -m $QWEN $HEAD"
+done
+for r in a b; do
+  arm d3b_s2_stock_$r    stock "$A" ""          12288 "-ngl 999 -ot exps=CPU -lm none -ub 512 -b 2048 -m $QWEN $HEAD"
+  arm d3b_s2_dave_$r     dave  "$A" "$DAVE_ENV" 12288 "-ngl 999 -ot exps=CPU --no-mmap -ub 2048 -b 4096 -m $QWEN"
+  arm d3b_s2_ours_$r     ours  "$A" "$OURS_ENV" 12288 "-ngl 999 -ot exps=CPU -lm none -ub 512 -b 4096 -ubp 2048 -m $QWEN $HEAD"
+  arm d3b_s2_oursc_$r    ours  "$A" "$OURS_ENV" 12288 "-ngl 999 -ot exps=CPU -lm none --moe-expert-cache 128 -ub 128 -b 4096 -ubp 2048 -m $QWEN $HEAD"
   arm d3b_s2_comboc_$r   combo "$A" "$OURS_ENV" 12288 "-ngl 999 -ot exps=CPU -lm none --moe-expert-cache 128 -ub 128 -b 4096 -ubp 2048 -m $QWEN $HEAD"
   arm d3b_s2_combo_$r    combo "$A" "$OURS_ENV" 12288 "-ngl 999 -ot exps=CPU -lm none -ub 2048 -b 4096 -m $QWEN $HEAD"
+done
+for r in a b; do
+  arm d3b_s3_stock_$r    stock "$A" ""          12288 "-ngl 999 -ot exps=CPU -lm none -ub 512 -b 2048 -m $DSV4"
+  arm d3b_s3_dave_$r     dave  "$A" "$DAVE_ENV" 12288 "-ngl 999 -ot exps=CPU --no-mmap -ub 2048 -b 4096 -m $DSV4"
+  arm d3b_s3_ours_$r     ours  "$A" "$OURS_ENV" 12288 "-ngl 999 -ot exps=CPU -lm none --moe-expert-cache 96 -ub 128 -b 4096 -ubp 2048 -m $DSV4"
   arm d3b_s3_comboc_$r   combo "$A" "$OURS_ENV" 12288 "-ngl 999 -ot exps=CPU -lm none --moe-expert-cache 96 -ub 128 -b 4096 -ubp 2048 -m $DSV4"
   arm d3b_s3_combo_$r    combo "$A" "$OURS_ENV" 12288 "-ngl 999 -ot exps=CPU -lm none -ub 2048 -b 4096 -m $DSV4"
 done
+docker stop bonsai-ablpq2 >/dev/null && echo "bonsai-ablpq2 stopped for S4"
+trap 'docker start bonsai-ablpq2 >/dev/null; echo "bonsai-ablpq2 restarted"' EXIT
+arm d3b_s4_stock  stock "$A $B" ""                                            12288 "-ngl 999 -sm layer -ub 512 -b 2048 -m $DSV4"
+arm d3b_s4_dave   dave  "$A $B" "$DAVE_ENV -e GGML_CUDA_REGISTER_HOST=1"      12288 "-ngl 999 -sm layer -ub 2048 -b 4096 -m $DSV4"
+arm d3b_s4_ours   ours  "$A $B" "$OURS_ENV"                                   12288 "-ngl 999 -sm layer -ub 512 -b 2048 -m $DSV4"
+arm d3b_s4_combo  combo "$A $B" "$OURS_ENV -e GGML_CUDA_REGISTER_HOST=1"       12288 "-ngl 999 -sm layer -ub 2048 -b 4096 -m $DSV4"
 python3 - <<'PY'
 import json, os, statistics as st
 R = "/mnt/llm-storage/localai/bench/runs"
-def load(p): return json.load(open(p)) if os.path.exists(p) else None
-for s, arms in (("s1", ("d3_s1_stock", "d3b_s1_stock", "d3_s1_dave", "d3_s1_ours", "d3_s1_oursub", "d3b_s1_combo", "d3b_s1_comboub")),
-                ("s2", ("d3_s2_stock", "d3b_s2_stock", "d3_s2_dave", "d3_s2_ours", "d3_s2_oursc", "d3b_s2_comboc", "d3b_s2_combo")),
-                ("s3", ("d3_s3_stock", "d3b_s3_stock", "d3_s3_dave", "d3_s3_ours", "d3b_s3_comboc", "d3b_s3_combo"))):
-    print(f"== {s}")
+def load(l, suf):
+    p = f"{R}/{l}{suf}"
+    return json.load(open(p)) if os.path.exists(p) else None
+for s, arms in (("s1", ("stock", "dave", "ours", "oursub", "oursnm", "combo", "comboub")), ("s2", ("stock", "dave", "ours", "oursc", "comboc", "combo")),
+                ("s3", ("stock", "dave", "ours", "comboc", "combo")), ("s4", ("stock", "dave", "ours", "combo"))):
+    rs = ("_a", "_b") if s != "s4" else ("",)
+    print(f"== {s}"); base = None
     for a in arms:
-        runs = [x for x in (load(f"{R}/{a}{r}.client.json") for r in ("_a", "_b", "")) if x]
-        pfs = [x for x in (load(f"{R}/{a}{r}_pf.longpf.json") for r in ("_a", "_b", "")) if x]
-        if not runs: print(f"  {a:16s} no data"); continue
-        per = [st.mean(q["decode_tps"] for q in x["rows"]) for x in runs]
-        pf = ("pf9.3k %7.1f after %6.1f" % (st.mean(x["prefill_tps"] for x in pfs), st.mean(x["decode_tps"] for x in pfs))) if pfs else ""
-        print(f"  {a:16s} n={len(runs)} decode {st.mean(per):6.1f} (spread {max(per)-min(per):4.1f}) | {pf}")
+        runs = [x for x in (load(f"d3b_{s}_{a}{r}", ".client.json") for r in rs) if x]
+        pfs = [x for x in (load(f"d3b_{s}_{a}{r}_pf", ".longpf.json") for r in rs) if x]
+        if not runs: print(f"  {a:7s} no data"); continue
+        rows = [{q["prompt"]: q for q in x["rows"]} for x in runs]
+        per = [st.mean(q["decode_tps"] for q in x.values()) for x in rows]
+        txt = {k: v["text_sha256"] for k, v in rows[0].items()}
+        if a == "stock": base = txt
+        same = sum(txt.get(k) == (base or {}).get(k) for k in txt)
+        pf = (f"prefill9.3k {st.mean(x['prefill_tps'] for x in pfs):7.1f} (spread {max(x['prefill_tps'] for x in pfs)-min(x['prefill_tps'] for x in pfs):5.1f})"
+              f" after {st.mean(x['decode_tps'] for x in pfs):6.2f}") if pfs else "no 9.3k"
+        print(f"  {a:7s} decode {st.mean(per):7.2f} (spread {max(per)-min(per):5.2f}) | {pf} | texts=stock {same}/{len(txt)}")
 PY
 echo DAVE3B_DONE
