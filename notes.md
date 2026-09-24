@@ -1666,3 +1666,19 @@ CPU experts) +2.7 (21%) + other host +2.4 (19%; host sampling over the 248k voca
   GPU busy "counts launch gaps" (spec3 method), so part of it may be host launch time. What grows with n_tokens on the GPU is
   the next question: (inferred candidates) the 30 Gated DeltaNet layers' per-token recurrence, the cache chain's mul_mat_id reads,
   attention. If it is the GDN recurrence, the queued "chunked GDN" lead now has a measured target for decode, not only prefill.
+
+### 2026-09-25 00:05 — spec4: the verify's GPU growth per draft position is the expert cache chain (53%) and dense mat-vecs (30%), not GDN (10%)
+nsys on STABLE (graphs off, so t/s -20% vs spec3 S3), n1 vs n3, code prompt, 200 tokens; rules in design section 11 / spec4.sh.
+GPU busy per verify step 20.43 -> 30.58 ms (+5.07 ms per position); host launch +0.90 ms per position (graphs off: upper bound).
+| op class | n1 ms | n3 ms | per position | share |
+|---|---|---|---|---|
+| cache-chain mul_mat_id (Q2_K / Q3_K on the device slots) | 5.97 | 11.38 | +2.70 | 53.3% |
+| dense mul_mat | 8.58 | 11.59 | +1.51 | 29.7% |
+| GDN (gated delta rule + conv) | 1.39 | 2.36 | +0.49 | 9.6% |
+| copies / FA / norms / quantize / unmapped | | | +0.37 | 7.4% |
+H6 TRUE (100% attributed), H7 FALSE (GDN 10%: chunked GDN is not the decode target), H8 FALSE (+0.9 ms launch per position).
+- Reading: the cache chain computes all 8 (token, expert) pairs per token, because uncached ids map to the zero "dummy" slot
+  and still run a full mat-vec against it (src/llama-moecache.h: "slot n_slots is permanently zero"). With ~48% hits, about half
+  of the cache-chain GPU time multiplies zeros. Dense mat-vecs grow +1.5 ms per extra column (Q4_K MMVQ on TU116 at 2-4 columns).
+- Whether GPU time is on the critical path depends on the per-layer overlap: the cache chain runs concurrently with the CPU
+  misses, so cutting it pays only where the device side is the longer one (inferred: measure, do not assume).

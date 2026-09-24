@@ -1,0 +1,29 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14765MiB swap_used=248MiB gpu=17MiB,52,P8
+--- PROFILE n1 | 23:58:43
+    spec4_n1: 200 tok, 51.87 t/s under nsys (graphs off), draft 104 accepted 95
+    spec4_n1: sqlite 41218048 bytes
+--- PROFILE n3 | 23:59:20
+    spec4_n3: 200 tok, 52.82 t/s under nsys (graphs off), draft 189 accepted 136
+    spec4_n3: sqlite 30830592 bytes
+--- t/s under nsys vs spec3's S3 (STABLE n3, no nsys, graphs on, code prompt) | 23:59:58
+  n1: 51.87 t/s under nsys | (no spec3 reference at n1)
+  n3: 52.82 t/s under nsys | spec3 S3 code 65.89 t/s -> -19.8%
+--- ANALYSIS | 23:59:58
+  n1: 105 verify steps | GPU busy 20.43 ms/step | host launch 6.07 ms/step | 1914 kernels/step | other streams (ms/step): draft 20 1.67
+      UNMAPPED 0.110 ms/step (40.0/step): moe_weighted_reduction_f32(const float *, const float *, const float *, float *, long, int
+  n3: 64 verify steps | GPU busy 30.58 ms/step | host launch 7.88 ms/step | 1974 kernels/step | other streams (ms/step): draft 20 4.03
+      UNMAPPED 0.115 ms/step (40.0/step): moe_weighted_reduction_f32(const float *, const float *, const float *, float *, long, int
+  per extra draft position: GPU busy +5.072 ms | host launch +0.904 ms
+    op class                            n1 ms    n3 ms  per position  share of busy growth
+    cache-chain mul_mat_id              5.971   11.379        +2.704                 53.3%
+    dense mul_mat                       8.581   11.594        +1.506                 29.7%
+    GDN (gated delta rule + conv)       1.387    2.364        +0.489                  9.6%
+    copies                              1.462    1.769        +0.154                  3.0%
+    flash attention                     0.347    0.602        +0.127                  2.5%
+    norms / elementwise                 1.758    1.875        +0.059                  1.2%
+    quantize (mat-mul inputs)           0.816    0.878        +0.031                  0.6%
+    unmapped                            0.110    0.115        +0.003                  0.1%
+  SPEC4 H6: TRUE (growing mapped classes = 100% of the busy growth)
+  SPEC4 H7: FALSE (GDN 10%: not the target; the top grower is cache-chain mul_mat_id)
+  SPEC4 H8: FALSE (host launch +0.904 ms per position, CUDA graphs off)
+SPEC4_DONE

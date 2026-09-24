@@ -71,3 +71,4 @@ the GPU (FA, mmvq) turns into idle unless it also shortens the miss phase.
 Lesson: on this box the winners removed WORK (fewer draft-head rows, a faster kernel for the long-KV scan, a hidden upload) or
 reordered it into idle windows on the SAME resource; every move that shifted bytes between DDR4, PCIe and VRAM lost to the shared
 bottleneck it created.
+| verify GPU growth attribution (spec4) | GDN >= 50% (H7) | cache chain 53% / dense 30% / GDN 10% per extra position | GDN not the decode target; next: skip the dummy-slot mat-vecs (P2) |
