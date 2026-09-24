@@ -22,13 +22,21 @@
 #  T0b (i) routers (40 x mlp.gate) + decoder block 39 (full attention + its experts) trainable, rest frozen, AdamW, params on
 #   GPU. (ii) all parameters trainable, FSDP2 CPUOffloadPolicy (sharded params, grads, optimizer on host, optimizer step on
 #   CPU). Optimizer for (ii) = torch Adafactor, chosen BEFORE running on host RAM: bf16 params 70 GB + grads 70 GB +
-#   AdamW's two states 140 GB = 280 GB > ~200 GB MemAvailable on a shared box; Adafactor's factored state is ~0. If
-#   Adafactor fails on the DTensor shards, SGD (no state) is the fallback and is reported as the lower bound on optimizer
-#   time. 2 warm-up steps then >= 5 timed steps; report median step (fwd / bwd / opt split), max-min spread, peak VRAM
+#   AdamW's two states 140 GB = 280 GB > ~200 GB MemAvailable on a shared box; Adafactor's factored state is ~0.
+#   Amended after the smoke run, before any measurement: torch Adafactor on DTensor params fails (aten.pow_ on a
+#   _NormPartial placement), so (ii) runs Adafactor over each rank's local shards (per-shard factored statistics, same
+#   cost). If that fails, SGD (no state) is the fallback and is reported as the lower bound on optimizer time.
+#   Amended again before any measurement, on two facts: the 8-layer smoke put Adafactor's CPU step at 45.8 s of a 50.6 s
+#   step, and optbench.py (CPU only, 12 threads, BF16, expert-shaped tensors) measured s per 1B params: Adafactor 4.64,
+#   AdamW fused 0.14, AdamW foreach 0.60, SGD 0.05. The optimizer phase is serial and timed on its own (barriers), so
+#   (ii) is measured with stateless SGD (isolates forward + backward + the offload traffic) and the step time for each
+#   real optimizer = measured fwd + bwd + (its s per 1B x 17.7B params per rank). Reported as derived, not measured.
+#   AdamW needs 280 GB of host state for 35B BF16 (> MemAvailable): it is listed as RAM-infeasible here.
+#  Both regimes: 2 warm-up steps then >= 5 timed steps; report median step (fwd / bwd / opt split), max-min spread, peak VRAM
 #   (torch max reserved) per GPU, host RSS high-water per rank, system MemAvailable min.
 #  Guards: container --memory 190g (the cgroup OOM kills OUR job, never Dave's) + in-process abort if MemAvailable < 24 GiB.
 #   CPU pinned to 24-47. Only renderD128 + renderD131 are passed in. bonsai-ablpq2 is stopped only for the 2-GPU runs and
-#   restarted by an EXIT trap (success, failure or signal). Per-run timeouts 15 min (i) / 25 min (ii); whole script 55 min.
+#   restarted by an EXIT trap (success, failure or signal). Per-run timeouts 15 min (i) / 20 min (ii); whole script 55 min.
 #  Re-plan threshold (SPEC 7.1): a trainable-step rate below ~100 tok/s puts a 10M-token run past a day.
 #  Output: ETA table hours per 10M / 100M tokens = N / tok_s / 3600 for (i) and (ii).
 #  T0c (teacher cost) is not measured here: it comes from q38fn serving on the R9700s (~40-65 t/s decode per request, 4
@@ -62,7 +70,7 @@ vram() { for d in 128 131; do printf "renderD%s used=%.1fGiB busy=%s%% | " $d \
 case $MODE in
 smoke)
   vram
-  tr smoke_frozen 1 "$A" 10m fla --regime frozen --layers 8 --steps 2 --warmup 1 --profile
+  [ -n "${SKIP_FROZEN:-}" ] || tr smoke_frozen 1 "$A" 10m fla --regime frozen --layers 8 --steps 2 --warmup 1 --profile
   tr smoke_full 1 "$A" 10m fla --regime full --layers 8 --steps 2 --warmup 1
   ;;
 run)
@@ -77,9 +85,7 @@ run)
       G=torch; tr t0_i_frozen_torchgdn 2 "$AB" 15m torch --regime frozen --steps 6 --profile || { echo "T0a NO-GO"; exit 1; }
     else echo "T0a NO-GO"; exit 1; fi
   fi
-  tr t0_ii_full 2 "$AB" 25m $G --regime full --steps 5 \
-    || { grep -q "Adafactor\|_single_tensor_adafactor\|_foreach_adafactor" $T/results/t0_ii_full.log \
-         && tr t0_ii_full_sgd 2 "$AB" 25m $G --regime full --steps 5 --opt SGD; }
+  tr t0_ii_full 2 "$AB" 20m $G --regime full --steps 5 --opt SGD
   vram
   ;;
 esac

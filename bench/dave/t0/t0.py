@@ -122,7 +122,10 @@ with torch.no_grad():
         r = ref_p[ref_name(n)].float()
         t = p.to_local() if isinstance(p, DTensor) else p
         mu, sd = r.mean().item(), (r.std().item() if r.numel() > 1 else 0.0)
-        (t.normal_(mu, sd) if sd > 0 else t.fill_(mu))
+        if sd > 0:  # generate on the GPU (CPU normal_ on 70 GB of offloaded shards takes minutes)
+            t.copy_(torch.empty(t.shape, dtype=t.dtype, device=dev).normal_(mu, sd))
+        else:
+            t.fill_(mu)
     for mod_name, mod in model.named_modules():
         for bn, b in list(mod._buffers.items()):
             if b is None:
@@ -137,12 +140,26 @@ log(f"materialized + init in {time.time()-t0:.1f}s; host MemAvailable {meminfo('
 model.train()
 model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
 params = [p for p in model.parameters() if p.requires_grad]
-opt_name = a.opt if a.opt != "auto" else ("AdamW" if a.regime == "frozen" else "Adafactor")
+opt_name = a.opt if a.opt != "auto" else ("AdamW" if a.regime == "frozen" else "Adafactor-local")
+# Adafactor-local: torch Adafactor over each rank's local shards (aliases of the DTensor storage). torch Adafactor on
+# DTensor fails (aten.pow_ on a _NormPartial placement); per-shard factored statistics cost the same.
+locs = [(p.to_local() if isinstance(p, DTensor) else p).detach() for p in params] if opt_name == "Adafactor-local" else None
 opt = {"AdamW": lambda: torch.optim.AdamW(params, lr=1e-5), "Adafactor": lambda: torch.optim.Adafactor(params, lr=1e-5),
+       "Adafactor-local": lambda: torch.optim.Adafactor(locs, lr=1e-5),
        "SGD": lambda: torch.optim.SGD(params, lr=1e-5)}[opt_name]()
 
+
+def opt_step():
+    if locs is not None:
+        for l, p in zip(locs, params):
+            l.grad = None if p.grad is None else (p.grad.to_local() if isinstance(p.grad, DTensor) else p.grad).detach()
+    opt.step(); opt.zero_grad(set_to_none=True)
+    if locs is not None:
+        for l in locs:
+            l.grad = None
+
 # ---- kernel-path record: static dispatch + runtime counters ----
-mm = sys.modules[type(model).__module__]
+mm = sys.modules[next(c for c in type(model).__mro__ if c.__module__.startswith("transformers.models.")).__module__]
 
 
 def impls(f):
@@ -197,14 +214,14 @@ def step():
     gn = torch.stack([x.to(dev) for x in sq]).sum().double() if sq else torch.zeros((), device=dev, dtype=torch.float64)
     dist.all_reduce(gn)
     torch.cuda.synchronize(); t.append(time.perf_counter())
-    opt.step(); opt.zero_grad(set_to_none=True)
+    opt_step()
     torch.cuda.synchronize(); dist.barrier(); t.append(time.perf_counter())
     fwd, bwd, o = t[1] - t[0], t[2] - t[1], t[4] - t[3]
     return {"loss": loss.detach().float().item(), "grad_norm": gn.sqrt().item(), "fwd": fwd, "bwd": bwd,
             "opt": o, "step": fwd + bwd + o}
 
 
-rows, err = [], None
+rows, err, prof_top = [], None, None
 try:
     for i in range(a.warmup + a.steps):
         r = step()
@@ -213,7 +230,6 @@ try:
         log(f"step {i} {'warm' if r['warmup'] else 'TIME'} loss={r['loss']:.4f} gnorm={r['grad_norm']:.3e} "
             f"fwd={r['fwd']:.2f}s bwd={r['bwd']:.2f}s opt={r['opt']:.2f}s step={r['step']:.2f}s "
             f"tok/s={ws*a.seq/r['step']:.1f} peakVRAM={torch.cuda.max_memory_reserved(dev)/2**30:.1f}GiB")
-    prof_top = None
     if a.profile:
         from torch.profiler import ProfilerActivity, profile
         with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
