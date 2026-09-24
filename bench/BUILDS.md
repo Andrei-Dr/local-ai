@@ -10,14 +10,14 @@ building with the listed cmake flags. `dirty` builds without a diff sha are from
 - source: `/ai/src/llama.cpp-t3` branch `tu116-leads` commit `e6961075b0b6ad676c075340707c4a0b3fa0371f`
 - cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
 - toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
-- 17 runs (17 labels): `lead1_d32k_G_a`, `lead1_d32k_G_b`, `lead1_d32k_T_a`, `lead1_d32k_T_b`, `lead1_d64k_G_a`, `lead1_d64k_G_b`, `lead1_d64k_T_a`, `lead1_d64k_T_b`, `lead1_f16_F_a`, `lead1_f16_F_b`, `lead1_f16_T_a`, `lead1_f16_T_b`, `lead1_id_T`, `lead1_pf_T_a`, `lead1_pf_T_b`, `lead1_spec_T_a`, `lead1_spec_T_b`
+- 29 runs (29 labels): `lead1_d32k_G_a`, `lead1_d32k_G_b`, `lead1_d32k_T_a`, `lead1_d32k_T_b`, `lead1_d64k_G_a`, `lead1_d64k_G_b`, `lead1_d64k_T_a`, `lead1_d64k_T_b`, `lead1_f16_F_a`, `lead1_f16_F_b`, `lead1_f16_T_a`, `lead1_f16_T_b`, `lead1_id_T`, `lead1_pf_T_a`, `lead1_pf_T_b`, `lead1_spec_T_a`, `lead1_spec_T_b`, `lead2_d32k_F_1`, `lead2_d32k_F_4`, `lead2_d32k_Q_2` ...
 
 ## `/ai/src/llama.cpp-v2/build75` @ b11056-30-gf5ddca176
 
 - source: `/ai/src/llama.cpp-v2` branch `tu116-served` commit `f5ddca176a4071c4f7dc8bf03f16254c6d5bd3c9`
 - cmake: CUDA arch 75, Release, GGML_CUDA=ON, cxx `/usr/bin/c++`
 - toolchain: c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; nvcc release 12.0, V12.0.140
-- 9 runs (9 labels): `lead1_d32k_S_a`, `lead1_d32k_S_b`, `lead1_d64k_S_a`, `lead1_d64k_S_b`, `lead1_id_S`, `lead1_pf_S_a`, `lead1_pf_S_b`, `lead1_spec_S_a`, `lead1_spec_S_b`
+- 13 runs (13 labels): `lead1_d32k_S_a`, `lead1_d32k_S_b`, `lead1_d64k_S_a`, `lead1_d64k_S_b`, `lead1_id_S`, `lead1_pf_S_a`, `lead1_pf_S_b`, `lead1_spec_S_a`, `lead1_spec_S_b`, `lead2_pf_S_1`, `lead2_pf_S_4`, `lead2_pf_S_5`, `lead2_pf_S_8`
 
 ## `/ai/src/llama.cpp-v2/build75` @ b11056-30-gd0fd493f6
 

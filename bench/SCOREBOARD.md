@@ -49,7 +49,7 @@ Cells are medians over every completed, non-identity run of exactly that build a
 |---|---|---|---|---|---|---|---|---|---|---|
 | LEGACY | LEGACY | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 56.1 | 56.4 | 60.6 | 46.8 | 48.5 | 47.4 | 47.5 | 43 |
 | STABLE build, K2 | STABLE | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 60.7 | 59.4 | 63.1 | 48.8 | 394.0 | 404.3 | 52.3 | 112 |
-| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 65.5 | 65.1 | 70.7 | 49.4 | 480.4 | 510.6 | 52.5 | 19 |
+| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 65.5 | 65.1 | 70.7 | 49.4 | 480.4 | 510.8 | 52.5 | 23 |
 
 **STABLE vs LEGACY (median vs median):** decode code +16.7%, decode reason +15.4%, decode edit +16.7%, decode long +5.7%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +10.4%
 
@@ -124,8 +124,8 @@ MEDIANS, and the authoritative comparison is the paired A/B of the promotion job
 
 | build | decode code | decode reason | decode edit | decode long | prefill 2.2k | prefill 9.3k | decode after 9.3k | runs |
 |---|---|---|---|---|---|---|---|---|
-| STABLE | 66.5 (`lead1_spec_S_a`) · med 65.5 n=8 | 66.9 (`k2q6b_q6c21_b`) · med 65.1 n=8 | 71.5 (`k2q6_k2q6c22_b`) · med 70.7 n=8 | 51.0 (`lead1_spec_S_b`) · med 49.4 n=8 | 481.5 (`k2q6b_q6c20_a`) · med 480.4 n=8 | 514.6 (`stable1_pf`) · med 510.6 n=11 | 55.6 (`k2q6b_pf_q6c18_a`) · med 52.5 n=11 | 19 |
-| TEST llama.cpp-t3 | 65.3 (`lead1_spec_T_a`) · med 64.7 n=2 | 66.7 (`lead1_spec_T_b`) · med 66.7 n=2 | 71.3 (`lead1_spec_T_a`) · med 70.5 n=2 | 53.4 (`lead1_spec_T_a`) · med 51.0 n=2 | 480.1 (`lead1_spec_T_a`) · med 479.5 n=2 | 512.9 (`lead1_pf_T_b`) · med 384.7 n=14 | 54.8 (`lead1_pf_T_a`) · med 29.7 n=14 | 16 |
+| STABLE | 66.5 (`lead1_spec_S_a`) · med 65.5 n=8 | 66.9 (`k2q6b_q6c21_b`) · med 65.1 n=8 | 71.5 (`k2q6_k2q6c22_b`) · med 70.7 n=8 | 51.0 (`lead1_spec_S_b`) · med 49.4 n=8 | 481.5 (`k2q6b_q6c20_a`) · med 480.4 n=8 | 514.6 (`stable1_pf`) · med 510.8 n=15 | 55.6 (`k2q6b_pf_q6c18_a`) · med 52.5 n=15 | 23 |
+| TEST llama.cpp-t3 | 65.3 (`lead1_spec_T_a`) · med 64.7 n=2 | 66.7 (`lead1_spec_T_b`) · med 66.7 n=2 | 71.3 (`lead1_spec_T_a`) · med 70.5 n=2 | 53.4 (`lead1_spec_T_a`) · med 51.0 n=2 | 480.1 (`lead1_spec_T_a`) · med 479.5 n=2 | 512.9 (`lead1_pf_T_b`) · med 384.7 n=26 | 54.8 (`lead1_pf_T_a`) · med 32.4 n=26 | 28 |
 
 ### Qwen3.8-27B-i1-IQ3_M
 

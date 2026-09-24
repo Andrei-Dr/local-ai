@@ -1,0 +1,30 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14224MiB swap_used=0MiB gpu=47MiB,62,P0
+--- A1. IDENTITY at 9.3k, STABLE config, LLAMA_MOE_CACHE_SYNC=1 | 09:03:36
+    lead2_id_S: 9279 prompt tok, 128 generated
+    lead2_id_T: 9279 prompt tok, 128 generated
+    RA1 PASS: IDENTICAL (550 chars)
+--- A2. 9.3k speed at the STABLE config, order S T T S S T T S | 09:04:55
+    lead2_pf_S_1: prompt 9279 tok @ 511.8 t/s | decode 128 tok @ 52.65 t/s | wall 20.6 s | 
+    lead2_pf_T_2: prompt 9279 tok @ 511.1 t/s | decode 128 tok @ 51.37 t/s | wall 20.7 s | 
+    lead2_pf_T_3: prompt 9279 tok @ 512.7 t/s | decode 128 tok @ 51.04 t/s | wall 21.1 s | 
+    lead2_pf_S_4: prompt 9279 tok @ 511.4 t/s | decode 128 tok @ 53.86 t/s | wall 20.5 s | 
+    lead2_pf_S_5: prompt 9279 tok @ 512.0 t/s | decode 128 tok @ 52.13 t/s | wall 20.6 s | 
+    lead2_pf_T_6: prompt 9279 tok @ 509.3 t/s | decode 128 tok @ 52.50 t/s | wall 20.7 s | 
+    lead2_pf_T_7: prompt 9279 tok @ 512.3 t/s | decode 128 tok @ 51.76 t/s | wall 21.1 s | 
+    lead2_pf_S_8: prompt 9279 tok @ 509.7 t/s | decode 128 tok @ 52.09 t/s | wall 20.7 s | 
+--- B. KV type at depth on TEST, no speculation | 09:09:56
+    [cache 6] lead2_d32k_F_1: prompt 33195 tok @ 391.3 t/s | decode 128 tok @ 34.07 t/s | wall 88.7 s | 
+    [cache 12] lead2_d32k_Q_2: prompt 33195 tok @ 384.3 t/s | decode 128 tok @ 32.45 t/s | wall 90.4 s | 
+    [cache 12] lead2_d32k_Q_3: prompt 33195 tok @ 383.6 t/s | decode 128 tok @ 32.60 t/s | wall 90.5 s | 
+    [cache 6] lead2_d32k_F_4: prompt 33195 tok @ 388.1 t/s | decode 128 tok @ 34.13 t/s | wall 89.3 s | 
+    [cache 12] lead2_d64k_Q_1: prompt 65079 tok @ 273.8 t/s | decode 128 tok @ 26.34 t/s | wall 242.7 s | 
+    [cache 4] http.client.RemoteDisconnected: Remote end closed connection without response | out of memory
+    [cache 2] http.client.RemoteDisconnected: Remote end closed connection without response | out of memory
+    [cache 0] lead2_d64k_F_2: prompt 65079 tok @ 106.5 t/s | decode 128 tok @ 28.90 t/s | wall 615.7 s | 
+    [cache 0] lead2_d64k_F_3: prompt 65079 tok @ 106.5 t/s | decode 128 tok @ 28.32 t/s | wall 615.8 s | 
+    [cache 12] lead2_d64k_Q_4: prompt 65079 tok @ 274.0 t/s | decode 128 tok @ 25.37 t/s | wall 243.3 s | 
+  RA2 9.3k decode_tps: S [52.65, 53.86, 52.13, 52.09] T [51.37, 51.04, 52.5, 51.76] | median T/S -1.6% | lead1 gain: ARTIFACT (ranges overlap) | R2 no-regression PASS
+  RA2 9.3k prefill_tps: S [511.78, 511.41, 512.04, 509.73] T [511.05, 512.71, 509.35, 512.32] | median T/S +0.0% | lead1 gain: ARTIFACT (ranges overlap) | R2 no-regression PASS
+  RB 32k: decode F16 (cache 6) [34.07, 34.13] vs q4_0 (cache 12) [32.45, 32.6] | F/Q +4.8% -> F16 WIN | prefill F16 390 q4_0 384
+  RB 64k: decode F16 (cache 0) [28.9, 28.32] vs q4_0 (cache 12) [26.34, 25.37] | F/Q +10.7% -> F16 WIN | prefill F16 106 q4_0 274
+LEAD2_DONE
