@@ -124,6 +124,7 @@ spec0	done	1	2026-09-24 22:18:33	2026-09-24 22:35:14	0	bash /ai/bench/spec0.sh >
 trapcheck	skipped	0	2026-09-24 22:46:24	-	-	sleep 600
 spec1cal	done	1	2026-09-24 22:47:56	2026-09-24 22:53:16	0	bash /ai/bench/spec1cal.sh > spec1cal.log 2>&1; grep -q SPEC1CAL_DONE spec1cal.log
 spec2	done	1	2026-09-24 23:01:03	2026-09-24 23:03:30	0	bash /ai/bench/spec2.sh > spec2.log 2>&1; grep -q SPEC2_DONE spec2.log
-hq1_k2	running	1	2026-09-24 23:04:30	-	-	bash /ai/bench/hq1.sh k2 > hq1_k2.log 2>&1; grep -q "HQ1_DONE k2" hq1_k2.log
+spec2b	done	1	2026-09-24 23:10:42	2026-09-24 23:25:01	0	bash /ai/bench/spec2b.sh > spec2b.log 2>&1; grep -q SPEC2B_DONE spec2b.log
+hq1_k2	pending	0	2026-09-24 23:04:30	-	-	bash /ai/bench/hq1.sh k2 > hq1_k2.log 2>&1; grep -q "HQ1_DONE k2" hq1_k2.log
 bonsai1_easy	pending	0	-	-	-	bash /ai/bench/bonsai1.sh easy > bonsai1_easy.log 2>&1; grep -q "BONSAI1_DONE easy" bonsai1_easy.log
 bonsai1_hard	pending	0	-	-	-	bash /ai/bench/bonsai1.sh hard > bonsai1_hard.log 2>&1; grep -q "BONSAI1_DONE hard" bonsai1_hard.log

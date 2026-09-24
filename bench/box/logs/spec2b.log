@@ -1,0 +1,194 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14761MiB swap_used=253MiB gpu=17MiB,52,P8
+--- BUILD e16838c6d in /ai/src/llama.cpp-t4 | 23:10:42
+    built e16838c6d | 23:10:43
+--- DIAGNOSIS (T = 0, SYNC=1, dump on, TEST build): S1 S2 S3 T3 T4 | 23:10:43
+    spec2b_S1 code: 400 tok, 46.21 t/s, draft 206 accepted 193
+    spec2b_S1 reason: 400 tok, 44.38 t/s, draft 207 accepted 191
+    spec2b_S1 prose: 400 tok, 43.78 t/s, draft 232 accepted 166
+    spec2b_S1: cache chain serves batches of up to 5-5 tokens
+    spec2b_S2 code: 400 tok, 49.45 t/s, draft 281 accepted 258
+    spec2b_S2 reason: 400 tok, 45.89 t/s, draft 296 accepted 251
+    spec2b_S2 prose: 400 tok, 39.34 t/s, draft 375 accepted 211
+    spec2b_S2: cache chain serves batches of up to 5-5 tokens
+    spec2b_S3 code: 400 tok, 49.51 t/s, draft 348 accepted 283
+    spec2b_S3 reason: 400 tok, 49.07 t/s, draft 333 accepted 287
+    spec2b_S3 prose: 400 tok, 34.53 t/s, draft 525 accepted 223
+    spec2b_S3: cache chain serves batches of up to 5-5 tokens
+    spec2b_T3 code: 400 tok, 49.38 t/s, draft 348 accepted 283
+    spec2b_T3 reason: 400 tok, 49.18 t/s, draft 333 accepted 287
+    spec2b_T3 prose: 400 tok, 34.74 t/s, draft 525 accepted 223
+    spec2b_T3: cache chain serves batches of up to 5-5 tokens
+    spec2b_T4 code: 400 tok, 47.61 t/s, draft 404 accepted 297
+    spec2b_T4 reason: 400 tok, 46.92 t/s, draft 398 accepted 299
+    spec2b_T4 prose: 400 tok, 34.88 t/s, draft 594 accepted 249
+    spec2b_T4: cache chain serves batches of up to 5-5 tokens
+--- D1 / D2 + VERDICT | 23:14:43
+  D1 batch shape alone (verify batches 2 / 3 / 4):
+    S1 vs S2 code: identical | max |delta logit| before it 1.999 over 399 positions
+    S1 vs S2 reason: differ at 11 (flip margin 0.1339) | max |delta logit| before it 0.3024 over 11 positions
+    S1 vs S2 prose: differ at 11 (flip margin 0.252) | max |delta logit| before it 0.7563 over 11 positions
+    S1 vs S3 code: identical | max |delta logit| before it 2.816 over 399 positions
+    S1 vs S3 reason: differ at 11 (flip margin 0.0436) | max |delta logit| before it 0.312 over 11 positions
+    S1 vs S3 prose: differ at 11 (flip margin 0.1971) | max |delta logit| before it 0.3854 over 11 positions
+    S2 vs S3 code: identical | max |delta logit| before it 3.055 over 399 positions
+    S2 vs S3 reason: differ at 25 (flip margin 0.2429) | max |delta logit| before it 0.5835 over 25 positions
+    S2 vs S3 prose: differ at 26 (flip margin 0.0351) | max |delta logit| before it 0.4996 over 26 positions
+  D2 (b) TEST n4 vs TEST n3:
+    T4 vs T3 code: identical | max |delta logit| before it 2.238 over 398 positions
+    T4 vs T3 reason: differ at 11 (flip margin 0.0436) | max |delta logit| before it 0.2574 over 11 positions
+    T4 vs T3 prose: differ at 11 (flip margin 0.1971) | max |delta logit| before it 0.3121 over 11 positions
+  determinism (same build and flags):
+    S3 vs T3 code: identical | max |delta logit| before it 0 over 399 positions
+    S3 vs T3 reason: identical | max |delta logit| before it 0 over 398 positions
+    S3 vs T3 prose: identical | max |delta logit| before it 0 over 398 positions
+    max|delta|(a) S2 vs S3 3.055 | max|delta|(b) T4 vs T3 2.238 (limit 2 x (a) = 6.111) | D1 flips 6 | T4 flips 2 | margin threshold 3.055
+  SPEC2B_VERDICT BATCH-SHAPE CLASS (flip condition True, delta condition True)
+--- P1 CLEARS: spec2 speed arms, R0 = clause 1 (TEST n3 vs STABLE n3) | 23:14:43
+      preflight: governor=performance thp=[always] compact=0/0 mem_avail=14795MiB swap_used=260MiB gpu=17MiB,58,P0
+  --- BUILD e16838c6d in /ai/src/llama.cpp-t4 | 23:14:43
+      built e16838c6d | 23:14:43
+  --- R0 IDENTITY (clause1; T = 0, LLAMA_MOE_CACHE_SYNC=1): I_S3 STABLE n3 | I_T3 TEST n3 | I_T4 TEST n4 (full only) | 23:14:43
+      spec2_I_S3 code: 400 tok, 60.30 t/s, draft 348 accepted 283
+      spec2_I_S3 reason: 400 tok, 59.33 t/s, draft 333 accepted 287
+      spec2_I_S3 prose: 400 tok, 43.29 t/s, draft 525 accepted 223
+      spec2_I_S3: cache chain 
+      spec2_I_T3 code: 400 tok, 58.61 t/s, draft 348 accepted 283
+      spec2_I_T3 reason: 400 tok, 58.36 t/s, draft 333 accepted 287
+      spec2_I_T3 prose: 400 tok, 41.75 t/s, draft 525 accepted 223
+      spec2_I_T3: cache chain serves batches of up to 5-5 tokens
+      R0 T3 vs S3 code: IDENTICAL (400 tokens)
+      R0 T3 vs S3 reason: IDENTICAL (400 tokens)
+      R0 T3 vs S3 prose: IDENTICAL (400 tokens)
+  --- SPEED: order A..G G..A (A S3, B S2, C P3a, D P3b, E T3, F T4, G T4p) | 23:16:12
+      spec2_S3_1 code: 400 tok, 63.75 t/s, draft 361 accepted 278
+      spec2_S3_1 reason: 400 tok, 67.25 t/s, draft 330 accepted 288
+      spec2_S3_1 prose: 400 tok, 51.96 t/s, draft 486 accepted 236
+      spec2_S3_1: cache chain 
+      spec2_S2_2 code: 400 tok, 69.24 t/s, draft 281 accepted 258
+      spec2_S2_2 reason: 400 tok, 63.46 t/s, draft 296 accepted 250
+      spec2_S2_2 prose: 400 tok, 55.46 t/s, draft 374 accepted 211
+      spec2_S2_2: cache chain 
+      spec2_P3a_3 code: 400 tok, 61.29 t/s, draft 300 accepted 266
+      spec2_P3a_3 reason: 400 tok, 62.61 t/s, draft 296 accepted 279
+      spec2_P3a_3 prose: 400 tok, 51.62 t/s, draft 262 accepted 198
+      spec2_P3a_3: cache chain 
+      spec2_P3b_4 code: 400 tok, 64.96 t/s, draft 281 accepted 265
+      spec2_P3b_4 reason: 400 tok, 63.17 t/s, draft 283 accepted 269
+      spec2_P3b_4 prose: 400 tok, 52.54 t/s, draft 184 accepted 165
+      spec2_P3b_4: cache chain 
+      spec2_T3_5 code: 400 tok, 65.40 t/s, draft 345 accepted 283
+      spec2_T3_5 reason: 400 tok, 64.67 t/s, draft 339 accepted 286
+      spec2_T3_5 prose: 400 tok, 48.47 t/s, draft 515 accepted 227
+      spec2_T3_5: cache chain serves batches of up to 5-5 tokens
+      spec2_T4_6 code: 400 tok, 65.68 t/s, draft 404 accepted 298
+      spec2_T4_6 reason: 400 tok, 64.15 t/s, draft 389 accepted 301
+      spec2_T4_6 prose: 400 tok, 45.48 t/s, draft 625 accepted 241
+      spec2_T4_6: cache chain serves batches of up to 5-5 tokens
+      spec2_T4p_7 code: 400 tok, 63.85 t/s, draft 332 accepted 287
+  Traceback (most recent call last):
+    File "<stdin>", line 17, in <module>
+    File "<stdin>", line 10, in post
+    File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+      return opener.open(url, data, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 515, in open
+      response = self._open(req, data)
+                 ^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 532, in _open
+      result = self._call_chain(self.handle_open, protocol, protocol +
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+      result = func(*args)
+               ^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 1373, in http_open
+      return self.do_open(http.client.HTTPConnection, req)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 1348, in do_open
+      r = h.getresponse()
+          ^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/http/client.py", line 1457, in getresponse
+      response.begin()
+    File "/usr/lib/python3.12/http/client.py", line 336, in begin
+      version, status, reason = self._read_status()
+                                ^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/http/client.py", line 305, in _read_status
+      raise RemoteDisconnected("Remote end closed connection without"
+  http.client.RemoteDisconnected: Remote end closed connection without response
+      spec2_T4p_7: cache chain serves batches of up to 5-5 tokens
+      spec2_T4p_7: VOID (out of memory)
+      spec2_T4p_8 code: 400 tok, 63.78 t/s, draft 313 accepted 277
+  Traceback (most recent call last):
+    File "<stdin>", line 17, in <module>
+    File "<stdin>", line 10, in post
+    File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+      return opener.open(url, data, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 515, in open
+      response = self._open(req, data)
+                 ^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 532, in _open
+      result = self._call_chain(self.handle_open, protocol, protocol +
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+      result = func(*args)
+               ^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 1373, in http_open
+      return self.do_open(http.client.HTTPConnection, req)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/urllib/request.py", line 1348, in do_open
+      r = h.getresponse()
+          ^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/http/client.py", line 1457, in getresponse
+      response.begin()
+    File "/usr/lib/python3.12/http/client.py", line 336, in begin
+      version, status, reason = self._read_status()
+                                ^^^^^^^^^^^^^^^^^^^
+    File "/usr/lib/python3.12/http/client.py", line 305, in _read_status
+      raise RemoteDisconnected("Remote end closed connection without"
+  http.client.RemoteDisconnected: Remote end closed connection without response
+      spec2_T4p_8: cache chain serves batches of up to 5-5 tokens
+      spec2_T4p_8: VOID (out of memory)
+      spec2_T4_9 code: 400 tok, 67.93 t/s, draft 386 accepted 302
+      spec2_T4_9 reason: 400 tok, 61.07 t/s, draft 419 accepted 294
+      spec2_T4_9 prose: 400 tok, 46.52 t/s, draft 615 accepted 244
+      spec2_T4_9: cache chain serves batches of up to 5-5 tokens
+      spec2_T3_10 code: 400 tok, 64.70 t/s, draft 359 accepted 279
+      spec2_T3_10 reason: 400 tok, 65.66 t/s, draft 342 accepted 284
+      spec2_T3_10 prose: 400 tok, 50.82 t/s, draft 508 accepted 229
+      spec2_T3_10: cache chain serves batches of up to 5-5 tokens
+      spec2_P3b_11 code: 400 tok, 64.00 t/s, draft 283 accepted 265
+      spec2_P3b_11 reason: 400 tok, 61.22 t/s, draft 263 accepted 258
+      spec2_P3b_11 prose: 400 tok, 51.73 t/s, draft 193 accepted 171
+      spec2_P3b_11: cache chain 
+      spec2_P3a_12 code: 400 tok, 65.38 t/s, draft 301 accepted 271
+      spec2_P3a_12 reason: 400 tok, 65.09 t/s, draft 298 accepted 279
+      spec2_P3a_12 prose: 400 tok, 54.22 t/s, draft 252 accepted 201
+      spec2_P3a_12: cache chain 
+      spec2_S2_13 code: 400 tok, 68.24 t/s, draft 283 accepted 257
+      spec2_S2_13 reason: 400 tok, 63.63 t/s, draft 294 accepted 252
+      spec2_S2_13 prose: 400 tok, 55.69 t/s, draft 377 accepted 210
+      spec2_S2_13: cache chain 
+      spec2_S3_14 code: 400 tok, 64.69 t/s, draft 360 accepted 279
+      spec2_S3_14 reason: 400 tok, 67.02 t/s, draft 333 accepted 288
+      spec2_S3_14 prose: 400 tok, 49.22 t/s, draft 526 accepted 223
+      spec2_S3_14: cache chain 
+  --- VERDICTS | 23:25:01
+    S3   3-prompt mean t/s per pass [60.99, 60.31] (2 of 2 passes) | prose [51.96, 49.22] | accepted/drafted ['802/1177', '790/1219']
+    S2   3-prompt mean t/s per pass [62.52, 62.72] (2 of 2 passes) | prose [55.69, 55.46] | accepted/drafted ['719/954', '719/951']
+    P3a  3-prompt mean t/s per pass [61.56, 58.51] (2 of 2 passes) | prose [54.22, 51.62] | accepted/drafted ['751/851', '743/858']
+    P3b  3-prompt mean t/s per pass [58.98, 60.22] (2 of 2 passes) | prose [51.73, 52.54] | accepted/drafted ['694/739', '699/748']
+    T3   3-prompt mean t/s per pass [60.39, 59.52] (2 of 2 passes) | prose [50.82, 48.47] | accepted/drafted ['792/1209', '796/1199']
+    T4   3-prompt mean t/s per pass [58.44, 58.51] (2 of 2 passes) | prose [45.48, 46.52] | accepted/drafted ['840/1418', '840/1420']
+    T4p  3-prompt mean t/s per pass [] (0 of 2 passes) | prose [] | accepted/drafted []
+    S3 mean 60.65 t/s, spread 0.68
+    R1 P1: T4 58.47 t/s (-3.6%) | T4p void | T3 59.95 t/s (-1.1%) -> FAIL (T4/T4p beat S3 by more than the spread: False; T3 no regression: False)
+    R2 confidence stop: P3a 60.03 t/s (-1.0%) | P3b 59.60 t/s (-1.7%) -> FAIL (neither beats S3 by more than the spread)
+    R2 prose only: S3 [51.96, 49.22] | P3a [54.22, 51.62] | P3b [51.73, 52.54] | T4p []
+    R3 depth (no rule): S2 62.62 t/s (+3.2%) vs S3 60.65
+    (info) greedy ids S2 vs S3 pass 1: identical on 0 of 3 prompts []
+    (info) greedy ids P3a vs S3 pass 1: identical on 0 of 3 prompts []
+    (info) greedy ids P3b vs S3 pass 1: identical on 0 of 3 prompts []
+    (info) greedy ids T3 vs S3 pass 1: identical on 0 of 3 prompts []
+    (info) greedy ids T4 vs S3 pass 1: identical on 0 of 3 prompts []
+  SPEC2_DONE
+SPEC2B_DONE

@@ -1626,3 +1626,24 @@ TEST = spec2 e16838c6d (/ai/src/llama.cpp-t4). Rules pre-registered in research/
 - Open question, not decided by this run: whether the flip is P1 computing wrong or batch shape alone (a 5-token verify batch
   takes different kernel paths than a 4-token one in the dense / attention / GDN layers; the builder flagged this before the run).
   The R0 clause "n4 identical to n3" cannot separate the two. Diagnosis pre-registered in the design doc section 9.
+
+### 2026-09-24 23:30 — spec2b: P1 is batch-shape class (exact-equivalent), but n4 is slower; the confidence stop does not pay; n2 beats n3 by 3.2%
+Rules: research/spec-design-2026-09-24.md section 9 (diagnosis) + section 8 (speed, R0 = clause 1). bench/box/spec2b.sh.
+- D1 (STABLE path, SYNC=1, verify batches 2 / 3 / 4): batch shape ALONE flips greedy tokens: n1 vs n2 vs n3 differ at token 11 /
+  25 / 26 on reason and prose (6 flips, top1-top2 margins 0.035-0.25); max |delta logit| up to 3.06 on code where the ids stay
+  identical. (inferred) The main source is which experts sit in the cache when (admission timing follows the step shape) plus
+  GPU (q8_1 activations) vs CPU (q8_K) expert compute; not investigated further here.
+- D2: TEST n4 vs n3 flips at the same positions with margins 0.044 / 0.197 and max |delta| 2.24 <= 2 x 3.06; S3 vs T3 identical
+  with delta 0 (P1 inert at <= 4 tokens) -> SPEC2B_VERDICT BATCH-SHAPE CLASS: P1 computes correctly.
+- Speed (no SYNC, 3-prompt mean, 2 passes): S3 60.65 (spread 0.68) | S2 62.62 (+3.2%) | P3a (p-min 0.6) 60.03 (-1.0%) |
+  P3b (0.75) 59.60 (-1.7%) | T3 59.95 (-1.1%) | T4 58.47 (-3.6%) | T4p VOID (OOM).
+  R1 FAIL (n4 with P1 is slower: it drafts 1418 and accepts 840 = 59%, the extra rejected tokens cost CPU experts);
+  R2 FAIL (the confidence stop cuts drafts 1177 -> 739-851 but loses speed; prose +0-5% inside noise);
+  R3 (no rule): n2 > n3 by 3.2%, beyond the spread, matching spec1cal (n2 >= n3 on code / reason).
+- Verdict on the speculation line for this box: wider or longer verification loses (every rejected token costs ~a full token
+  of CPU experts, section 1); tree / sibling / n4 are closed; P1 stays a correct but unused patch (useful only if a future drafter
+  accepts much more at depth 4). The live lever is SHORTER drafts: draft n 2. Recommendation to Andrei: a pre-registered
+  STABLE-promotion A/B of --spec-draft-n-max 2 vs 3 (specbench + 9.3k + the quality gate is unaffected: speculation is lossless
+  at T = 0 up to the batch-shape class above).
+- Accuracy note (new): the served build's greedy output depends on the verify batch shape (D1); the KLD / quality gates were
+  always run at the served shape, so they stand, but "IDENTICAL" tests are only meaningful at equal draft n.
