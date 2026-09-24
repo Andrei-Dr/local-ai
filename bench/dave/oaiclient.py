@@ -2,7 +2,7 @@
 Same prompts as specclient.py (its prompt block is executed verbatim, so the texts cannot drift), plus LONGPF=CHARS for the
 long-prompt row (longpf.py's prompt). Timing is taken on the client for every engine alike:
   prefill t/s = prompt_tokens / time to the first streamed token;  decode t/s = (completion_tokens - 1) / (last - first token).
-Writes OUT/LABEL.oai.json."""
+LONGPF_ONLY=1 runs just that row. Writes OUT/LABEL.oai.json."""
 import hashlib, json, os, sys, time, urllib.request
 label = sys.argv[1]
 URL = os.environ.get("URL", "http://localhost:8099/v1/chat/completions")
@@ -15,6 +15,8 @@ exec(src[src.index("PROMPTS = ["):src.index("def post(")])  # noqa: S102 -- PROM
 if os.environ.get("LONGPF"):
     doc = open(os.environ["CORPUS"], encoding="utf-8").read()[:int(os.environ["LONGPF"])]
     PROMPTS.append(("longpf", "Summarize the following text in five bullet points.\n\n" + doc))
+    if os.environ.get("LONGPF_ONLY") == "1":  # prefill sweeps: the long row alone
+        PROMPTS[:] = PROMPTS[-1:]
 
 
 def stream(content, max_tokens):
