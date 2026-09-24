@@ -121,7 +121,7 @@ arm() {
     stable_server 4096 $l
     if health $STABLE_PID; then client $l $mode; else echo "    $l: SERVER DIED $(voidlog $l)"; fi
     stop_server )
-  echo "    $l: $(voidlog $l) dump $(wc -l < $OUT/$l.jsonl 2>/dev/null || echo -) steps, route $(stat -c %s $OUT/$l.route 2>/dev/null || echo -) B"
+  echo "    $l: $(voidlog $l) dump $(cat $OUT/$l.jsonl 2>/dev/null | wc -l) steps, route $(stat -c %s $OUT/$l.route 2>/dev/null || echo -) B"
 }
 
 echo "--- 0. IDENTITY (R0 ids, R0b draft counts) T = 0, LLAMA_MOE_CACHE_SYNC=1: S (STABLE) | O (TEST, dumps unset) | D (TEST, dumps on) | $(date +%T)"
