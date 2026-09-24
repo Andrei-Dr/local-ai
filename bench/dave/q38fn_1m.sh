@@ -19,6 +19,7 @@
 # already exists is replaced, so re-running from an already-patched container does not duplicate them):
 #   EXTRA_BINDS='host:container[:ro] ...'   (space-separated; e.g. patched vLLM files under /mnt/llm-storage/localai/...)
 #   EXTRA_ENV='NAME=value ...'
+#   PUBLISH_HOST=127.0.0.1   publish the ports on this host address only (e.g. for a dev-mode test boot); unset = as copied
 # Caveats: static YaRN applies to every request (Qwen warns short-context quality can dip: spot-check); decode may slow a
 # little from the extra 3 GB/GPU offload; LiteLLM's model_info (max_input_tokens) may still say 262144.
 set -euo pipefail
@@ -55,7 +56,9 @@ for b in os.environ.get("EXTRA_BINDS", "").split():
     binds[b.split(":")[1]] = b
 for b in binds.values(): run += ["-v", b]
 for p, bs in (h["PortBindings"] or {}).items():
-    for b in bs: run += ["-p", (b["HostIp"] + ":" if b["HostIp"] else "") + b["HostPort"] + ":" + p.split("/")[0]]
+    for b in bs:
+        ip = os.environ.get("PUBLISH_HOST") or b["HostIp"]
+        run += ["-p", (ip + ":" if ip else "") + b["HostPort"] + ":" + p.split("/")[0]]
 for g in h["GroupAdd"] or []: run += ["--group-add", g]
 for s in h["SecurityOpt"] or []: run += ["--security-opt", s]
 for d in h["Devices"] or []: run += ["--device", d["PathOnHost"] + ":" + d["PathInContainer"]]
