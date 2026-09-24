@@ -69,7 +69,7 @@ chains cut at the budget, 0 looping); `dl_stock`; `dense1` = FLAT (DM1 static sp
 | C2 | which file serves hard reasoning (uncensored fine-tune vs stock) | READY: `hq1_stock` says stock (paired WORSE for the fine-tune, notes 09-22) |
 | C3 | the shipped long-context config (KV type, KROW) | `lq1`, `lq2` |
 | C4 | Gemma default; `ollama.service` on the box; anything public (upstream PRs, fork) | his call, no data pending |
-| C5 | **second to last: Dave's box for a better distillation than Whittle's (T5)** | T0 (1 h ROCm throughput spike) prices it; only after everything above |
+| C5 | **second to last: Dave's box for a better distillation than Whittle's (T5), teacher = q38fn (Andrei 2026-09-25)** | T0 (a short ROCm throughput test; the hour is a cap, not the run) prices it; only after everything above |
 | C6 | **LAST: RAM1 (16 -> 32 GB)** | only if `qx3` shows a precision ceiling that no hot / cold split reaches in 16 GB |
 
 Done since the last board (2026-09-21, numbers in `notes.md`): `fa1` run 2, `arch1`, `kld1`, `ctx1c`, `ctx1d`, `prof2`, `prof3` (blind: nsys 2022.4 cannot see kernels inside CUDA graphs), `kq1graft`, `prof4`, `fa3` (dead), `fa4`. Box fixes: the queue never autostarted because of a **systemd ordering cycle** (ai-queue After ai-perf-tweaks After multi-user.target; fixed, unproven until the next boot); power-profiles-daemon kept resetting the governor (the tweak unit now sets the `performance` profile through it); `systemctl stop` no longer marks the running job `failed`.
@@ -128,11 +128,11 @@ Done tonight, verdicts in the rows below: S2, S3, U1, N1, N2, P1/G4, P2, `p4c1` 
 | QX | **Own quantization** ("our rainbow table": unlimited offline compute, consulted on every token). [M] routing: top 25% of experts carry 72-78% of the mass, but the hot set is workload-specific (code vs prose overlap = chance). Steps, each gated by KLD then paired: QX1 imatrix from the Q6 source with expert-balanced calibration (Dave's box); QX2 per-layer type recipe — replay Unsloth Dynamic's from its GGUF header (`bench/gguf_types.py`, merged) onto our Q6 source; QX3 hot/cold per-expert precision — FIRST emulated in one GGUF (`expert_mix.py`, Qwen brief 24) and priced by KLD, runtime C++ (split tensors + two MUL_MAT_ID with skip ids + expert-cache interplay, 2-3 sessions) only if mean KLD drops >= ~25% at equal size; QX4 ik_llama IQK types only if the FORMAT is the limit | accuracy answer for QX3: ~12-16 h after kld1 + brief 24 land | codebook / trellis formats only for GPU-resident tensors: they decode slowly on the CPU miss path |
 | RAM1 | Hardware: 16 -> 32 GB DDR4 (~$50-70, board takes 128 GB) | **LAST on the table (Andrei 2026-09-22)**: only after every software lever and after T5 | unlocks 3-4 bit expert files (16.7-20 GB do not fit today), the biggest accuracy lever per dollar if `hq1` shows a reasoning collapse; also page cache for slot files |
 | MIG1 | Repo layout: flatten `bench/box/*` -> `bench/*` so the repo mirrors `/ai/bench` 1:1, then make `/ai` a git checkout (box identity + GitHub SSH already set) | parked, plan in `research/MIGRATION-flatten-bench.md` | only when the queue AND the Qwen worktree are idle |
-| T0 | ROCm throughput spike on Dave's MI210 pair (1 h) | todo | gate for every T item |
+| T0 | ROCm throughput test on Dave's MI210 pair: go / no-go for training on gfx90a + tok/s of a student train step (minutes of measuring; the 1 h is a cap incl. setup) | todo | gate for every T item |
 | T1 | MTP head / drafter fine-tune with TV loss (self-distillation) | design in section 7 | after T0 |
 | T2 | Router-only locality fine-tune (ReMoE-style) | design in section 7 | after T0 and P1 |
 | T3 | Full logit KD dense 27B -> 35B-A3B | parked [L] | 15-193 days student + teacher-logit generation; see 7.4 |
-| T5 | Continue the Whittle recipe (memory transfer + dependence loss + forward-KL) on Dave's box = a better distillation than the 3.3 h preview | lead [L]; **second to last in Andrei's order (2026-09-22), just before RAM1** | after S4 shows the preview is worth continuing, and after T0; see 7.5 |
+| T5 | The Whittle recipe (memory transfer + dependence loss + forward-KL) on Dave's box, **teacher = q38fn** (Qwen3.8-Flash-Next, uncensored; the source of Whittle's n-gram table; serving on the R9700s) = a better distillation than the 3.3 h / 1,840-trace preview | lead [L]; **second to last in Andrei's order (2026-09-22), just before RAM1** | after T0; S4 (whittle1) judged only the preview, not the recipe; see 7.5 |
 | T4 | Dense -> A3B/A4B conversion of Qwen3.8-27B | dead [D] | see 3.2 |
 | F1 | Qwen3.8-Flash-Next (native n-gram table + MoE + MTP) | parked by Andrei | see 3.4 |
 | W1 | Write-up / paper | outline in section 10 | after the ablation matrix is filled |
@@ -295,7 +295,12 @@ Correction to the scout: our drafts are TOKENS (MTP head, n-gram table), not mai
 
 Principle: **only small-trainable-set jobs.** Full-model training of a 35B MoE on 2x MI210 with ZeRO-3 offload is estimated at 60-150 tok/s [L, stated assumptions, no direct measurement exists] = 15-39 days per 200M tokens. Two existence proofs for the cheap direction, both from the Whittle line [V cards]: the 27B-A17.8B model trained routers with every expert frozen on personal hardware, and Whittle-Qwen-3.8-35B-A3B did its joint memory + KD training in 3.3 h on one 96 GB Blackwell (1,840 teacher traces; a research preview, not a full distillation). Neither transfers to 2x MI210 under ROCm without T0.
 
-### 7.1 T0, throughput spike (1 hour, gates everything else)
+### 7.1 T0, throughput test (gates everything else; the 1 hour is a cap including setup, the measuring itself is minutes)
+**Updated 2026-09-25 for T5 with q38fn as the teacher:** T0 answers two questions: (1) does training run at all on gfx90a under
+ROCm (BF16, no FP8, grouped-GEMM coverage for MoE layers) - a go / no-go, not just a number; (2) the student's trainable-step
+tok/s (forward + backward at seq 2048) and the teacher's trace-generation tok/s on the R9700s (q38fn under vLLM, already measured
+in production: ~40-65 t/s decode per request, 4 concurrent). Together they turn T5 into a wall-clock ETA per million tokens.
+Original plan (still the method for (1)):
 On the MI210 pair, AMD's curated ROCm image, BF16, DeepSpeed ZeRO-3 + CPU offload: load Qwen3.6-35B-A3B HF weights, freeze everything except (a) the routers, (b) the MTP head; measure forward-only tok/s and trainable-step tok/s at seq 2048. Known risks [L]: no FP8 on gfx90a, grouped-GEMM coverage, gfx90a off the CI hot path, no mixed gfx90a + gfx1201 collectives (R9700s only for separate inference jobs).
 - **Output:** a measured tok/s that replaces every ETA in this section. **Re-plan threshold:** a trainable-step rate (forward + backward through the frozen body) below ~100 tok/s puts a 10M-token T2 run past a day; below that, shrink the token budget or the sequence length before giving up on T2.
 
@@ -320,8 +325,12 @@ On the MI210 pair, AMD's curated ROCm image, BF16, DeepSpeed ZeRO-3 + CPU offloa
 ### 7.4 T3, full logit KD (parked)
 Dense Qwen3.8-27B -> 35B-A3B student: 15-193 days of student training for 200M-1B tokens plus 29-58 days of teacher top-k logit generation on 4x R9700 [L, assumptions stated in the scout report]. An SFT-distilled checkpoint already exists (S2). **Reopen if** T0 measures >= 5x the assumed throughput, or S2 shows the distill is clearly better than Qwen3.6 and we want more of the same.
 
-### 7.5 T5, continuing the Whittle recipe (lead)
-Only after S4 says the preview is competitive on this box. Inputs the author publishes: weights, eval logs, the recipe on the card (`logic65/whittle-dev` exists; contents not yet read). What Dave's box would add: more teacher traces (broad-domain, from Qwen3.8-27B on the R9700s), longer joint training, on-policy distillation. Differences that T0 has to price: one 96 GB Blackwell with a mature CUDA stack vs 2x 64 GB MI210 under ROCm with weak grouped-GEMM coverage [L]. Courtesy item: talk to the author before building on their work; they ask for compute support on the card.
+### 7.5 T5, the Whittle recipe with q38fn as the teacher (lead)
+**2026-09-25 (Andrei):** teacher = q38fn (Qwen3.8-Flash-Next heretic, 512 experts, ~6B active, serving on Dave's R9700s at up to
+1M context), not the 27B. It is the model Whittle's 10B n-gram table came from, it is uncensored, and it covers far more ground
+than the preview's 1,840 traces / 3.3 h (whittle1 measured the preview at GSM8K-200 81.5 vs 96.0 and MMLU-Pro-280 43.6 vs 71.4 for
+our Qwen3.6). Student: an A3B-shaped body that fits the i5 (experts in RAM, ~3B active). S4 judged one checkpoint, not the recipe.
+Older text: Inputs the author publishes: weights, eval logs, the recipe on the card (`logic65/whittle-dev` exists; contents not yet read). What Dave's box would add: more teacher traces (broad-domain, from Qwen3.8-27B on the R9700s), longer joint training, on-policy distillation. Differences that T0 has to price: one 96 GB Blackwell with a mature CUDA stack vs 2x 64 GB MI210 under ROCm with weak grouped-GEMM coverage [L]. Courtesy item: talk to the author before building on their work; they ask for compute support on the card.
 
 ## 8. Experiment protocol and quality gates
 
