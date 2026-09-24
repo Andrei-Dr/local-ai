@@ -16,7 +16,7 @@
 #   - H3 (sibling overlap): mean NEW experts (not in the accepted path's set nor in the LRU) for a depth-1 sibling <= 2.0 per
 #     layer (a full token costs ~4). If >= 3.5 -> L4 collapses to L3 (width is never cheap).
 #   (The offline simulator over the dump, "a lever proceeds only at >= +5% tokens/s over chain n = 3", is a later step, not here.)
-# OPERATIONAL DEFINITIONS (research/scripts/spec0_analyze.py, deployed as /ai/bench/spec0_analyze.py, holds the same text):
+# OPERATIONAL DEFINITIONS (bench/box/spec0_analyze.py, deployed as /ai/bench/spec0_analyze.py, holds the same text):
 #   H1 depth d = steps that drafted >= d tokens with depths 1..d-1 accepted; TRUE if depth 2 AND depth 3 < 0.8 x depth 1, FALSE if
 #      both >= 0.8 x depth 1, else MIXED. Judged at T = 0; the card-sampler value is printed beside it.
 #   H2 over steps whose depth-1 draft token was rejected: is the target's token (tgt_tok[0]) at rank 2..4 of the draft's top-10?

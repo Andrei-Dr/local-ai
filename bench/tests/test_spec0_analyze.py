@@ -1,8 +1,8 @@
-"""tests for research/scripts/spec0_analyze.py — synthetic dumps with known answers, run as subprocesses."""
+"""tests for bench/box/spec0_analyze.py — synthetic dumps with known answers, run as subprocesses."""
 import json, struct, subprocess, sys, tempfile, unittest
 from pathlib import Path
 
-TOOL = Path(__file__).resolve().parents[2] / "research" / "scripts" / "spec0_analyze.py"
+TOOL = Path(__file__).resolve().parents[1] / "box" / "spec0_analyze.py"
 
 
 def top(ids):
