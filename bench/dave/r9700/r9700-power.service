@@ -1,0 +1,20 @@
+[Unit]
+# Persist the R9700 power limits across reboots (sustained cap now; clock cap + undervolt once tuned).
+# See /usr/local/sbin/set-r9700-power.sh for the why. Needs amdgpu.ppfeaturemask=0xfff7ffff for the OverDrive knobs.
+Description=Set R9700 power cap / clock cap / voltage offset
+After=sysinit.target systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=R9700_POWER_CAP_WATTS=210
+# Empty until tuned after the OverDrive reboot (measure peak power per step; keep bursts <= 210 W):
+Environment=R9700_SCLK_MAX_MHZ=
+Environment=R9700_VOLT_OFFSET_MV=
+ExecStart=/usr/local/sbin/set-r9700-power.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
