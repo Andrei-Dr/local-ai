@@ -1,0 +1,24 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14774MiB swap_used=253MiB gpu=17MiB,51,P8
+--- BUILD e16838c6d in /ai/src/llama.cpp-t4 | 23:01:03
+    built e16838c6d | 23:01:19
+--- R0 IDENTITY (T = 0, LLAMA_MOE_CACHE_SYNC=1): I_S3 STABLE n3 | I_T3 TEST n3 | I_T4 TEST n4 | 23:01:19
+    spec2_I_S3 code: 400 tok, 60.47 t/s, draft 348 accepted 283
+    spec2_I_S3 reason: 400 tok, 59.67 t/s, draft 333 accepted 287
+    spec2_I_S3 prose: 400 tok, 43.42 t/s, draft 525 accepted 223
+    spec2_I_S3: cache chain 
+    spec2_I_T3 code: 400 tok, 58.66 t/s, draft 348 accepted 283
+    spec2_I_T3 reason: 400 tok, 58.67 t/s, draft 333 accepted 287
+    spec2_I_T3 prose: 400 tok, 41.51 t/s, draft 525 accepted 223
+    spec2_I_T3: cache chain 
+    spec2_I_T4 code: 400 tok, 59.45 t/s, draft 404 accepted 297
+    spec2_I_T4 reason: 400 tok, 58.13 t/s, draft 398 accepted 299
+    spec2_I_T4 prose: 400 tok, 44.39 t/s, draft 594 accepted 249
+    spec2_I_T4: cache chain 
+    R0 T3 vs S3 code: IDENTICAL (400 tokens)
+    R0 T3 vs S3 reason: IDENTICAL (400 tokens)
+    R0 T3 vs S3 prose: IDENTICAL (400 tokens)
+    R0 T4 vs S3 code: IDENTICAL (400 tokens)
+    R0 FAIL T4 vs S3 reason: token ids differ at 11 (400 vs 400 tokens)
+    R0 FAIL T4 vs S3 prose: token ids differ at 11 (400 vs 400 tokens)
+SPEC2_VERDICT FAIL (R0)
+SPEC2_DONE

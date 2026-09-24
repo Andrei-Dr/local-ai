@@ -154,3 +154,19 @@ Phase 2 = direct box measurement (spec2), replacing the simulator gate:
   serving flag: Andrei's call via STABLE promotion rules). Prose reported separately (its 44% acceptance is where a stop
   should pay).
 - R3 (depth): S2 vs S3 reported; no rule (informational for the draft-length default).
+
+## 9. spec2 FAIL (R0) and the pre-registered diagnosis spec2b (2026-09-24 23:10, before any code)
+spec2: TEST n3 = STABLE n3 IDENTICAL (P1 leaves batches <= 4 untouched); TEST n4 differs from STABLE n3 at token 11 on reason
+and prose. The clause "n4 identical to n3" assumed a 5-token verify batch computes every position bit-identically to a 4-token
+one; that is a property of the whole graph, not of P1, so it cannot tell a P1 bug from batch-shape rounding. Per the rule, P1
+is NOT promoted and R1-R3 are unmeasured.
+spec2b (T = 0, SYNC=1, the same 3 prompts, 400 tokens; LLAMA_SPEC_DUMP on for the target top-10 logits):
+- D1 (does batch shape alone flip greedy tokens on STABLE?): STABLE n1, n2, n3 pairwise token ids. Batches 2 / 3 / 4, all
+  inside the unpatched cache window.
+- D2 (does P1 add error beyond batch shape?): per prompt, over the verify positions both runs computed before their first
+  divergence, max |delta logit| over the target's top-10 between (a) STABLE n2 vs STABLE n3 and (b) TEST n4 vs TEST n3; and
+  the target's top-1 minus top-2 logit margin at each first-divergence position.
+- Verdict: P1 is exact-equivalent ("batch-shape class") if D1 shows at least one flip OR every TEST n4 flip sits at a margin
+  <= the largest margin at which a D1 flip or (a) difference occurs, AND max|delta|(b) <= 2 x max|delta|(a). Otherwise P1 is
+  SUSPECT and goes to a KLD-vs-Q6 test before any speed claim.
+- If P1 clears: rerun spec2's speed arms (R1-R3 unchanged) with R0 reduced to its first clause (TEST n3 = STABLE n3).

@@ -1616,3 +1616,13 @@ no spec 47.3 / 45.8 | n1 61.1 / 58.4 | n2 68.8 / 65.0 | n3 67.5 / 65.4 | n4 47.6
 - spec1_sim.py calibrated fit: errors +24 / +2 / -10 / -15 / +12% (n0..n4) -> fails the pre-registered 3% rule: NO VERDICT on
   the tree / sibling line or the confidence stop from the simulator. Phase 2 measures on the box instead
   (research/spec-design-2026-09-24.md section 8).
+
+### 2026-09-24 23:10 — spec2: FAIL (R0) — P1 (cache chain serves 5-token batches) is live and n = 4 no longer falls off the cliff, but n4 greedy output differs from n3 at token 11 on 2 of 3 prompts
+TEST = spec2 e16838c6d (/ai/src/llama.cpp-t4). Rules pre-registered in research/spec-design-2026-09-24.md section 8 / spec2.sh.
+- R0 (T = 0, SYNC=1): TEST n3 vs STABLE n3 IDENTICAL on code / reason / prose (batches <= 4 untouched: PASS for that clause).
+  TEST n4 vs STABLE n3: code IDENTICAL, reason and prose DIFFER at token 11 -> FAIL; the speed arms (R1-R3) did not run.
+- P1 is live: TEST n4 under SYNC=1 ran 59.5 / 58.1 / 44.4 t/s (code / reason / prose) vs STABLE n3 60.5 / 59.7 / 43.4; without
+  P1 n4 runs at no-spec speed (~47, spec1cal). Prose accepts more at n4 (249 of 594 vs 223 of 525).
+- Open question, not decided by this run: whether the flip is P1 computing wrong or batch shape alone (a 5-token verify batch
+  takes different kernel paths than a 4-token one in the dense / attention / GDN layers; the builder flagged this before the run).
+  The R0 clause "n4 identical to n3" cannot separate the two. Diagnosis pre-registered in the design doc section 9.
