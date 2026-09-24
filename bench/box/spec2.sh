@@ -36,7 +36,8 @@ cd /ai/bench || exit 1
 source /ai/bench/stable.sh || { echo "SPEC2_FAILED: stable.sh"; exit 1; }
 PY=/ai/.venv/bin/python
 SRC=/ai/src/llama.cpp-mainline; T4=/ai/src/llama.cpp-t4; B4=$T4/build75; SHA=e16838c6d
-OUT=/ai/bench/runs/spec2; mkdir -p $OUT
+OUT=/ai/bench/runs/spec2; mkdir -p $OUT/logs
+export STABLE_LOGDIR=$OUT/logs  # server logs kept with the results
 GEN=400
 
 echo "--- BUILD $SHA in $T4 | $(date +%T)"
@@ -51,7 +52,7 @@ cmake --build $B4 -j6 --target llama-server > spec2_build.log 2>&1 || { grep err
 cat $B4/bin/lib*.so* 2>/dev/null | grep -qa ggml_backend_cuda_mmvq_mmid_max_batch || { echo "SPEC2_FAILED: build lacks P1"; exit 1; }
 echo "    built $(git -C $T4 rev-parse --short=9 HEAD) | $(date +%T)"
 
-voidlog() { grep -hoE 'could not re-allocate|out of memory' "server_$1.log" 2>/dev/null | head -1; }
+voidlog() { grep -hoE 'could not re-allocate|out of memory' "$OUT/logs/server_$1.log" 2>/dev/null | head -1; }
 health() { # pid: wait for /health, 0 = up
   local _
   for _ in $(seq 1 200); do curl -sf localhost:8099/health >/dev/null 2>&1 && return 0; kill -0 "$1" 2>/dev/null || return 1; sleep 2; done
@@ -99,12 +100,13 @@ run() {
   ( export BUILD=$b
     [ "$sync" = 1 ] && export LLAMA_MOE_CACHE_SYNC=1
     # shellcheck disable=SC2046  # optional flag pair
-    stable_server 4096 $l --spec-draft-n-max $n $([ -n "$pmin" ] && echo --spec-draft-p-min $pmin)
+    # -lv 4: llama.cpp's own INFO lines (the cache-chain cap) only reach the log at verbosity 4, as in specbench.sh
+    stable_server 4096 $l --spec-draft-n-max $n $([ -n "$pmin" ] && echo --spec-draft-p-min $pmin) -lv 4
     if health $STABLE_PID; then
       python3 mon.py start $l; client $l; python3 mon.py stop $l | grep FOREIGN
     else echo "    $l: SERVER DIED $(voidlog $l)"; fi
     stop_server )
-  echo "    $l: cache chain $(grep -o 'serves batches of up to [0-9-]* tokens' server_$l.log | head -1 || true)"
+  echo "    $l: cache chain $(grep -oE 'serves batches of up to [0-9]+-[0-9]+ tokens' $OUT/logs/server_$l.log | head -1 || true)"
   v=$(voidlog $l)
   grep -q '"foreign_cpu_flag": true' runs/$l.mon.json 2>/dev/null && v="${v:+$v, }FOREIGN CPU"
   [ -n "$v" ] && { echo "    $l: VOID ($v)"; rm -f $OUT/$l.json; }
