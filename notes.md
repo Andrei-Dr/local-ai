@@ -1567,3 +1567,22 @@ TEST = STABLE + 0032 + 0033 (t3 e6961075b). Rules pre-registered in bench/box/le
   at 64k. The 32k-64k crossover (the largest -c where F16 keeps a usable cache) is unmeasured.
 - Promotion: 0033 (+ 0032, its host) now only matters for the q4_0 path, i.e. 64k. There it gave +18% (lead1 KROW) with identity
   held; 0032 alone stays NOT PROVEN at 64k. Decision waits on the KV-type call.
+
+### 2026-09-24 17:50 — hq1_k2q6: the served K2q6 file is non-inferior to stock IQ2_M and far above the old IQ2_M fine-tune file
+Same 96 items, sampler and seeds as hq1_iq2m / hq1_stock; K2q6 at -c 49152, F16 KV, cache 20 (bench/box/hq1.sh).
+
+| set | K2q6 (STABLE) | stock IQ2_M | fine-tune IQ2_M | K2q6 - stock: W/L, diff, 95% CI, p | K2q6 - fine-tune IQ2_M: W/L, diff, 95% CI, p |
+|---|---|---|---|---|---|
+| MATH-L5 (40) | 85.0% | 80.0% | 57.5% | 4/2, +5.0, [-6.9, +16.9], 0.69 | 12/1, +27.5, [+12.0, +43.0], 0.003 |
+| AIME (15) | 73.3% | 46.7% | 20.0% | 4/0, +26.7, [+4.3, +49.1], 0.13 | 8/0, +53.3, [+28.1, +78.6], 0.008 |
+| EvalPlus (41) | 80.5% | 78.0% | 85.4% | 4/3, +2.4, [-10.2, +15.1], 1.00 | 2/4, -4.9, [-16.5, +6.7], 0.69 |
+| ALL (96) | | | | 12/5, +7.3, [-1.0, +15.6], 0.14 => NON-INFERIOR (margin 2) | 22/5, +17.7, [+7.7, +27.7], 0.0015 => BETTER |
+
+(`bench/qual/paired.py BASE.jsonl q36_k2q6_hard.jsonl --md`.) Truncated chains: K2q6 15, stock 20, fine-tune IQ2_M 27. Decode 39.2
+t/s (stock run 32.0; different build and file, not a like-for-like speed read). No FOREIGN flag.
+- Reading: the same fine-tune weights, quantized our way (imatrix, K2 experts, dense Q4_K from the Q6 source), recover everything
+  the IQ2_M file lost on hard math and edge past stock. This retracts the 2026-09-22 inference that "the fine-tune" was the lead
+  cause of hq1_stock's gap: the quantization of that file was (inferred from the same weights scoring +17.7 here). Code: no
+  significant difference in either pair.
+- Settles for C2 (Andrei's call): the served K2q6 file is not a hard-reasoning regression vs stock at 2.5-bit class; no need to
+  serve stock for reasoning. hq1_k2 (next) isolates the dense-from-Q6 splice (K2 vs K2q6, paired).
