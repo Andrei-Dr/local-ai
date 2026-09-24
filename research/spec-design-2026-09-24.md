@@ -210,3 +210,17 @@ mul_mat_id, dense mul_mat, flash attention, norms / elementwise, copies), and th
 - H7: the GDN layers are >= 50% of the per-position GPU growth -> the chunked / parallel GDN form for small batches becomes the top
   lead (it serves the verify AND prefill). If < 25%, GDN is not the target; the top grower is.
 - H8: host launch time per verify grows >= 1.5 ms per position -> launch overhead is a real share (CUDA graphs / fusion lead).
+
+## 12. P2: skip the cache chain's dummy-slot mat-vecs (pre-registered 2026-09-25 00:30, before the run)
+spec4: the cache chain is 53% of the verify's GPU growth per position. Uncached ids map to slot n_slots, which is all zeros, and the
+MMVQ kernels still run a full dot product against it for every one of the 8 (token, expert) pairs; at ~48% hits about half of
+the chain's work multiplies zeros. P2 (branch spec5 ba0d5f708): the cache's weight tensors carry the dummy slot in op_params[0]
+(leaf tensors: unused by every backend), and both MMVQ kernels skip the dot-product loop for that id. The partial sums stay 0,
+the same value the all-zero blocks produce, so outputs cannot change.
+spec5 (bench/box/spec5.sh):
+- R0 identity (T = 0, SYNC=1, the 3 spec2 prompts, 400 tokens): TEST vs STABLE at n3 AND at n2: token ids IDENTICAL and
+  draft / accepted counts EQUAL, else FAIL and stop.
+- Speed (no SYNC; order A B C D D C B A; A S3 = STABLE n3, B T3 = TEST n3, C S2 = STABLE n2, D T2 = TEST n2): 3-prompt mean
+  decode t/s per pass. R1: P2 WINS if T3 - S3 > spread(S3) OR T2 - S2 > spread(S2), AND neither TEST arm is below its STABLE arm
+  by more than that arm's spread. Otherwise NOT PROVEN (a GPU-side saving that the per-layer overlap with the CPU misses hides).
+- Report: T2 vs T3 (does P2 change the n2 / n3 ranking).
