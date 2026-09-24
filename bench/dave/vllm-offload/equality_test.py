@@ -99,9 +99,12 @@ def metrics():
     txt = urllib.request.urlopen(HOST + "/metrics", timeout=30).read().decode()
     out = {}
     for line in txt.splitlines():
-        m = re.match(r"^(vllm:[a-z_]+?)(?:_total)?(?:\{[^}]*\})? ([0-9.eE+-]+)$", line)
+        m = re.match(r"^(vllm:[a-z_]+?)(?:_total)?(\{[^}]*\})? ([0-9.eE+-]+)$", line)
         if m and not line.startswith("#"):
-            out[m.group(1)] = out.get(m.group(1), 0.0) + float(m.group(2))
+            # this build exports offload bytes as vllm:kv_offload_total_bytes{transfer_type=CPU_to_GPU|GPU_to_CPU}
+            tt = re.search(r'transfer_type="([^"]+)"', m.group(2) or "")
+            key = m.group(1) + (":" + tt.group(1) if tt else "")
+            out[key] = out.get(key, 0.0) + float(m.group(3))
     return out
 
 
@@ -111,7 +114,13 @@ def body(prompt, stream, salt):
             "stream_options": {"include_usage": True} if stream else None}
 
 
-WATCH = ("prefix_cache", "kv_offload_load_bytes", "kv_offload_store_bytes", "num_preemptions", "prompt_tokens")
+WATCH = ("prefix_cache", "kv_offload_total_bytes", "kv_offload_load_bytes", "kv_offload_store_bytes", "num_preemptions",
+         "prompt_tokens")
+
+
+def load_bytes(delta):
+    """CPU->GPU bytes: the deprecated labelled counter in this build, or the newer dedicated one."""
+    return delta.get("vllm:kv_offload_total_bytes:CPU_to_GPU", 0) + delta.get("vllm:kv_offload_load_bytes", 0)
 
 
 def deltas(m0, m1):
@@ -212,7 +221,7 @@ def e2(label):
                    "flip_AB": A["argmax"] != B["argmax"], "flip_GC": G["argmax"] != C["argmax"],
                    "gpu_hit": G["metric_delta"].get("vllm:prefix_cache_hits", 0),
                    "cpu_hit": C["metric_delta"].get("vllm:external_prefix_cache_hits", 0),
-                   "load_bytes": C["metric_delta"].get("vllm:kv_offload_load_bytes", 0)}
+                   "load_bytes": load_bytes(C["metric_delta"])}
             res["probes"].append(row)
             print(f"E2 {name:9s} k={k:3d} d_AB={row['d_AB']:.2e} d_GC={row['d_GC']:.2e} d_AC={row['d_AC']:.2e} "
                   f"flipAB={row['flip_AB']} flipGC={row['flip_GC']} gpu_hit={row['gpu_hit']} cpu_hit={row['cpu_hit']} "
@@ -268,7 +277,7 @@ def e1(label, ref_path, external):
     res = {"label": label, "external_reset": external, "reset": reset_info, "wall_s": round(time.time() - t0, 1),
            "ids": ids, "metric_delta": delta, "identical_to_e0": fd is None, "first_divergence": fd,
            "evidence_ok": delta.get("vllm:num_preemptions", 0) >= 1
-           and (external or delta.get("vllm:kv_offload_load_bytes", 0) > 0)}
+           and (external or load_bytes(delta) > 0)}
     print(f"E1 external={external} reset={reset_info} tokens={len(ids)} identical={fd is None} first_div={fd} "
           f"delta={delta}", flush=True)
     return res
