@@ -32,8 +32,9 @@ gpu_busy() { # busy if any compute process holds the GPU, if VRAM in use is abov
     used=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | head -1)
     [ -n "$used" ] && [ "$used" -gt "$GPU_IDLE_MIB" ] && return 0
     return 1; }
-# wrapper shells (ssh one-liners, tmux "bash -c" waiters) only QUOTE the pattern in their command line; real work shows up as its own process
-busy() { pgrep -af "$BUSY_RE" | grep -vE "^[0-9]+ (/usr)?(/bin/)?(bash|sh|zsh|timeout|ssh|sshd:)( |$).*-c |queue\.sh|pgrep" | grep -q . && return 0; gpu_busy; }
+# wrapper shells (ssh one-liners, tmux "bash -c" waiters) only QUOTE the pattern in their command line, and watch.sh only waits on
+# a row; real work shows up as its own process
+busy() { pgrep -af "$BUSY_RE" | grep -vE "^[0-9]+ (/usr)?(/bin/)?(bash|sh|zsh|timeout|ssh|sshd:)( |$).*-c |queue\.sh|watch\.sh|pgrep" | grep -q . && return 0; gpu_busy; }
 
 case "$1" in
 add)
