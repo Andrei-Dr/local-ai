@@ -49,9 +49,9 @@ Cells are medians over every completed, non-identity run of exactly that build a
 |---|---|---|---|---|---|---|---|---|---|---|
 | LEGACY | LEGACY | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 56.1 | 56.4 | 60.6 | 46.8 | 48.5 | 47.4 | 47.5 | 43 |
 | STABLE build, K2 | STABLE | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 60.7 | 59.4 | 63.1 | 48.8 | 394.0 | 404.3 | 52.3 | 112 |
-| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 64.8 | 65.1 | 70.2 | 49.4 | 480.3 | 510.8 | 55.0 | 11 |
+| STABLE | STABLE | Qwen3.6-35B-A3B-K2q6-denseQ4K | 65.5 | 65.1 | 70.7 | 49.4 | 480.4 | 510.6 | 52.5 | 19 |
 
-**STABLE vs LEGACY (median vs median):** decode code +15.4%, decode reason +15.4%, decode edit +15.8%, decode long +5.7%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +15.7%
+**STABLE vs LEGACY (median vs median):** decode code +16.7%, decode reason +15.4%, decode edit +16.7%, decode long +5.7%, prefill 2.2k 9.89x, prefill 9.3k 10.78x, decode after 9.3k +10.4%
 
 ## Builds: STABLE vs LEGACY vs TEST
 
@@ -124,7 +124,8 @@ MEDIANS, and the authoritative comparison is the paired A/B of the promotion job
 
 | build | decode code | decode reason | decode edit | decode long | prefill 2.2k | prefill 9.3k | decode after 9.3k | runs |
 |---|---|---|---|---|---|---|---|---|
-| STABLE | 66.5 (`k2q6b_q6c21_b`) · med 64.8 n=6 | 66.9 (`k2q6b_q6c21_b`) · med 65.1 n=6 | 71.5 (`k2q6_k2q6c22_b`) · med 70.2 n=6 | 49.8 (`k2q6b_q6c21_a`) · med 49.4 n=6 | 481.5 (`k2q6b_q6c20_a`) · med 480.3 n=6 | 514.6 (`stable1_pf`) · med 510.8 n=5 | 55.6 (`k2q6b_pf_q6c18_a`) · med 55.0 n=5 | 11 |
+| STABLE | 66.5 (`lead1_spec_S_a`) · med 65.5 n=8 | 66.9 (`k2q6b_q6c21_b`) · med 65.1 n=8 | 71.5 (`k2q6_k2q6c22_b`) · med 70.7 n=8 | 51.0 (`lead1_spec_S_b`) · med 49.4 n=8 | 481.5 (`k2q6b_q6c20_a`) · med 480.4 n=8 | 514.6 (`stable1_pf`) · med 510.6 n=11 | 55.6 (`k2q6b_pf_q6c18_a`) · med 52.5 n=11 | 19 |
+| TEST llama.cpp-t3 | 65.3 (`lead1_spec_T_a`) · med 64.7 n=2 | 66.7 (`lead1_spec_T_b`) · med 66.7 n=2 | 71.3 (`lead1_spec_T_a`) · med 70.5 n=2 | 53.4 (`lead1_spec_T_a`) · med 51.0 n=2 | 480.1 (`lead1_spec_T_a`) · med 479.5 n=2 | 512.9 (`lead1_pf_T_b`) · med 384.7 n=14 | 54.8 (`lead1_pf_T_a`) · med 29.7 n=14 | 16 |
 
 ### Qwen3.8-27B-i1-IQ3_M
 
@@ -189,8 +190,8 @@ MEDIANS, and the authoritative comparison is the paired A/B of the promotion job
 | 1 | `k2d_k2dc22_b` | Qwen3.6-35B-A3B-K2d-denseQ4K | 71.8 (mean 62.1 over 4 prompts) | slots 22, MTP n=3, VRAM 3580 MiB, commit d0fd493f61e9 |
 | 2 | `k2q6_k2q6c22_b` | Qwen3.6-35B-A3B-K2q6-denseQ4K | 71.5 (mean 62.5 over 4 prompts) | slots 22, MTP n=3, VRAM 3580 MiB, commit d0fd493f61e9 |
 | 3 | `tune1_c26_a` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 71.5 (mean 62.7 over 4 prompts) | slots 26, MTP n=3, VRAM 3552 MiB, commit d0fd493f61e9 |
-| 4 | `k2q6b_q6c21_b` | Qwen3.6-35B-A3B-K2q6-denseQ4K | 71.3 (mean 63.6 over 4 prompts) | slots 21, MTP n=3, VRAM 3536 MiB, commit d0fd493f61e9 |
-| 5 | `mtpn1_n3_a` | Qwen3.6-35B-A3B-K2-expQ2K-downQ3K | 70.6 (mean 62.3 over 4 prompts) | slots 26, MTP n=3, VRAM 3552 MiB, commit c75018be7791 |
+| 4 | `lead1_spec_S_a` | Qwen3.6-35B-A3B-K2q6-denseQ4K | 71.4 (mean 63.1 over 4 prompts) | slots 21, MTP n=3, VRAM 3536 MiB, commit f5ddca176a40 |
+| 5 | `k2q6b_q6c21_b` | Qwen3.6-35B-A3B-K2q6-denseQ4K | 71.3 (mean 63.6 over 4 prompts) | slots 21, MTP n=3, VRAM 3536 MiB, commit d0fd493f61e9 |
 
 ## Fastest config per model file
 

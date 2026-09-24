@@ -1,0 +1,68 @@
+    preflight: governor=performance thp=[always] compact=0/0 mem_avail=14695MiB swap_used=268MiB gpu=17MiB,52,P8
+--- 0. UNIT GATE (TEST build) | 04:37:12
+    defaults: exit 0 | 4079/4079 tests passed
+    GGML_CUDA_FA_VEC_KROW=0: exit 0 | 4079/4079 tests passed
+    GGML_CUDA_FA_VEC_GQA=0: exit 0 | 4079/4079 tests passed
+--- 1. IDENTITY at the STABLE config (LLAMA_MOE_CACHE_SYNC=1) | 04:41:59
+    code  IDENTICAL
+    edit  IDENTICAL
+    long  IDENTICAL
+    reason  IDENTICAL
+    R1 PASS
+--- 2. STABLE config speed | 04:43:35
+##### lead1_spec_S_a | 04:43:37
+    lead1_spec_S_a code    300 tok | wall 57.36 t/s | decode 66.53 t/s | prefill   59.8 t/s | accept 210/266=0.79 
+    lead1_spec_S_a reason  300 tok | wall 56.76 t/s | decode 66.66 t/s | prefill   75.2 t/s | accept 214/253=0.85 
+    lead1_spec_S_a edit    300 tok | wall 44.41 t/s | decode 71.39 t/s | prefill  147.1 t/s | accept 223/227=0.98 
+    lead1_spec_S_a long    300 tok | wall 27.86 t/s | decode 47.99 t/s | prefill  481.4 t/s | accept 185/340=0.54 
+    hit rate 43.8% 
+##### lead1_spec_T_a | 04:44:22
+    lead1_spec_T_a code    300 tok | wall 56.26 t/s | decode 65.27 t/s | prefill   57.8 t/s | accept 208/270=0.77 
+    lead1_spec_T_a reason  300 tok | wall 56.79 t/s | decode 66.65 t/s | prefill   75.5 t/s | accept 214/254=0.84 
+    lead1_spec_T_a edit    300 tok | wall 44.40 t/s | decode 71.32 t/s | prefill  147.2 t/s | accept 223/227=0.98 
+    lead1_spec_T_a long    300 tok | wall 29.56 t/s | decode 53.39 t/s | prefill  480.1 t/s | accept 197/303=0.65 
+    hit rate 44.3% 
+##### lead1_spec_S_b | 04:45:07
+    lead1_spec_S_b code    300 tok | wall 56.82 t/s | decode 65.82 t/s | prefill   59.0 t/s | accept 209/267=0.78 
+    lead1_spec_S_b reason  300 tok | wall 55.01 t/s | decode 64.14 t/s | prefill   76.0 t/s | accept 212/259=0.82 
+    lead1_spec_S_b edit    300 tok | wall 44.29 t/s | decode 71.04 t/s | prefill  147.2 t/s | accept 223/227=0.98 
+    lead1_spec_S_b long    300 tok | wall 28.82 t/s | decode 51.03 t/s | prefill  480.2 t/s | accept 194/315=0.62 
+    hit rate 43.6% 
+##### lead1_spec_T_b | 04:45:51
+    lead1_spec_T_b code    300 tok | wall 55.63 t/s | decode 64.19 t/s | prefill   59.9 t/s | accept 207/275=0.75 
+    lead1_spec_T_b reason  300 tok | wall 56.86 t/s | decode 66.73 t/s | prefill   75.7 t/s | accept 215/250=0.86 
+    lead1_spec_T_b edit    300 tok | wall 43.71 t/s | decode 69.63 t/s | prefill  147.0 t/s | accept 223/227=0.98 
+    lead1_spec_T_b long    300 tok | wall 27.98 t/s | decode 48.55 t/s | prefill  478.9 t/s | accept 187/333=0.56 
+    hit rate 44.1% 
+    lead1_pf_S_a: prompt 9279 tok @ 512.4 t/s | decode 128 tok @ 51.59 t/s | wall 20.6 s | 
+    lead1_pf_T_a: prompt 9279 tok @ 512.0 t/s | decode 128 tok @ 54.79 t/s | wall 20.5 s | 
+    lead1_pf_S_b: prompt 9279 tok @ 511.7 t/s | decode 128 tok @ 52.51 t/s | wall 20.6 s | 
+    lead1_pf_T_b: prompt 9279 tok @ 512.9 t/s | decode 128 tok @ 54.69 t/s | wall 20.5 s | 
+--- 3. DEPTH, q4_0 KV, no speculation, cache 12 | 04:49:00
+    lead1_d32k_S_a: prompt 33195 tok @ 386.2 t/s | decode 128 tok @ 28.21 t/s | wall 90.6 s | 
+    lead1_d32k_G_a: prompt 33195 tok @ 384.8 t/s | decode 128 tok @ 29.68 t/s | wall 90.7 s | 
+    lead1_d32k_T_a: prompt 33195 tok @ 384.6 t/s | decode 128 tok @ 32.43 t/s | wall 90.3 s | 
+    lead1_d32k_S_b: prompt 33195 tok @ 384.3 t/s | decode 128 tok @ 28.42 t/s | wall 90.9 s | 
+    lead1_d32k_G_b: prompt 33195 tok @ 384.0 t/s | decode 128 tok @ 29.70 t/s | wall 90.8 s | 
+    lead1_d32k_T_b: prompt 33195 tok @ 384.0 t/s | decode 128 tok @ 32.50 t/s | wall 90.4 s | 
+    lead1_d64k_S_a: prompt 65079 tok @ 273.5 t/s | decode 128 tok @ 21.72 t/s | wall 244.0 s | 
+    lead1_d64k_G_a: prompt 65079 tok @ 273.5 t/s | decode 128 tok @ 21.69 t/s | wall 244.0 s | 
+    lead1_d64k_T_a: prompt 65079 tok @ 273.4 t/s | decode 128 tok @ 26.33 t/s | wall 243.0 s | 
+    lead1_d64k_S_b: prompt 65079 tok @ 273.9 t/s | decode 128 tok @ 21.84 t/s | wall 243.6 s | 
+    lead1_d64k_G_b: prompt 65079 tok @ 273.2 t/s | decode 128 tok @ 22.95 t/s | wall 243.9 s | 
+    lead1_d64k_T_b: prompt 65079 tok @ 273.7 t/s | decode 128 tok @ 26.34 t/s | wall 242.7 s | 
+--- 4. EXPLORATORY: 32k F16 KV, no speculation, cache 6: T vs T + GQA_F16=1 | 05:25:08
+    lead1_f16_T_a: prompt 33195 tok @ 390.1 t/s | decode 128 tok @ 34.12 t/s | wall 88.9 s | 
+    lead1_f16_F_a: prompt 33195 tok @ 388.8 t/s | decode 128 tok @ 14.04 t/s | wall 94.5 s | 
+    lead1_f16_T_b: prompt 33195 tok @ 388.4 t/s | decode 128 tok @ 34.17 t/s | wall 89.3 s | 
+    lead1_f16_F_b: prompt 33195 tok @ 388.5 t/s | decode 128 tok @ 14.07 t/s | wall 94.6 s | 
+  R2 specbench decode S 63.08 T 63.22 (+0.2%, S spread 1.65) -> PASS
+  R2 9.3k decode_tps: S [51.59, 52.51] T [54.79, 54.69] (+5.2%) -> PASS
+  R2 9.3k prefill_tps: S [512.43, 511.67] T [512.03, 512.87] (+0.1%) -> PASS
+  R3 32k (prompt 33195 tok) decode S [28.21, 28.42] G [29.68, 29.7] T [32.43, 32.5] | G/S +4.9% -> 0032 PASS | T/G +9.3% -> 0033 PASS | T/S +14.7% | prefill T/S -0.2%
+  R3 64k (prompt 65079 tok) decode S [21.72, 21.84] G [21.69, 22.95] T [26.33, 26.34] | G/S +2.5% -> 0032 NOT PROVEN | T/G +18.0% -> 0033 PASS | T/S +20.9% | prefill T/S -0.0%
+  R3 0032: NOT PROVEN
+  R3 0033: PASS
+  EXPLORATORY 32k F16 decode T [34.12, 34.17] T+GQA_F16 [14.04, 14.07] (-58.8%; no verdict)
+  LEAD1_VERDICT R1 PASS | R2 PASS | R3 0032 / 0033 above (a patch ships as a default only with R2 PASS and its R3 PASS)
+LEAD1_DONE

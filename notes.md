@@ -1531,3 +1531,21 @@ Full tables: research/dave-mi210-2026-09-24.md (round 2); raw logs bench/dave/re
   (host CPU shared, reps swing 19-52).
 - Void: d3c_s2_ours_b decode-after 8.3 t/s (one-off host stall).
 - Nothing transfers to the i5 (MFMA kernels; stream-k already off on sm_75). Handing Dave the fork branch dave-combo is Andrei's call.
+
+### 2026-09-24 05:40 — lead1: 0032 (FA vec GQA) + 0033 (KROW) on the i5 -> 0033 PASS, 0032 NOT PROVEN, one unexplained gain
+TEST = STABLE + 0032 + 0033 (t3 e6961075b). Rules pre-registered in bench/box/lead1.sh.
+- R0 unit: FLASH_ATTN_EXT 4079/4079 under defaults, KROW=0, GQA=0.
+- R1 identity at the STABLE config (-c 4096, LLAMA_MOE_CACHE_SYNC=1): 4/4 texts IDENTICAL -> PASS.
+- R2 no regression: specbench decode 63.08 -> 63.22 (+0.2%); 9.3k prefill 512 -> 512; 9.3k decode after S [51.59, 52.51]
+  T [54.79, 54.69] (+5.2%, beyond the spread) -> PASS. UNEXPLAINED: F16 KV is never routed to either patch by default, so the
+  dispatch is unchanged. (inferred) At KV > 4096 (GGML_CUDA_FA_MMA_MAX_KV=4096) single-token F16 attention runs the vec kernel
+  with ncols2 = 1, whose body both patches rewrote (ncols -> ncols1 x ncols2 indexing): same math, different code generation.
+  R1 ran at -c 4096 (MMA path), so identity on that path is untested. Owed before any claim: identity + a kernel timing at 9.3k.
+- R3 depth, q4_0 KV, no speculation, cache 12 (decode after the prompt, S / GQA only / TEST):
+  32k 28.3 / 29.7 / 32.5 (GQA +4.9% PASS, KROW +9.3% PASS, total +14.7%); 64k 21.8 / 22.3 / 26.3 (GQA +2.5% NOT PROVEN, the
+  GQA-only reps 21.69 / 22.95 overlap STABLE; KROW +18.0% PASS; total +20.9%). Prefill unchanged at both depths.
+- Verdict per the rule: 0033 ships as a default only with 0032 (KROW is built inside the GQA kernel), and 0032 is NOT PROVEN at
+  64k -> neither is promoted yet.
+- Exploratory 32k F16 KV, cache 6: TEST 34.1 t/s; TEST + GGML_CUDA_FA_VEC_GQA_F16=1 14.1 (-59%) -> the F16 GQA vec route is dead.
+  Also: F16 KV at 32k (34.1, cache 6) beat q4_0 KV + both patches (32.5, cache 12) -> the long-context KV type (Andrei's call)
+  needs a measured F16 vs q4_0 comparison at 32k / 64k.
