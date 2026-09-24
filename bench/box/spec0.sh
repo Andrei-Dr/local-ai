@@ -34,6 +34,9 @@
 #   R0 IDENTITY: the generated token ids of O equal S (the TEST build with the switches unset is the STABLE build) AND D equal O
 #      (the switches change no output), for all three prompts; else SPEC0 FAIL (R0) and stop. A void arm (dead server, OOM, empty
 #      dump) = FAIL too: an identity test never passes by default.
+#   R0b SAME DRAFTER: at T = 0 the emitted ids do not depend on the draft, so R0 cannot see a drafter change (the dump makes the
+#      MTP draft sample on the CPU instead of the backend). Per prompt, the server's draft_n and draft_n_accepted must be EXACTLY
+#      equal for S vs O and O vs D; else SPEC0 FAIL (R0b) and stop. The counts are printed either way.
 #   H1-H3 verdicts as printed by spec0_analyze.py; routing alignment (every route record has n_draft + 1 tokens) must be 0
 #   misaligned, else the H3-side numbers from the route dump are void (H3 itself comes from the sibling tool).
 # RUNTIME (est.): build ~35 min (fresh worktree, CUDA, FA_ALL_QUANTS; incremental when rerun) | identity 3 x ~3 = 9 | card ~4 |
@@ -121,21 +124,23 @@ arm() {
   echo "    $l: $(voidlog $l) dump $(wc -l < $OUT/$l.jsonl 2>/dev/null || echo -) steps, route $(stat -c %s $OUT/$l.route 2>/dev/null || echo -) B"
 }
 
-echo "--- 0. IDENTITY T = 0, LLAMA_MOE_CACHE_SYNC=1: S (STABLE) | O (TEST, dumps unset) | D (TEST, dumps on) | $(date +%T)"
+echo "--- 0. IDENTITY (R0 ids, R0b draft counts) T = 0, LLAMA_MOE_CACHE_SYNC=1: S (STABLE) | O (TEST, dumps unset) | D (TEST, dumps on) | $(date +%T)"
 arm spec0_S "$STABLE_BUILD" t0
 arm spec0_O "$B4" t0
 arm spec0_D "$B4" t0 dump
-$PY - "$OUT" <<'PY' || { echo "SPEC0_VERDICT FAIL (R0)"; echo SPEC0_DONE; exit 0; }
+$PY - "$OUT" <<'PY' || { echo SPEC0_DONE; exit 0; }  # the check prints SPEC0_VERDICT FAIL (R0) or (R0b)
 import json, os, sys
 out = sys.argv[1]
-runs = {}
+runs, drafts = {}, {}
 for a in "SOD":
     p = f"{out}/spec0_{a}.json"
     if not os.path.exists(p) or os.path.getsize(p) == 0:
-        print(f"    R0 FAIL: arm {a} void (no client output)"); sys.exit(1)
-    runs[a] = {r["prompt"]: r["tokens"] for r in json.load(open(p))}
+        print(f"    R0 FAIL: arm {a} void (no client output)\nSPEC0_VERDICT FAIL (R0)"); sys.exit(1)
+    rows = json.load(open(p))
+    runs[a] = {r["prompt"]: r["tokens"] for r in rows}
+    drafts[a] = {r["prompt"]: (r["timings"].get("draft_n"), r["timings"].get("draft_n_accepted")) for r in rows}
 if not os.path.getsize(f"{out}/spec0_D.jsonl") or not os.path.getsize(f"{out}/spec0_D.route"):
-    print("    R0 FAIL: D wrote an empty dump"); sys.exit(1)
+    print("    R0 FAIL: D wrote an empty dump\nSPEC0_VERDICT FAIL (R0)"); sys.exit(1)
 ok = True
 for x, y in (("S", "O"), ("O", "D")):
     for k in runs[x]:
@@ -145,6 +150,17 @@ for x, y in (("S", "O"), ("O", "D")):
             print(f"    R0 FAIL {x} vs {y} {k}: token ids differ at {i} ({len(a)} vs {len(b)} tokens)"); ok = False
         else:
             print(f"    R0 {x} vs {y} {k}: IDENTICAL ({len(a)} tokens)")
+if not ok:
+    print("SPEC0_VERDICT FAIL (R0)"); sys.exit(1)
+for x, y in (("S", "O"), ("O", "D")):
+    for k in drafts[x]:
+        a, b = drafts[x][k], drafts[y].get(k)
+        same = a == b and None not in a
+        print(f"    R0b {x} vs {y} {k}: draft_n / accepted {a[0]} / {a[1]} vs {b[0] if b else None} / {b[1] if b else None}"
+              f" -> {'EQUAL' if same else 'DIFFERENT'}")
+        ok &= same
+if not ok:
+    print("SPEC0_VERDICT FAIL (R0b)")
 sys.exit(0 if ok else 1)
 PY
 
