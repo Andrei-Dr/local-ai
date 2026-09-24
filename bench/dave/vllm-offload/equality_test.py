@@ -19,10 +19,15 @@ Why revision 2: revision 1 (commit e4a4ab8) ran E0 once on the unpatched 1M serv
   hit-vs-cold were confounded. Revision 2 separates them, and adds E2 (same restore boundary, GPU vs CPU source).
 E0 (determinism): each prompt twice cold (two fresh salts), sequential, alone. Pass = identical ids for every prompt.
 E0h (diagnostic): a third run reusing the first salt = a GPU prefix-cache hit; first divergence vs cold is reported.
-E2 (offload exactness, dev mode): per prompt, fresh salt: cold run; G = same salt again (GPU prefix hit); then
-  /reset_prefix_cache (GPU only: reset_external=false, no running requests) and C = same salt again (restore from CPU).
-  Evidence: vllm:kv_offload_load_bytes delta > 0 during C, and C's external (CPU) hit tokens equal G's GPU hit tokens
-  (same boundary, so both runs recompute the same tail). Pass = C ids == G ids for all 3 prompts.
+E2 (offload exactness, dev mode; revision 3, see below): logprob probes. Per prompt, a cold 256-token reference run gives
+  the continuation. Probe = (prompt ids + first k continuation ids, k in 0/64/128/192), max_tokens 1, top-20 logprobs as
+  token ids. Per probe four requests: A = fresh salt X (cold), B = fresh salt Y (cold; A vs B = noise floor), G = salt X
+  again (GPU prefix hit), then a GPU-only /reset_prefix_cache (reset_external=false) and C = salt X again (restore from CPU).
+  G and C resume at the same chunk boundary (checked: C's external hit tokens == G's GPU hit tokens) and recompute the same
+  tail, so if the CPU round trip is byte-exact, G vs C differs only by the server's kernel noise.
+  Distance d(P, Q) = KL over P's top-20 tokens (both renormalized; a token missing from Q gets Q's lowest listed logprob).
+  Pass = every C shows vllm:kv_offload_load_bytes > 0 AND equal boundary AND median d(G, C) <= 2 x median d(A, B) AND
+  max d(G, C) <= 2 x max d(A, B) AND argmax(G) != argmax(C) in no more probes than argmax(A) != argmax(B).
 E1 (preempt-and-restore, dev mode): stream the code prompt (fresh salt); after 64 generated tokens POST
   /reset_prefix_cache?reset_running_requests=true (reset_external=false): every running request is preempted
   (Scheduler._preempt_request), the GPU prefix cache is wiped, the CPU tier is kept. Run twice (E1a, E1b; fresh salts).
@@ -32,12 +37,16 @@ E1 (preempt-and-restore, dev mode): stream the code prompt (fresh salt); after 6
   divergence from cold reported next to E1 --external.
 E1 --external (control, diagnostic only): the same with reset_external=true, so the CPU tier is wiped too and the restore is
   a full recompute. It separates preemption-recompute numerics from the offload path.
-Verdict: PASS = E0 deterministic AND E2 pass AND E1 pass with its evidence. If E0 itself is not deterministic: no PASS;
-  report first-divergence positions (tolerance: a restore may not diverge earlier than E0's own first divergence).
+Verdict: PASS = E0 deterministic AND E2 pass AND E1 pass with its evidence. If E0 itself is not deterministic: no PASS on
+  token ids; report first-divergence positions, and E2 (non-inferiority against the measured noise floor) carries the
+  exactness verdict ("E2 PASS, ids nondeterministic").
+Revision 3 (before any run on the offload server): rev-2 E0 on the unpatched server showed cold-vs-cold divergence at
+  tokens 1 / 11 / 0 (the server itself is nondeterministic), so id equality cannot prove exactness; E2 moved to the
+  logprob probes above. E1 unchanged: evidence + 256 tokens completed, divergence from cold reported (diagnostic).
 Kill: any mismatch, missing evidence, or server error -> roll back to the plain 1M config (q38fn_1m.sh --rollback).
 Safety: resets refuse to run while any request other than ours is running (Dave's traffic shares the server).
 """
-import hashlib, json, os, random, re, sys, threading, time, urllib.request
+import hashlib, json, math, os, random, re, sys, threading, time, urllib.request
 
 HOST = os.environ.get("HOST", "http://127.0.0.1:8057")
 MODEL = os.environ.get("MODEL_NAME", "q38fn-mxfp4")
@@ -156,23 +165,58 @@ def e0(label):
     return res
 
 
+def probe(ids, salt):
+    idle(); m0 = metrics()
+    r = post("/v1/completions", {"model": MODEL, "prompt": ids, "max_tokens": 1, "temperature": 0, "logprobs": 20,
+                                 "return_tokens_as_token_ids": True, "cache_salt": salt})
+    time.sleep(6)
+    top = r["choices"][0]["logprobs"]["top_logprobs"][0]
+    return {"salt": salt, "top": top, "argmax": max(top, key=top.get), "metric_delta": deltas(m0, metrics())}
+
+
+def kl(p, q):
+    floor = min(q.values())
+    ps = {t: math.exp(v) for t, v in p.items()}; qs = {t: math.exp(q.get(t, floor)) for t in p}
+    zp, zq = sum(ps.values()), sum(qs.values())
+    return sum(ps[t] / zp * math.log((ps[t] / zp) / (qs[t] / zq)) for t in p)
+
+
 def e2(label):
-    res = {"label": label, "prompts": {}}
+    res = {"label": label, "prompts": {}, "probes": []}
     for name, fn in PROMPTS.items():
-        p = fn(); salt = f"{label}-{name}"
-        cold = run_once(p, salt); g = run_once(p, salt)
-        idle()
-        if not reset(False, False):
-            sys.exit("E2: GPU-only reset failed")
-        c = run_once(p, salt)
-        fd = first_divergence(g["ids"], c["ids"])
-        res["prompts"][name] = {"prompt_sha256": hashlib.sha256(p.encode()).hexdigest(), "cold": cold, "gpu_hit": g,
-                                "cpu_restore": c, "identical": fd is None, "first_divergence": fd,
-                                "cold_vs_gpu_hit": first_divergence(cold["ids"], g["ids"])}
-        print(f"E2 {name:9s} C==G {fd is None} (div {fd}) | cold vs G div {res['prompts'][name]['cold_vs_gpu_hit']} | "
-              f"G {g['metric_delta']} | C {c['metric_delta']}", flush=True)
-    res["pass"] = all(v["identical"] and v["cpu_restore"]["metric_delta"].get("vllm:kv_offload_load_bytes", 0) > 0
-                      for v in res["prompts"].values())
+        p = fn()
+        ref = post("/v1/completions", {"model": MODEL, "prompt": p, "max_tokens": GEN, "temperature": 0,
+                                       "ignore_eos": True, "return_token_ids": True, "cache_salt": f"{label}-{name}-ref"})
+        c0 = ref["choices"][0]; pids, cont = c0["prompt_token_ids"], c0["token_ids"]
+        res["prompts"][name] = {"prompt_sha256": hashlib.sha256(p.encode()).hexdigest(), "prompt_tokens": len(pids),
+                                "continuation": cont}
+        for k in (0, 64, 128, 192):
+            ids, x = pids + cont[:k], f"{label}-{name}-{k}-x"
+            A = probe(ids, x); B = probe(ids, f"{label}-{name}-{k}-y"); G = probe(ids, x)
+            idle()
+            if not reset(False, False):
+                sys.exit("E2: GPU-only reset failed")
+            C = probe(ids, x)
+            row = {"prompt": name, "k": k, "A": A, "B": B, "G": G, "C": C, "d_AB": kl(A["top"], B["top"]),
+                   "d_GC": kl(G["top"], C["top"]), "d_AC": kl(A["top"], C["top"]),
+                   "flip_AB": A["argmax"] != B["argmax"], "flip_GC": G["argmax"] != C["argmax"],
+                   "gpu_hit": G["metric_delta"].get("vllm:prefix_cache_hits", 0),
+                   "cpu_hit": C["metric_delta"].get("vllm:external_prefix_cache_hits", 0),
+                   "load_bytes": C["metric_delta"].get("vllm:kv_offload_load_bytes", 0)}
+            res["probes"].append(row)
+            print(f"E2 {name:9s} k={k:3d} d_AB={row['d_AB']:.2e} d_GC={row['d_GC']:.2e} d_AC={row['d_AC']:.2e} "
+                  f"flipAB={row['flip_AB']} flipGC={row['flip_GC']} gpu_hit={row['gpu_hit']} cpu_hit={row['cpu_hit']} "
+                  f"load={row['load_bytes']:.3g}", flush=True)
+    P = res["probes"]; med = lambda v: sorted(v)[len(v) // 2]  # noqa: E731
+    ab, gc = [r["d_AB"] for r in P], [r["d_GC"] for r in P]
+    res["summary"] = {"median_d_AB": med(ab), "max_d_AB": max(ab), "median_d_GC": med(gc), "max_d_GC": max(gc),
+                      "flips_AB": sum(r["flip_AB"] for r in P), "flips_GC": sum(r["flip_GC"] for r in P),
+                      "all_loaded": all(r["load_bytes"] > 0 for r in P),
+                      "equal_boundary": all(r["cpu_hit"] == r["gpu_hit"] for r in P)}
+    S = res["summary"]
+    res["pass"] = (S["all_loaded"] and S["equal_boundary"] and S["median_d_GC"] <= 2 * S["median_d_AB"]
+                   and S["max_d_GC"] <= 2 * S["max_d_AB"] and S["flips_GC"] <= S["flips_AB"])
+    print("E2 summary", S, "PASS" if res["pass"] else "FAIL", flush=True)
     return res
 
 
