@@ -1,0 +1,182 @@
+--- a/vllm/distributed/kv_transfer/kv_connector/v1/offloading/config.py	2026-09-25 00:59:15
++++ b/vllm/distributed/kv_transfer/kv_connector/v1/offloading/config.py	2026-09-25 00:59:30
+@@ -56,7 +56,12 @@
+     )
+ 
+     _, tokens_per_hash = resolve_kv_cache_block_sizes(kv_cache_config, vllm_config)
+-    for group in groups:
++    for group, kv_cache_group in zip(groups, kv_cache_config.kv_cache_groups):
++        # Groups that are not prefix-cacheable (e.g. a CircularBufferSpec ring)
++        # are never offloaded (see scheduler.is_offloaded_group), so they are
++        # not hashed and need not align to the hash unit.
++        if not kv_cache_group.kv_cache_spec.prefix_cacheable:
++            continue
+         assert group.tokens_per_block % tokens_per_hash == 0, (
+             f"tokens_per_block={group.tokens_per_block} not divisible by "
+             f"tokens_per_hash={tokens_per_hash}. "
+--- a/vllm/distributed/kv_transfer/kv_connector/v1/offloading/scheduler.py	2026-09-25 00:59:15
++++ b/vllm/distributed/kv_transfer/kv_connector/v1/offloading/scheduler.py	2026-09-25 01:00:02
+@@ -37,6 +37,7 @@
+     KVCacheSpec,
+     MambaSpec,
+     SlidingWindowSpec,
++    UniformTypeKVCacheSpecs,
+ )
+ from vllm.v1.kv_offload.base import (
+     GPULoadStoreSpec,
+@@ -104,11 +105,38 @@
+     # of these groups is volatile and lacks a stable hash, so it must
+     # be excluded from store and load scheduling.
+     is_eagle_group: bool = False
++    # False for groups that are never stored, loaded, touched or looked up
++    # (see is_offloaded_group). Their blocks are left to the KV cache manager.
++    is_offloaded: bool = True
+ 
+ 
++def is_offloaded_group(kv_cache_spec: KVCacheSpec) -> bool:
++    """Whether a KV cache group takes part in offloading.
++
++    Mirrors the GPU prefix cache, which skips groups that are not
++    prefix-cacheable when it looks up and restores a hit
++    (HybridKVCacheCoordinator.verify_and_split_kv_cache_groups). The only such
++    spec is CircularBufferSpec: a per-request ring holding the raw keys of the
++    compression group still being filled. Restores land on chunk boundaries,
++    which the CSA+linear layout keeps divisible by the compression ratio, so
++    the ring's open group is empty there and the recomputed tail rewrites
++    every ring row before it is read.
++    """
++    return kv_cache_spec.prefix_cacheable
++
++
+ def get_sliding_window_size_in_chunks(
+     kv_cache_spec: KVCacheSpec, tokens_per_chunk: int
+ ) -> int | None:
++    if isinstance(kv_cache_spec, UniformTypeKVCacheSpecs):
++        # Grouped layers share one lifetime, so they must agree on the window.
++        windows = {
++            get_sliding_window_size_in_chunks(spec, tokens_per_chunk)
++            for spec in kv_cache_spec.kv_cache_specs.values()
++        }
++        assert len(windows) == 1, windows
++        return windows.pop()
++
+     if isinstance(kv_cache_spec, SlidingWindowSpec):
+         assert kv_cache_spec.sliding_window > 0
+         return cdiv(kv_cache_spec.sliding_window, tokens_per_chunk)
+@@ -192,6 +220,8 @@
+         full_attn_tokens_per_chunk: set[int] = set()
+         for idx, tokens_per_block in enumerate(spec.tokens_per_block):
+             kv_spec = kv_cache_config.kv_cache_groups[idx].kv_cache_spec
++            if not is_offloaded_group(kv_spec):
++                continue
+             sw = get_sliding_window_size_in_chunks(
+                 kv_spec, tokens_per_block * spec.blocks_per_chunk
+             )
+@@ -242,6 +272,24 @@
+         for idx, tokens_per_block in enumerate(spec.tokens_per_block):
+             kv_cache_group = kv_cache_config.kv_cache_groups[idx]
+             kv_spec = kv_cache_group.kv_cache_spec
++            if not is_offloaded_group(kv_spec):
++                # Keep the slot so group indices still match the KV cache
++                # config and the worker's per-group tensor refs; the group
++                # contributes no keys and zero blocks to every transfer.
++                kv_group_configs_list.append(
++                    GroupOffloadConfig(
++                        group_idx=idx,
++                        tokens_per_block=tokens_per_block,
++                        tokens_per_chunk=tokens_per_block * spec.blocks_per_chunk,
++                        hashes_per_chunk=0,
++                        kv_event_group_spec=get_offloading_event_group_spec(
++                            kv_cache_group
++                        ),
++                        sliding_window_size_in_chunks=None,
++                        is_offloaded=False,
++                    )
++                )
++                continue
+             sw = get_sliding_window_size_in_chunks(
+                 kv_spec, tokens_per_block * spec.blocks_per_chunk
+             )
+@@ -276,8 +324,11 @@
+         # Partial tails currently require one physical block per offload chunk
+         # and uniform, non-windowed groups so one boundary identifies every
+         # group's source. EAGLE and DCP need additional hand-off semantics.
++        # Groups excluded from offloading have no boundary keys, so partial
++        # tails stay off whenever one exists.
+         supports_partial_tail = (
+-            spec.blocks_per_chunk == 1
++            all(config.is_offloaded for config in kv_group_configs)
++            and spec.blocks_per_chunk == 1
+             and len(group_block_sizes) == 1
+             and has_partial_recurrent_group
+             and all(
+@@ -357,6 +408,8 @@
+         for group_config, group_state in zip(
+             self.config.kv_group_configs, self.group_states
+         ):
++            if not group_config.is_offloaded:
++                continue
+             for req_block_hash in islice(
+                 self.req.block_hashes,
+                 group_config.hashes_per_chunk * len(group_state.offload_keys)
+@@ -504,6 +557,8 @@
+         full_attention_groups: list[int] = []
+         sliding_window_groups: list[int] = []
+         for group_config in self.config.kv_group_configs:
++            if not group_config.is_offloaded:
++                continue
+             if group_config.sliding_window_size_in_chunks is None:
+                 full_attention_groups.append(group_config.group_idx)
+             else:
+@@ -667,6 +722,8 @@
+         for group_config, group_state in zip(
+             self.config.kv_group_configs, req_status.group_states
+         ):
++            if not group_config.is_offloaded:
++                continue
+             if group_config.sliding_window_size_in_chunks is None:
+                 self.manager.touch(group_state.offload_keys, req_status.req_context)
+             else:
+@@ -837,6 +894,8 @@
+             for group_config, group_state in zip(
+                 self.config.kv_group_configs, req_status.group_states
+             ):
++                if not group_config.is_offloaded:
++                    continue
+                 tokens_per_chunk = group_config.tokens_per_chunk
+                 sliding_window_size_in_chunks = (
+                     group_config.sliding_window_size_in_chunks
+@@ -1018,6 +1077,13 @@
+                 block.block_id for block in group_blocks if block.block_id != 0
+             )
+ 
++            if not group_config.is_offloaded:
++                # The KV cache manager already claimed this group's blocks;
++                # nothing is loaded into them.
++                group_sizes.append(0)
++                block_indices.append(0)
++                continue
++
+             tokens_per_block = group_config.tokens_per_block
+             tokens_per_chunk = group_config.tokens_per_chunk
+             offload_keys = group_state.offload_keys
+@@ -1278,6 +1344,8 @@
+             for group_config, group_state in zip(
+                 self.config.kv_group_configs, req_status.group_states
+             ):
++                if not group_config.is_offloaded:
++                    continue
+                 num_chunks = req_status.storable_chunks(
+                     group_config, group_state, num_offloadable_tokens
+                 )
+@@ -1349,6 +1417,10 @@
+             for group_config, group_state in zip(
+                 self.config.kv_group_configs, req_status.group_states
+             ):
++                if not group_config.is_offloaded:
++                    group_sizes.append(0)
++                    block_indices.append(0)
++                    continue
+                 is_sliding_window = (
+                     group_config.sliding_window_size_in_chunks is not None
+                 )
