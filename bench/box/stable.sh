@@ -39,7 +39,7 @@ stable_server() {
     args=$(stable_args "$ctx") || return 1
     # shellcheck disable=SC2086  # args is a flag list
     ( stable_export_env; export LEDGER_STABLE=$STABLE_STABLE_SINCE; exec env -u LD_LIBRARY_PATH "${BUILD:-$STABLE_BUILD}/bin/llama-server" -m "${MODEL:-$STABLE_MODEL_PATH}" \
-        -c "$ctx" --load-mode none --jinja --parallel 1 --port 8099 --cache-ram 0 $args "$@" ) \
+        -c "$ctx" --jinja --parallel 1 --port 8099 $args "$@" ) \
         > "${STABLE_LOGDIR:-/ai/bench}/server_$label.log" 2>&1 &
     STABLE_PID=$!
 }

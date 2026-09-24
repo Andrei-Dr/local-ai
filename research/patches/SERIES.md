@@ -56,7 +56,7 @@ decode code +0.9 / reason +0.2 / edit -0.8 / long -6.1% (open item, see notes), 
 STABLE since 2026-09-24: llama.cpp `e613ef2` + patches 0001-0030, model `Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf`, draft head `mtp-Qwen3.6-35B-A3B-Q4_0.gguf` with vocabulary `mtp-Qwen3.6-35B-A3B-vocab49k.bin`. Source: `stable/stable.env`.
 
 ```
-LLAMA_MTP_VOCAB_FILE=mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 llama-server -m Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf -md mtp-Qwen3.6-35B-A3B-Q4_0.gguf -c 4096 -ngl 999 -fa on -t 6 -ot exps=CPU --spec-type draft-mtp --spec-draft-n-max 3 -ub 128 -ubp 2048 --moe-expert-cache 21 -b 2048
+LLAMA_MTP_VOCAB_FILE=mtp-Qwen3.6-35B-A3B-vocab49k.bin GGML_CUDA_FA_TILE_MIN_BATCH=32 GGML_CUDA_FA_MMA_MAX_KV=4096 GGML_SCHED_MOE_PREFETCH=1 GGML_OP_OFFLOAD_MIN_BATCH=32 llama-server -m Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-K2q6-denseQ4K.gguf -md mtp-Qwen3.6-35B-A3B-Q4_0.gguf -c 4096 -ngl 999 -fa on -t 6 -ot exps=CPU --load-mode none --cache-ram 0 --spec-type draft-mtp --spec-draft-n-max 3 -ub 128 -ubp 2048 --moe-expert-cache 21 -b 2048
 ```
 At `-c 12288`: `--moe-expert-cache 18 -b 4096` instead of `--moe-expert-cache 21 -b 2048`.
 `stable/serve.sh` runs exactly this (`--ctx 4096 | 12288`).
