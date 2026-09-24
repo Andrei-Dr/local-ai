@@ -1,0 +1,20 @@
+E2 code      k=  0 d_AB=1.35e+00 d_GC=3.69e-01 d_AC=4.50e-01 flipAB=True flipGC=True gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 code      k= 32 d_AB=3.66e-02 d_GC=1.51e-02 d_AC=2.74e-03 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 code      k= 64 d_AB=1.02e-02 d_GC=1.41e-03 d_AC=4.79e-02 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 code      k= 96 d_AB=1.07e-06 d_GC=2.86e-06 d_AC=1.29e-05 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 code      k=128 d_AB=6.47e-03 d_GC=1.69e-03 d_AC=1.50e-04 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 code      k=160 d_AB=1.78e-02 d_GC=1.42e-02 d_AC=2.46e-03 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 code      k=192 d_AB=1.70e-07 d_GC=3.49e-08 d_AC=1.20e-07 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 code      k=224 d_AB=1.23e-04 d_GC=7.76e-04 d_AC=8.79e-04 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k=  0 d_AB=9.06e-02 d_GC=1.29e-01 d_AC=1.07e+00 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k= 32 d_AB=6.25e-02 d_GC=9.96e-03 d_AC=8.15e-03 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k= 64 d_AB=3.41e-05 d_GC=1.62e-04 d_AC=2.69e-05 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k= 96 d_AB=5.47e-09 d_GC=5.99e-09 d_AC=4.18e-09 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k=128 d_AB=3.11e-02 d_GC=7.42e-03 d_AC=1.70e-02 flipAB=True flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k=160 d_AB=2.19e-03 d_GC=5.36e-03 d_AC=2.89e-03 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k=192 d_AB=3.51e-03 d_GC=6.79e-04 d_AC=3.27e-04 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 prose     k=224 d_AB=7.22e-09 d_GC=2.88e-09 d_AC=1.94e-08 flipAB=False flipGC=False gpu_hit=9648.0 cpu_hit=9648.0 load=5.27e+08
+E2 reasoning k=  0 d_AB=1.90e+00 d_GC=1.61e+00 d_AC=1.56e-01 flipAB=True flipGC=True gpu_hit=19296.0 cpu_hit=19296.0 load=8.16e+08
+E2 reasoning k= 32 d_AB=3.95e-05 d_GC=2.28e-04 d_AC=1.66e-04 flipAB=False flipGC=False gpu_hit=19296.0 cpu_hit=19296.0 load=8.16e+08
+E2 reasoning k= 64 d_AB=5.81e-05 d_GC=1.70e-05 d_AC=6.91e-06 flipAB=False flipGC=False gpu_hit=19296.0 cpu_hit=19296.0 load=8.16e+08
+E2 reasoning k= 96 d_AB=6.81e-04 d_GC=1.06e-06 d_AC=1.68e-03 flipAB=False flipGC=False gpu_hit=19296.0 cpu_hit=19296.0 load=8.16e+08
