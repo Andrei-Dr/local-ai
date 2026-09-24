@@ -1519,3 +1519,15 @@ it is not in the STABLE series yet (fa1 branch) -> owed: port into the series + 
 Both runs complete; the ledger records stable_since; stable_args present in specbench args and the 9.3k server argv; speed
 specbench 62.29 vs 63.06 (-1.2%, rule 5%), 9.3k 54.99 vs 55.4 (-0.7%). `STABLE=1 specbench.sh` / `stable_server` are the way
 to write a job's STABLE arm from now on.
+
+### 2026-09-24 05:30 — dave3 / dave3b / dave3c / dave4 / dave5: Dave's build, the combo, vLLM, long prompts (MI210)
+Full tables: research/dave-mi210-2026-09-24.md (round 2); raw logs bench/dave/results/.
+- Engine vs engine (dave3c, no MTP, -ub 2048): S1 pf 9.3k dave 4194 / ours 3007 / combo 4265; decode 99.9 / 103.1 / 101.2.
+- Each at its best: S1 combo+MTP -ub 2048 110.3 decode / 3419 pf (best llama.cpp); S3 combo+cache 18.5 decode (+62% vs stock);
+  S4 combo pf 570 vs 406 stock (1.40x).
+- vLLM GPTQ-Int4 + MTP3 (dave4): 125.9 decode / 5412 pf 9.3k vs ours+MTP 113.3 / 2065 -> vLLM wins short context.
+- dave5 resident, no MTP: combo pf 3698 / 4956 / 3469 at 33k / 66k / 132k vs dave 3570 / 4700 / 3229 (WIN every depth) vs vLLM
+  4519 / 3261 / 2047; llama.cpp decode after ~93 / 88 / 79 vs vLLM 58 / 55 / 50. Offloaded: combo pf = dave's; decode no verdict
+  (host CPU shared, reps swing 19-52).
+- Void: d3c_s2_ours_b decode-after 8.3 t/s (one-off host stall).
+- Nothing transfers to the i5 (MFMA kernels; stream-k already off on sm_75). Handing Dave the fork branch dave-combo is Andrei's call.
