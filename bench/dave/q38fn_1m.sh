@@ -19,12 +19,13 @@
 # little from the extra 3 GB/GPU offload; LiteLLM's model_info (max_input_tokens) may still say 262144.
 set -euo pipefail
 cd "$(dirname "$0")"
-C=q38fn-lru; OLD=q38fn-lru-262k; PORT=8057
+C=q38fn-lru; OLD=${OLD:-q38fn-lru-262k}; PORT=8057   # OLD=<name> for tuning rounds: the original 262k container stays untouched
 if [ "${1:-}" = --rollback ]; then
   docker rm -f $C >/dev/null 2>&1 || true
   docker rename $OLD $C && docker start $C && echo "rolled back: $C (262k) started"; exit 0
 fi
 [ "$(docker inspect -f '{{.Name}}' $C 2>/dev/null)" = "/$C" ] || { echo "no container $C"; exit 1; }
+[ "${1:-}" != --apply ] || ! docker inspect $OLD >/dev/null 2>&1 || { echo "$OLD already exists: pick another OLD= name"; exit 1; }
 docker inspect $C > $C.inspect.json
 python3 - "$C.inspect.json" > run_1m.sh <<'EOF'
 import json, shlex, sys
@@ -36,6 +37,8 @@ def setarg(k, v):
     else: args.extend([k, v])
 import os
 setarg("--max-model-len", "1010000"); setarg("--kv-cache-memory", os.environ.get("KV", "8300000000")); setarg("--cpu-offload-gb", os.environ.get("OFF", "45"))
+for k, v in json.loads(os.environ.get("EXTRA", "{}")).items():   # EXTRA='{"--flag": "value"}' tuning overrides
+    setarg(k, v)
 setarg("--hf-overrides", json.dumps({"text_config": {"rope_parameters": {
     "rope_type": "yarn", "factor": 4.0, "original_max_position_embeddings": 262144, "rope_theta": 10000000,
     "partial_rotary_factor": 0.25, "mrope_section": [11, 11, 10], "mrope_interleaved": True},
