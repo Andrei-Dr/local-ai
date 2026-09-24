@@ -21,13 +21,15 @@ E0 (determinism): each prompt twice cold (two fresh salts), sequential, alone. P
 E0h (diagnostic): a third run reusing the first salt = a GPU prefix-cache hit; first divergence vs cold is reported.
 E2 (offload exactness, dev mode; revision 3, see below): logprob probes. Per prompt, a cold 256-token reference run gives
   the continuation. Probe = (prompt ids + first k continuation ids, k in 0/64/128/192), max_tokens 1, top-20 logprobs as
-  token ids. Per probe four requests: A = fresh salt X (cold), B = fresh salt Y (cold; A vs B = noise floor), G = salt X
+  token ids (revision 4: k in 0, 32, ..., 224 = 24 probes over the 3 prompts). Per probe four requests: A = fresh salt X (cold), B = fresh salt Y (cold; A vs B = noise floor), G = salt X
   again (GPU prefix hit), then a GPU-only /reset_prefix_cache (reset_external=false) and C = salt X again (restore from CPU).
   G and C resume at the same chunk boundary (checked: C's external hit tokens == G's GPU hit tokens) and recompute the same
   tail, so if the CPU round trip is byte-exact, G vs C differs only by the server's kernel noise.
   Distance d(P, Q) = KL over P's top-20 tokens (both renormalized; a token missing from Q gets Q's lowest listed logprob).
-  Pass = every C shows vllm:kv_offload_load_bytes > 0 AND equal boundary AND median d(G, C) <= 2 x median d(A, B) AND
-  max d(G, C) <= 2 x max d(A, B) AND argmax(G) != argmax(C) in no more probes than argmax(A) != argmax(B).
+  Pass (revision 4, stricter, set with the team lead before any offload run): G vs C must sit inside the cold-vs-cold
+  noise distribution over the same 24 probes: p95 d(G, C) <= p95 d(A, B) AND max d(G, C) <= max d(A, B) (nearest-rank
+  percentiles) AND argmax agreement G/C >= argmax agreement A/B; plus every C shows vllm:kv_offload_load_bytes > 0 and
+  C's CPU hit tokens == G's GPU hit tokens (equal boundary). Median d(G, C) and d(A, C) are reported, not gated.
 E1 (preempt-and-restore, dev mode): stream the code prompt (fresh salt); after 64 generated tokens POST
   /reset_prefix_cache?reset_running_requests=true (reset_external=false): every running request is preempted
   (Scheduler._preempt_request), the GPU prefix cache is wiped, the CPU tier is kept. Run twice (E1a, E1b; fresh salts).
@@ -44,7 +46,9 @@ Revision 3 (before any run on the offload server): rev-2 E0 on the unpatched ser
   tokens 1 / 11 / 0 (the server itself is nondeterministic), so id equality cannot prove exactness; E2 moved to the
   logprob probes above. E1 unchanged: evidence + 256 tokens completed, divergence from cold reported (diagnostic).
 Kill: any mismatch, missing evidence, or server error -> roll back to the plain 1M config (q38fn_1m.sh --rollback).
-Safety: resets refuse to run while any request other than ours is running (Dave's traffic shares the server).
+Safety (revision 4): a reset preempts every running request and wipes the GPU prefix cache, so it is only sent when
+  /metrics shows num_requests_running == 0 (== 1 for E1's own request) AND num_requests_waiting == 0, re-checked
+  immediately before every call; if the server does not go idle within 10 minutes the test stops and reports that.
 """
 import hashlib, json, math, os, random, re, sys, threading, time, urllib.request
 
@@ -128,15 +132,21 @@ def run_once(prompt, salt):
 
 def idle():
     for _ in range(600):
-        if metrics().get("vllm:num_requests_running", 0) == 0:
+        m = metrics()
+        if m.get("vllm:num_requests_running", 0) == 0 and m.get("vllm:num_requests_waiting", 0) == 0:
             return
         time.sleep(1)
     sys.exit("server never went idle (other traffic); stopping")
 
 
 def reset(running, external):
+    allowed = 1 if running else 0  # E1 resets with its own request running
     q = f"/reset_prefix_cache?reset_running_requests={str(running).lower()}&reset_external={str(external).lower()}"
     for _ in range(150):
+        m = metrics()
+        if m.get("vllm:num_requests_running", 0) > allowed or m.get("vllm:num_requests_waiting", 0) > 0:
+            print("reset refused: server not idle", flush=True)
+            return False
         try:
             if post(q, timeout=60).get("success"):
                 return True
@@ -190,7 +200,7 @@ def e2(label):
         c0 = ref["choices"][0]; pids, cont = c0["prompt_token_ids"], c0["token_ids"]
         res["prompts"][name] = {"prompt_sha256": hashlib.sha256(p.encode()).hexdigest(), "prompt_tokens": len(pids),
                                 "continuation": cont}
-        for k in (0, 64, 128, 192):
+        for k in range(0, 256, 32):
             ids, x = pids + cont[:k], f"{label}-{name}-{k}-x"
             A = probe(ids, x); B = probe(ids, f"{label}-{name}-{k}-y"); G = probe(ids, x)
             idle()
@@ -207,15 +217,18 @@ def e2(label):
             print(f"E2 {name:9s} k={k:3d} d_AB={row['d_AB']:.2e} d_GC={row['d_GC']:.2e} d_AC={row['d_AC']:.2e} "
                   f"flipAB={row['flip_AB']} flipGC={row['flip_GC']} gpu_hit={row['gpu_hit']} cpu_hit={row['cpu_hit']} "
                   f"load={row['load_bytes']:.3g}", flush=True)
-    P = res["probes"]; med = lambda v: sorted(v)[len(v) // 2]  # noqa: E731
-    ab, gc = [r["d_AB"] for r in P], [r["d_GC"] for r in P]
-    res["summary"] = {"median_d_AB": med(ab), "max_d_AB": max(ab), "median_d_GC": med(gc), "max_d_GC": max(gc),
+    P = res["probes"]
+    pct = lambda v, q: sorted(v)[max(0, math.ceil(q * len(v)) - 1)]  # noqa: E731 -- nearest rank
+    ab, gc, ac = ([r[k] for r in P] for k in ("d_AB", "d_GC", "d_AC"))
+    res["summary"] = {"median_d_AB": pct(ab, .5), "p95_d_AB": pct(ab, .95), "max_d_AB": max(ab),
+                      "median_d_GC": pct(gc, .5), "p95_d_GC": pct(gc, .95), "max_d_GC": max(gc),
+                      "median_d_AC": pct(ac, .5), "max_d_AC": max(ac),
                       "flips_AB": sum(r["flip_AB"] for r in P), "flips_GC": sum(r["flip_GC"] for r in P),
                       "all_loaded": all(r["load_bytes"] > 0 for r in P),
                       "equal_boundary": all(r["cpu_hit"] == r["gpu_hit"] for r in P)}
     S = res["summary"]
-    res["pass"] = (S["all_loaded"] and S["equal_boundary"] and S["median_d_GC"] <= 2 * S["median_d_AB"]
-                   and S["max_d_GC"] <= 2 * S["max_d_AB"] and S["flips_GC"] <= S["flips_AB"])
+    res["pass"] = (S["all_loaded"] and S["equal_boundary"] and S["p95_d_GC"] <= S["p95_d_AB"]
+                   and S["max_d_GC"] <= S["max_d_AB"] and S["flips_GC"] <= S["flips_AB"])
     print("E2 summary", S, "PASS" if res["pass"] else "FAIL", flush=True)
     return res
 
