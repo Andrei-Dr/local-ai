@@ -6,7 +6,12 @@ TOOL = Path(__file__).resolve().parents[1] / "box" / "spec1_sim.py"
 
 
 def top(ids, p):
-    return [[t, p if j == 0 else 0.01, 0.0] for j, t in enumerate(ids)]
+    """10 entries whose top-10 softmax gives the top-1 exactly p (the server's p_min quantity): logit 0 for the top-1,
+    log((1 - p) / (9 p)) for the other nine; the stored full-vocab p is deliberately different (0.99) and must be ignored"""
+    ids = list(ids) + [900 + j for j in range(10 - len(ids))]
+    import math
+    lo = math.log((1 - p) / (9 * p))
+    return [[t, 0.99, 0.0 if j == 0 else lo] for j, t in enumerate(ids)]
 
 
 def step(i, task, n_accept, p1, d1, tgt):

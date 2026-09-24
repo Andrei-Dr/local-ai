@@ -19,8 +19,18 @@ Counterfactuals (pre-registered): depth <= 3; the chain's depth d is accepted if
   were accepted) equals it, and then only the sibling and the target's own next token are credited (no dumped drafts beyond it).
   Every dumped step is one sample of a step start; tokens/s = sum(tokens) / sum(t_step) over the steps (the position shift a
   different acceptance would cause is ignored). Replayed steps and steps without aligned routing are dropped.
+Draft confidence p_top1 = the p the server's --spec-draft-p-min compares (line numbers: STABLE source f5ddca176; common/speculative.cpp:1686, cur_p->data[0].p after
+  the MTP draft sampler), NOT the dump's full-vocab p. The draft sampler chain is top-k 10 then dist (common/speculative.cpp:1399-
+  1400 sets samplers = {TOP_K}, k = 10; common/sampling.cpp:399 appends dist; no temperature stage). top-k sorts the candidates
+  (src/llama-sampler.cpp:321-337) and dist normalizes over what is left (src/llama-sampler.cpp:1178-1207), so
+      p_top1 = 1 / sum_{j in draft top-10} exp(logit_j - logit_top1)
+  computed here from the dumped top-10 logits. Under backend sampling (STABLE's default) the backend chain is top-k 10 only
+  (common/speculative.cpp:1406-1409): it leaves the 10 logits and ids but no token and no probs (src/llama-sampler.cpp:1477-1502),
+  so common_sampler_sample runs the same CPU chain on those 10 (common/sampling.cpp:132-150, 607-640) -> the same p. (Exception:
+  a model with suppress tokens adds a logit-bias stage, which the CPU path applies before the top-k and the backend path after it.)
+  So the confidence stop at theta is exactly the zero-code box arm --spec-draft-p-min theta.
 Policies (section 7, nothing else): chain n = 1..3 (n = 3 = STABLE); chain with a confidence stop (depth d kept while the draft's
-  p_top1 >= theta); L3 = chain 3 + draft ranks 2..k (k = 2, 3) as siblings at depth 1, always or only when depth 1's p_top1 <
+  p_top1 >= theta, the server's p_min rule; the decode of the depth that fails still runs); L3 = chain 3 + draft ranks 2..k (k = 2, 3) as siblings at depth 1, always or only when depth 1's p_top1 <
   theta; L4 = at each depth, p_top1 >= theta continues the chain, else that depth's top-1 plus ranks 2..k (k = 2..4) and stop.
   theta (0.05..0.95 by 0.05) and k are tuned on one dump and scored on the other, both directions.
 Calibration (--cal DIR = bench/box/spec1cal.sh output): per (arm n, prompt) the measured step time predicted_ms / steps is fitted by
@@ -30,6 +40,11 @@ Calibration (--cal DIR = bench/box/spec1cal.sh output): per (arm n, prompt) the 
 Gate: a policy PASSES if its held-out tokens/s beats chain n = 3 by >= 5% on BOTH dumps AND the fit is within 3%.
 Kill: no L3 / L4 policy passes -> the tree / sibling line is closed; the confidence stop is kept if >= +2% on both held-out dumps.
 Without --cal the run is UNCALIBRATED: numbers print, verdicts are not verdicts.
+Not scorable here: the confidence stop with a longer cap (--spec-draft-p-min theta with --spec-draft-n-max 4 or 5) — the dumps hold 3
+  draft depths, so depth > 3 has no acceptance or routing data; only a box arm can measure it.
+Tokens per step: the simulator uses each dump's own per-step acceptance (T = 0 chain n = 3: 2.99 tokens per step pooled over code
+  3.50, reason 3.53, prose 2.32). The calibration fit uses neither number: it regresses measured step time (predicted_ms / verify
+  steps from /metrics) per (arm, prompt); tokens per step enter only when a step-time error is shown as a t/s error.
 """
 import argparse
 import glob
@@ -65,7 +80,7 @@ def prep(dump, route_path, slots):
         if aligned and not r.get("replay") and r["n_draft"] >= 1 and all(d["top"] for d in r["draft"][:r["n_draft"]]):
             s = Step()
             s.A, s.nd, s.tgt, s.task = r["n_accept"], min(r["n_draft"], 3), r["tgt_tok"], r["task"]
-            s.p1 = [d["top"][0][1] for d in r["draft"][:s.nd]]
+            s.p1 = [sampler_p1(d["top"]) for d in r["draft"][:s.nd]]
             s.dtop = [[e[0] for e in d["top"]] for d in r["draft"][:s.nd]]
             s.new = []
             for n in range(s.nd + 1):
@@ -78,6 +93,12 @@ def prep(dump, route_path, slots):
             for row in rows:
                 lru[il].touch(row)
     return out, n_layers, dropped
+
+
+def sampler_p1(top):
+    """the draft sampler's p of its top-1 (see the docstring): softmax over the top-10 logits at T = 1"""
+    l0 = top[0][2]
+    return 1.0 / sum(np.exp(e[2] - l0) for e in top)
 
 
 # --- policies: step -> (tokens, draft decodes, NEW units incl. siblings)
