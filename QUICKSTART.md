@@ -67,7 +67,7 @@ The server log reports the expert-cache hit rate and the draft acceptance. What 
 generated from the run ledger):
 
 <!-- BEGIN GENERATED: headline (bench/docgen.py; edit the source, not this block) -->
-prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing 55-70 tokens/s (65-70 on short prompts, 55 after a 9.3k-token prompt)
+prompt reading ~511 tokens/s at 9.3k tokens (LEGACY 47, 10.8x); writing 53-71 tokens/s (65-71 on short prompts, 53 after a 9.3k-token prompt)
 <!-- END GENERATED: headline -->
 
 Full table: the "Progress" section of [README.md](README.md).
