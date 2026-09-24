@@ -1,0 +1,53 @@
+##### d4_vllm_mtp3_a | 01:21:24
+    d4_vllm_mtp3_a   code      42+300 tok | prefill    10.4 t/s | decode 128.48 t/s | wall  47.22 | '```python\nfrom typing import Any, Option'
+    d4_vllm_mtp3_a   reason    60+300 tok | prefill   576.7 t/s | decode 128.77 t/s | wall 123.66 | 'To determine when the second train catch'
+    d4_vllm_mtp3_a   edit     377+300 tok | prefill   368.9 t/s | decode 143.37 t/s | wall  96.55 | '```python\ndef parse_records(path, sep=",'
+    d4_vllm_mtp3_a   long    2181+300 tok | prefill  2832.4 t/s | decode 105.14 t/s | wall  83.01 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_vllm_mtp3_a   longpf  9279+128 tok | prefill  5450.5 t/s | decode 108.24 t/s | wall  44.51 | 'Here is a five-point summary of the prov'
+##### d4_vllm_nomtp_a | 01:25:58
+    d4_vllm_nomtp_a  code      42+300 tok | prefill    12.8 t/s | decode  67.31 t/s | wall  38.78 | '```python\nfrom typing import Any, Option'
+    d4_vllm_nomtp_a  reason    60+300 tok | prefill   597.7 t/s | decode  67.18 t/s | wall  65.92 | 'To determine when the second train catch'
+    d4_vllm_nomtp_a  edit     377+300 tok | prefill  3310.2 t/s | decode  65.01 t/s | wall  63.65 | '```python\ndef parse_records(path, sep=",'
+    d4_vllm_nomtp_a  long    2181+300 tok | prefill  5155.2 t/s | decode  64.89 t/s | wall  59.64 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_vllm_nomtp_a  longpf  9279+128 tok | prefill  5255.6 t/s | decode  64.71 t/s | wall  34.33 | 'Here is a five-point summary of the prov'
+##### d4_ours_mtp3_a | 01:28:26
+    d4_ours_mtp3_a   code      42+300 tok | prefill   314.3 t/s | decode 118.42 t/s | wall 112.85 | '```python\nfrom typing import Optional\n\n\n'
+    d4_ours_mtp3_a   reason    60+300 tok | prefill   406.1 t/s | decode 113.03 t/s | wall 107.41 | 'To determine when the second train catch'
+    d4_ours_mtp3_a   edit     377+300 tok | prefill  1374.9 t/s | decode 128.67 t/s | wall 115.47 | '```python\ndef parse_records(path, sep=",'
+    d4_ours_mtp3_a   long    2181+300 tok | prefill  2003.8 t/s | decode  92.14 t/s | wall  69.23 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_ours_mtp3_a   longpf  9279+128 tok | prefill  2065.4 t/s | decode 106.88 t/s | wall  22.53 | 'Here is a five-point summary of the prov'
+##### d4_dave_a | 01:28:53
+    d4_dave_a        code      42+300 tok | prefill   369.4 t/s | decode 102.53 t/s | wall  99.01 | '```python\nfrom typing import Optional\n\n\n'
+    d4_dave_a        reason    60+300 tok | prefill   487.4 t/s | decode 101.21 t/s | wall  97.49 | 'To determine when the second train catch'
+    d4_dave_a        edit     377+300 tok | prefill  1717.7 t/s | decode 101.26 t/s | wall  94.57 | '```python\ndef parse_records(path, sep=",'
+    d4_dave_a        long    2181+300 tok | prefill  3640.8 t/s | decode 100.21 t/s | wall  83.74 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_dave_a        longpf  9279+128 tok | prefill  4069.8 t/s | decode  96.95 t/s | wall  35.66 | 'Here is a five-point summary of the prov'
+##### d4_vllm_mtp3_b | 01:29:17
+    d4_vllm_mtp3_b   code      42+300 tok | prefill   264.8 t/s | decode 127.34 t/s | wall 119.68 | '```python\nfrom typing import Any, Option'
+    d4_vllm_mtp3_b   reason    60+300 tok | prefill   577.2 t/s | decode 127.67 t/s | wall 122.65 | 'To determine when the second train catch'
+    d4_vllm_mtp3_b   edit     377+300 tok | prefill  2743.9 t/s | decode 141.70 t/s | wall 133.48 | '```python\ndef parse_records(path, sep=",'
+    d4_vllm_mtp3_b   long    2181+300 tok | prefill  5640.4 t/s | decode 105.02 t/s | wall  92.77 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_vllm_mtp3_b   longpf  9279+128 tok | prefill  5374.1 t/s | decode 108.00 t/s | wall  44.10 | 'Here is a five-point summary of the prov'
+##### d4_vllm_nomtp_b | 01:30:58
+    d4_vllm_nomtp_b  code      42+300 tok | prefill   259.9 t/s | decode  66.04 t/s | wall  63.98 | '```python\nfrom typing import Any, Option'
+    d4_vllm_nomtp_b  reason    60+300 tok | prefill   606.6 t/s | decode  65.81 t/s | wall  64.62 | 'To determine when the second train catch'
+    d4_vllm_nomtp_b  edit     377+300 tok | prefill  3237.0 t/s | decode  63.74 t/s | wall  62.40 | '```python\ndef parse_records(path, sep=",'
+    d4_vllm_nomtp_b  long    2181+300 tok | prefill  5119.7 t/s | decode  63.53 t/s | wall  58.45 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_vllm_nomtp_b  longpf  9279+128 tok | prefill  5253.9 t/s | decode  63.36 t/s | wall  33.95 | 'Here is a five-point summary of the prov'
+##### d4_ours_mtp3_b | 01:32:48
+    d4_ours_mtp3_b   code      42+300 tok | prefill   313.2 t/s | decode 118.94 t/s | wall 113.29 | '```python\nfrom typing import Optional\n\n\n'
+    d4_ours_mtp3_b   reason    60+300 tok | prefill   404.7 t/s | decode 113.92 t/s | wall 108.19 | 'To determine when the second train catch'
+    d4_ours_mtp3_b   edit     377+300 tok | prefill  1383.8 t/s | decode 129.27 t/s | wall 116.04 | '```python\ndef parse_records(path, sep=",'
+    d4_ours_mtp3_b   long    2181+300 tok | prefill  2013.3 t/s | decode  92.12 t/s | wall  69.30 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_ours_mtp3_b   longpf  9279+128 tok | prefill  2063.6 t/s | decode 107.84 t/s | wall  22.56 | 'Here is a five-point summary of the prov'
+##### d4_dave_b | 01:33:14
+    d4_dave_b        code      42+300 tok | prefill   367.3 t/s | decode 101.62 t/s | wall  98.15 | '```python\nfrom typing import Optional\n\n\n'
+    d4_dave_b        reason    60+300 tok | prefill   488.5 t/s | decode 101.05 t/s | wall  97.35 | 'To determine when the second train catch'
+    d4_dave_b        edit     377+300 tok | prefill  1724.0 t/s | decode 101.05 t/s | wall  94.41 | '```python\ndef parse_records(path, sep=",'
+    d4_dave_b        long    2181+300 tok | prefill  3628.2 t/s | decode  98.95 t/s | wall  82.81 | '### 6-Bullet Summary\n\n*   The performanc'
+    d4_dave_b        longpf  9279+128 tok | prefill  4056.5 t/s | decode  95.98 t/s | wall  35.45 | 'Here is a five-point summary of the prov'
+  vllm_mtp3  decode  125.94 (spread  1.01) | code  127.9 reason  128.2 edit  142.5 long  105.1 | longpf 9279 tok prefill  5412.3 (spread  76.4) decode-after 108.12
+  vllm_nomtp decode   65.44 (spread  1.32) | code   66.7 reason   66.5 edit   64.4 long   64.2 | longpf 9279 tok prefill  5254.8 (spread   1.7) decode-after  64.03
+  ours_mtp3  decode  113.31 (spread  0.50) | code  118.7 reason  113.5 edit  129.0 long   92.1 | longpf 9279 tok prefill  2064.5 (spread   1.8) decode-after 107.36
+  dave       decode  100.98 (spread  0.63) | code  102.1 reason  101.1 edit  101.2 long   99.6 | longpf 9279 tok prefill  4063.2 (spread  13.3) decode-after  96.47
+DAVE4_DONE

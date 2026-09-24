@@ -1,0 +1,211 @@
+##### d3_s1_stock_a | 23:56:19
+    d3_s1_stock_a  code    300 tok | wall 88.00 t/s | decode 96.17 t/s | prefill  145.1 t/s | accept 213/255=0.84    | vram 
+    d3_s1_stock_a  reason  300 tok | wall 101.55 t/s | decode 110.12 t/s | prefill  379.7 t/s | accept 212/258=0.82    | vra
+    d3_s1_stock_a  edit    300 tok | wall 105.04 t/s | decode 120.30 t/s | prefill 1311.0 t/s | accept 223/226=0.99    | vra
+    d3_s1_stock_a  long    300 tok | wall 67.51 t/s | decode 93.01 t/s | prefill 1918.4 t/s | accept 196/303=0.65    | vram 
+    d3_s1_stock_a_pf: prompt 9279 tok @ 2061.2 t/s | decode 128 tok @ 104.52 t/s | wall 5.9 s
+    running=true 
+##### d3_s1_dave_a | 23:56:47
+    d3_s1_dave_a   code    300 tok | wall 97.52 t/s | decode 105.10 t/s | prefill  199.2 t/s | accept -               | vram
+    d3_s1_dave_a   reason  300 tok | wall 98.75 t/s | decode 105.26 t/s | prefill  554.0 t/s | accept -               | vram
+    d3_s1_dave_a   edit    300 tok | wall 89.87 t/s | decode 98.42 t/s | prefill 1804.4 t/s | accept -               | vram 
+    d3_s1_dave_a   long    300 tok | wall 81.37 t/s | decode 99.25 t/s | prefill 3792.4 t/s | accept -               | vram 
+    d3_s1_dave_a_pf: prompt 9279 tok @ 4172.0 t/s | decode 128 tok @ 96.66 t/s | wall 3.7 s
+    running=true 
+##### d3_s1_ours_a | 23:57:11
+    d3_s1_ours_a   code    300 tok | wall 102.07 t/s | decode 112.97 t/s | prefill  148.6 t/s | accept 213/255=0.84    | vra
+    d3_s1_ours_a   reason  300 tok | wall 104.05 t/s | decode 113.08 t/s | prefill  380.8 t/s | accept 212/258=0.82    | vra
+    d3_s1_ours_a   edit    300 tok | wall 111.34 t/s | decode 128.53 t/s | prefill 1309.7 t/s | accept 223/226=0.99    | vra
+    d3_s1_ours_a   long    300 tok | wall 67.49 t/s | decode 92.45 t/s | prefill 1938.4 t/s | accept 192/315=0.61    | vram 
+    d3_s1_ours_a_pf: prompt 9279 tok @ 2055.1 t/s | decode 128 tok @ 107.90 t/s | wall 5.9 s
+    running=true 
+##### d3_s1_oursub_a | 23:57:38
+    d3_s1_oursub_a code    300 tok | wall 98.65 t/s | decode 111.34 t/s | prefill  121.9 t/s | accept 213/255=0.84    | vram
+    d3_s1_oursub_a reason  300 tok | wall 105.15 t/s | decode 114.61 t/s | prefill  373.9 t/s | accept 212/258=0.82    | vra
+    d3_s1_oursub_a edit    300 tok | wall 111.36 t/s | decode 129.27 t/s | prefill 1247.8 t/s | accept 223/226=0.99    | vra
+    d3_s1_oursub_a long    300 tok | wall 69.59 t/s | decode 89.88 t/s | prefill 2454.8 t/s | accept 191/322=0.59    | vram 
+    d3_s1_oursub_a_pf: prompt 9279 tok @ 2771.6 t/s | decode 128 tok @ 104.27 t/s | wall 4.7 s
+    running=true 
+##### d3_s1_oursnm_a | 23:58:03
+    d3_s1_oursnm_a code    300 tok | wall 94.19 t/s | decode 101.71 t/s | prefill  178.6 t/s | accept -               | vram
+    d3_s1_oursnm_a reason  300 tok | wall 96.57 t/s | decode 103.05 t/s | prefill  472.0 t/s | accept -               | vram
+    d3_s1_oursnm_a edit    300 tok | wall 88.03 t/s | decode 97.62 t/s | prefill 1431.2 t/s | accept -               | vram 
+    d3_s1_oursnm_a long    300 tok | wall 73.12 t/s | decode 99.80 t/s | prefill 2155.2 t/s | accept -               | vram 
+    d3_s1_oursnm_a_pf: prompt 9279 tok @ 2193.5 t/s | decode 128 tok @ 98.06 t/s | wall 5.7 s
+    running=true 
+##### d3_s1_stock_b | 23:58:30
+    d3_s1_stock_b  code    300 tok | wall 84.07 t/s | decode 92.37 t/s | prefill  130.5 t/s | accept 213/255=0.84    | vram 
+    d3_s1_stock_b  reason  300 tok | wall 101.10 t/s | decode 109.86 t/s | prefill  369.9 t/s | accept 212/258=0.82    | vra
+    d3_s1_stock_b  edit    300 tok | wall 105.81 t/s | decode 121.66 t/s | prefill 1266.1 t/s | accept 223/226=0.99    | vra
+    d3_s1_stock_b  long    300 tok | wall 67.34 t/s | decode 92.72 t/s | prefill 1924.0 t/s | accept 196/303=0.65    | vram 
+    d3_s1_stock_b_pf: prompt 9279 tok @ 2062.5 t/s | decode 128 tok @ 104.49 t/s | wall 5.9 s
+    running=true 
+##### d3_s1_dave_b | 23:58:58
+    d3_s1_dave_b   code    300 tok | wall 91.35 t/s | decode 98.17 t/s | prefill  192.3 t/s | accept -               | vram 
+    d3_s1_dave_b   reason  300 tok | wall 94.52 t/s | decode 100.61 t/s | prefill  549.1 t/s | accept -               | vram
+    d3_s1_dave_b   edit    300 tok | wall 84.22 t/s | decode 92.73 t/s | prefill 1560.1 t/s | accept -               | vram 
+    d3_s1_dave_b   long    300 tok | wall 81.21 t/s | decode 99.34 t/s | prefill 3791.9 t/s | accept -               | vram 
+    d3_s1_dave_b_pf: prompt 9279 tok @ 4165.2 t/s | decode 128 tok @ 96.40 t/s | wall 3.7 s
+    running=true 
+##### d3_s1_ours_b | 23:59:23
+    d3_s1_ours_b   code    300 tok | wall 91.98 t/s | decode 101.64 t/s | prefill  135.9 t/s | accept 213/255=0.84    | vram
+    d3_s1_ours_b   reason  300 tok | wall 104.22 t/s | decode 113.61 t/s | prefill  368.4 t/s | accept 212/258=0.82    | vra
+    d3_s1_ours_b   edit    300 tok | wall 105.41 t/s | decode 120.18 t/s | prefill 1349.5 t/s | accept 223/226=0.99    | vra
+    d3_s1_ours_b   long    300 tok | wall 66.91 t/s | decode 91.69 t/s | prefill 1936.1 t/s | accept 192/315=0.61    | vram 
+    d3_s1_ours_b_pf: prompt 9279 tok @ 2050.5 t/s | decode 128 tok @ 107.71 t/s | wall 5.9 s
+    running=true 
+##### d3_s1_oursub_b | 23:59:50
+    d3_s1_oursub_b code    300 tok | wall 95.43 t/s | decode 106.88 t/s | prefill  125.6 t/s | accept 213/255=0.84    | vram
+    d3_s1_oursub_b reason  300 tok | wall 103.91 t/s | decode 113.03 t/s | prefill  376.7 t/s | accept 212/258=0.82    | vra
+    d3_s1_oursub_b edit    300 tok | wall 109.37 t/s | decode 126.40 t/s | prefill 1265.8 t/s | accept 223/226=0.99    | vra
+    d3_s1_oursub_b long    300 tok | wall 70.38 t/s | decode 90.64 t/s | prefill 2493.9 t/s | accept 191/322=0.59    | vram 
+    d3_s1_oursub_b_pf: prompt 9279 tok @ 2781.3 t/s | decode 128 tok @ 105.11 t/s | wall 4.7 s
+    running=true 
+##### d3_s1_oursnm_b | 00:00:16
+    d3_s1_oursnm_b code    300 tok | wall 80.11 t/s | decode 85.78 t/s | prefill  168.4 t/s | accept -               | vram 
+    d3_s1_oursnm_b reason  300 tok | wall 97.23 t/s | decode 103.73 t/s | prefill  473.6 t/s | accept -               | vram
+    d3_s1_oursnm_b edit    300 tok | wall 85.84 t/s | decode 94.77 t/s | prefill 1481.9 t/s | accept -               | vram 
+    d3_s1_oursnm_b long    300 tok | wall 73.59 t/s | decode 100.62 t/s | prefill 2151.9 t/s | accept -               | vram
+    d3_s1_oursnm_b_pf: prompt 9279 tok @ 2197.2 t/s | decode 128 tok @ 96.81 t/s | wall 5.7 s
+    running=true 
+##### d3_s2_stock_a | 00:00:44
+    d3_s2_stock_a  code    300 tok | wall 54.68 t/s | decode 61.16 t/s | prefill   71.6 t/s | accept 215/251=0.86    | vram 
+    d3_s2_stock_a  reason  300 tok | wall 43.95 t/s | decode 47.83 t/s | prefill  121.8 t/s | accept 214/252=0.85    | vram 
+    d3_s2_stock_a  edit    300 tok | wall 52.28 t/s | decode 75.29 t/s | prefill  222.2 t/s | accept 224/225=1.00    | vram 
+    d3_s2_stock_a  long    300 tok | wall 25.40 t/s | decode 47.22 t/s | prefill  404.9 t/s | accept 195/308=0.63    | vram 
+    d3_s2_stock_a_pf: prompt 9279 tok @ 607.2 t/s | decode 128 tok @ 45.87 t/s | wall 18.2 s
+    running=true 
+##### d3_s2_dave_a | 00:02:12
+    d3_s2_dave_a   code    300 tok | wall 53.52 t/s | decode 58.83 t/s | prefill   84.8 t/s | accept -               | vram 
+    d3_s2_dave_a   reason  300 tok | wall 40.74 t/s | decode 48.27 t/s | prefill   53.2 t/s | accept -               | vram 
+    d3_s2_dave_a   edit    300 tok | wall 39.21 t/s | decode 43.92 t/s | prefill  472.3 t/s | accept -               | vram 
+    d3_s2_dave_a   long    300 tok | wall 31.22 t/s | decode 39.09 t/s | prefill 1144.8 t/s | accept -               | vram 
+    d3_s2_dave_a_pf: prompt 9279 tok @ 1674.7 t/s | decode 128 tok @ 57.52 t/s | wall 7.9 s
+    running=true 
+##### d3_s2_ours_a | 00:03:14
+    d3_s2_ours_a   code    300 tok | wall 61.51 t/s | decode 69.59 t/s | prefill   73.5 t/s | accept 215/251=0.86    | vram 
+    d3_s2_ours_a   reason  300 tok | wall 49.39 t/s | decode 53.52 t/s | prefill  128.9 t/s | accept 214/252=0.85    | vram 
+    d3_s2_ours_a   edit    300 tok | wall 57.28 t/s | decode 74.82 t/s | prefill  309.5 t/s | accept 224/225=1.00    | vram 
+    d3_s2_ours_a   long    300 tok | wall 28.37 t/s | decode 48.40 t/s | prefill  498.9 t/s | accept 194/311=0.62    | vram 
+    d3_s2_ours_a_pf: prompt 9279 tok @ 529.4 t/s | decode 128 tok @ 37.40 t/s | wall 21.1 s
+    running=true 
+##### d3_s2_oursc_a | 00:04:24
+    d3_s2_oursc_a  code    300 tok | wall 38.65 t/s | decode 43.34 t/s | prefill   49.3 t/s | accept 215/252=0.85    | vram 
+    d3_s2_oursc_a  reason  300 tok | wall 58.41 t/s | decode 64.88 t/s | prefill  118.3 t/s | accept 211/261=0.81    | vram 
+    d3_s2_oursc_a  edit    300 tok | wall 50.24 t/s | decode 70.11 t/s | prefill  223.6 t/s | accept 223/226=0.99    | vram 
+    d3_s2_oursc_a  long    300 tok | wall 27.96 t/s | decode 38.69 t/s | prefill  734.9 t/s | accept 192/320=0.60    | vram 
+    d3_s2_oursc_a_pf: prompt 9279 tok @ 1128.4 t/s | decode 128 tok @ 50.67 t/s | wall 10.8 s
+    running=true 
+##### d3_s2_stock_b | 00:05:31
+    d3_s2_stock_b  code    300 tok | wall 50.50 t/s | decode 67.15 t/s | prefill   28.4 t/s | accept 215/251=0.86    | vram 
+    d3_s2_stock_b  reason  300 tok | wall 45.46 t/s | decode 49.51 t/s | prefill  111.1 t/s | accept 214/252=0.85    | vram 
+    d3_s2_stock_b  edit    300 tok | wall 61.89 t/s | decode 75.07 t/s | prefill  447.9 t/s | accept 224/225=1.00    | vram 
+    d3_s2_stock_b  long    300 tok | wall 27.51 t/s | decode 42.36 t/s | prefill  570.7 t/s | accept 195/308=0.63    | vram 
+    d3_s2_stock_b_pf: prompt 9279 tok @ 606.3 t/s | decode 128 tok @ 59.54 t/s | wall 17.5 s
+    running=true 
+##### d3_s2_dave_b | 00:06:36
+    d3_s2_dave_b   code    300 tok | wall 52.54 t/s | decode 57.62 t/s | prefill   84.9 t/s | accept -               | vram 
+    d3_s2_dave_b   reason  300 tok | wall 52.16 t/s | decode 56.80 t/s | prefill  134.3 t/s | accept -               | vram 
+    d3_s2_dave_b   edit    300 tok | wall 41.63 t/s | decode 49.46 t/s | prefill  336.4 t/s | accept -               | vram 
+    d3_s2_dave_b   long    300 tok | wall 41.59 t/s | decode 54.77 t/s | prefill 1277.6 t/s | accept -               | vram 
+    d3_s2_dave_b_pf: prompt 9279 tok @ 1621.9 t/s | decode 128 tok @ 56.73 t/s | wall 8.0 s
+    running=true 
+##### d3_s2_ours_b | 00:07:31
+    d3_s2_ours_b   code    300 tok | wall 59.84 t/s | decode 67.30 t/s | prefill   74.9 t/s | accept 215/251=0.86    | vram 
+    d3_s2_ours_b   reason  300 tok | wall 42.02 t/s | decode 44.95 t/s | prefill  128.9 t/s | accept 214/252=0.85    | vram 
+    d3_s2_ours_b   edit    300 tok | wall 58.17 t/s | decode 77.04 t/s | prefill  300.2 t/s | accept 224/225=1.00    | vram 
+    d3_s2_ours_b   long    300 tok | wall 27.47 t/s | decode 46.27 t/s | prefill  491.9 t/s | accept 194/311=0.62    | vram 
+    d3_s2_ours_b_pf: prompt 9279 tok @ 530.6 t/s | decode 128 tok @ 60.90 t/s | wall 19.6 s
+    running=true 
+##### d3_s2_oursc_b | 00:08:41
+    d3_s2_oursc_b  code    300 tok | wall 33.80 t/s | decode 37.57 t/s | prefill   46.2 t/s | accept 212/260=0.82    | vram 
+    d3_s2_oursc_b  reason  300 tok | wall 31.42 t/s | decode 33.15 t/s | prefill  117.6 t/s | accept 213/258=0.83    | vram 
+    d3_s2_oursc_b  edit    300 tok | wall 50.46 t/s | decode 77.55 t/s | prefill  182.2 t/s | accept 223/226=0.99    | vram 
+    d3_s2_oursc_b  long    300 tok | wall 27.22 t/s | decode 37.68 t/s | prefill  714.4 t/s | accept 188/330=0.57    | vram 
+    d3_s2_oursc_b_pf: prompt 9279 tok @ 1192.6 t/s | decode 128 tok @ 39.49 t/s | wall 11.1 s
+    running=true 
+##### d3_s3_stock_a | 00:09:49
+    d3_s3_stock_a  code    300 tok | wall 10.49 t/s | decode 11.15 t/s | prefill   19.2 t/s | accept -               | vram 
+    d3_s3_stock_a  reason  300 tok | wall 10.13 t/s | decode 11.07 t/s | prefill   18.9 t/s | accept -               | vram 
+    d3_s3_stock_a  edit    300 tok | wall 10.32 t/s | decode 12.03 t/s | prefill   87.3 t/s | accept -               | vram 
+    d3_s3_stock_a  long    300 tok | wall  6.81 t/s | decode 11.72 t/s | prefill  114.6 t/s | accept -               | vram 
+    d3_s3_stock_a_pf: prompt 8935 tok @ 129.2 t/s | decode 128 tok @ 12.28 t/s | wall 79.5 s
+    running=true 
+##### d3_s3_dave_a | 00:15:16
+    d3_s3_dave_a   code    300 tok | wall 11.91 t/s | decode 13.45 t/s | prefill   11.8 t/s | accept -               | vram 
+    d3_s3_dave_a   reason  300 tok | wall 11.44 t/s | decode 12.70 t/s | prefill   19.3 t/s | accept -               | vram 
+    d3_s3_dave_a   edit    300 tok | wall 11.28 t/s | decode 13.17 t/s | prefill   96.6 t/s | accept -               | vram 
+    d3_s3_dave_a   long    300 tok | wall  9.26 t/s | decode 13.26 t/s | prefill  218.5 t/s | accept -               | vram 
+    d3_s3_dave_a_pf: prompt 8936 tok @ 261.5 t/s | decode 128 tok @ 11.40 t/s | wall 45.5 s
+    running=true 
+##### d3_s3_ours_a | 00:19:01
+    d3_s3_ours_a   code    300 tok | wall  9.17 t/s | decode  9.61 t/s | prefill   21.5 t/s | accept -               | vram 
+    d3_s3_ours_a   reason  300 tok | wall 17.63 t/s | decode 21.34 t/s | prefill   16.4 t/s | accept -               | vram 
+    d3_s3_ours_a   edit    300 tok | wall 11.99 t/s | decode 19.74 t/s | prefill   37.1 t/s | accept -               | vram 
+    d3_s3_ours_a   long    300 tok | wall 10.83 t/s | decode 18.34 t/s | prefill  186.5 t/s | accept -               | vram 
+    d3_s3_ours_a_pf: prompt 8935 tok @ 228.6 t/s | decode 128 tok @ 16.06 t/s | wall 47.0 s
+    running=true 
+##### d3_s3_stock_b | 00:22:41
+    d3_s3_stock_b  code    300 tok | wall 12.61 t/s | decode 13.49 t/s | prefill   21.0 t/s | accept -               | vram 
+    d3_s3_stock_b  reason  300 tok | wall 11.92 t/s | decode 13.47 t/s | prefill   16.6 t/s | accept -               | vram 
+    d3_s3_stock_b  edit    300 tok | wall  5.90 t/s | decode  6.42 t/s | prefill   85.3 t/s | accept -               | vram 
+    d3_s3_stock_b  long    300 tok | wall  6.86 t/s | decode 11.80 t/s | prefill  115.6 t/s | accept -               | vram 
+    d3_s3_stock_b_pf: prompt 8935 tok @ 128.7 t/s | decode 128 tok @ 12.09 t/s | wall 80.0 s
+    running=true 
+##### d3_s3_dave_b | 00:27:37
+    d3_s3_dave_b   code    300 tok | wall 12.92 t/s | decode 14.44 t/s | prefill   14.0 t/s | accept -               | vram 
+    d3_s3_dave_b   reason  300 tok | wall 11.47 t/s | decode 12.69 t/s | prefill   20.0 t/s | accept -               | vram 
+    d3_s3_dave_b   edit    300 tok | wall 10.91 t/s | decode 12.88 t/s | prefill   87.6 t/s | accept -               | vram 
+    d3_s3_dave_b   long    300 tok | wall  7.47 t/s | decode  9.88 t/s | prefill  217.8 t/s | accept -               | vram 
+    d3_s3_dave_b_pf: prompt 8936 tok @ 258.8 t/s | decode 128 tok @ 6.83 t/s | wall 53.3 s
+    running=true 
+##### d3_s3_ours_b | 00:31:32
+    d3_s3_ours_b   code    300 tok | wall 11.39 t/s | decode 12.35 t/s | prefill   16.1 t/s | accept -               | vram 
+    d3_s3_ours_b   reason  300 tok | wall 14.95 t/s | decode 17.46 t/s | prefill   16.8 t/s | accept -               | vram 
+    d3_s3_ours_b   edit    300 tok | wall 10.79 t/s | decode 16.53 t/s | prefill   37.8 t/s | accept -               | vram 
+    d3_s3_ours_b   long    300 tok | wall  9.49 t/s | decode 17.57 t/s | prefill  145.5 t/s | accept -               | vram 
+    d3_s3_ours_b_pf: prompt 8935 tok @ 128.0 t/s | decode 128 tok @ 18.56 t/s | wall 76.7 s
+    running=true 
+bonsai-ablpq2 stopped for S4
+##### d3_s4_stock | 00:35:37
+    d3_s4_stock    code    300 tok | wall 25.38 t/s | decode 27.75 t/s | prefill   32.9 t/s | accept -               | vram 
+    d3_s4_stock    reason  300 tok | wall 25.33 t/s | decode 27.51 t/s | prefill   51.5 t/s | accept -               | vram 
+    d3_s4_stock    edit    300 tok | wall 23.91 t/s | decode 27.24 t/s | prefill  236.8 t/s | accept -               | vram 
+    d3_s4_stock    long    300 tok | wall 17.87 t/s | decode 27.00 t/s | prefill  373.0 t/s | accept -               | vram 
+    d3_s4_stock_pf: prompt 8935 tok @ 406.3 t/s | decode 128 tok @ 26.11 t/s | wall 26.9 s
+    running=true 
+##### d3_s4_dave | 00:37:23
+    d3_s4_dave     code    300 tok | wall 26.86 t/s | decode 29.37 t/s | prefill   36.0 t/s | accept -               | vram 
+    d3_s4_dave     reason  300 tok | wall 26.97 t/s | decode 29.42 t/s | prefill   54.6 t/s | accept -               | vram 
+    d3_s4_dave     edit    300 tok | wall 24.21 t/s | decode 28.99 t/s | prefill  180.8 t/s | accept -               | vram 
+    d3_s4_dave     long    300 tok | wall 18.39 t/s | decode 27.78 t/s | prefill  387.8 t/s | accept -               | vram 
+    d3_s4_dave_pf: prompt 8936 tok @ 382.2 t/s | decode 128 tok @ 17.08 t/s | wall 30.9 s
+    running=true 
+##### d3_s4_ours | 00:39:04
+    d3_s4_ours     code    300 tok | wall 25.26 t/s | decode 27.59 t/s | prefill   33.0 t/s | accept -               | vram 
+    d3_s4_ours     reason  300 tok | wall 25.44 t/s | decode 27.61 t/s | prefill   51.7 t/s | accept -               | vram 
+    d3_s4_ours     edit    300 tok | wall 24.03 t/s | decode 27.38 t/s | prefill  237.1 t/s | accept -               | vram 
+    d3_s4_ours     long    300 tok | wall 17.90 t/s | decode 27.11 t/s | prefill  372.2 t/s | accept -               | vram 
+    d3_s4_ours_pf: prompt 8935 tok @ 401.7 t/s | decode 128 tok @ 26.23 t/s | wall 27.1 s
+    running=true 
+== s1
+  stock   decode  104.53 (spread  0.75) | prefill9.3k  2061.9 (spread   1.3) after 104.50 | texts=stock 4/4
+  dave    decode   99.86 (spread  4.29) | prefill9.3k  4168.6 (spread   6.8) after  96.53 | texts=stock 2/4
+  ours    decode  109.27 (spread  4.98) | prefill9.3k  2052.8 (spread   4.6) after 107.80 | texts=stock 4/4
+  oursub  decode  110.26 (spread  2.04) | prefill9.3k  2776.4 (spread   9.7) after 104.69 | texts=stock 3/4
+  oursnm  decode   98.38 (spread  4.32) | prefill9.3k  2195.4 (spread   3.7) after  97.44 | texts=stock 1/4
+== s2
+  stock   decode   58.20 (spread  0.65) | prefill9.3k   606.8 (spread   0.9) after  52.70 | texts=stock 4/4
+  dave    decode   51.09 (spread  7.13) | prefill9.3k  1648.3 (spread  52.8) after  57.13 | texts=stock 2/4
+  ours    decode   60.24 (spread  2.69) | prefill9.3k   530.0 (spread   1.2) after  49.15 | texts=stock 4/4
+  oursc   decode   50.37 (spread  7.77) | prefill9.3k  1160.5 (spread  64.2) after  45.08 | texts=stock 1/4
+== s3
+  stock   decode   11.39 (spread  0.20) | prefill9.3k   129.0 (spread   0.5) after  12.18 | texts=stock 4/4
+  dave    decode   12.81 (spread  0.67) | prefill9.3k   260.2 (spread   2.6) after   9.11 | texts=stock 3/4
+  ours    decode   16.62 (spread  1.28) | prefill9.3k   178.3 (spread 100.6) after  17.31 | texts=stock 2/4
+== s4
+  stock   decode   27.38 (spread  0.00) | prefill9.3k   406.3 (spread   0.0) after  26.11 | texts=stock 4/4
+  dave    decode   28.89 (spread  0.00) | prefill9.3k   382.2 (spread   0.0) after  17.08 | texts=stock 1/4
+  ours    decode   27.42 (spread  0.00) | prefill9.3k   401.7 (spread   0.0) after  26.23 | texts=stock 4/4
+DAVE3_DONE
+bonsai-ablpq2 restarted

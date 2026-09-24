@@ -1,0 +1,102 @@
+##### d5_R_stock_a | 01:33:39
+    d5_R_stock_a_140000 longpf 33657+128 tok | prefill  2047.7 t/s | decode  93.89 t/s | wall   7.20 | 'Here is a five-point summary of the prov'
+    d5_R_stock_a_280000 longpf 66112+128 tok | prefill  3367.6 t/s | decode  88.23 t/s | wall   6.07 | 'Here is a five-point summary of the prov'
+    d5_R_stock_a_560000 longpf 132432+128 tok | prefill  2628.4 t/s | decode  79.04 t/s | wall   2.46 | 'Here is a five-point summary of the prov'
+##### d5_R_dave_a | 01:35:18
+    d5_R_dave_a_140000 longpf 33657+128 tok | prefill  3566.9 t/s | decode  92.52 t/s | wall  11.84 | 'Here is a five-point summary of the prov'
+    d5_R_dave_a_280000 longpf 66112+128 tok | prefill  4699.9 t/s | decode  87.90 t/s | wall   8.25 | 'Here is a five-point summary of the prov'
+    d5_R_dave_a_560000 longpf 132432+128 tok | prefill  3229.0 t/s | decode  78.66 t/s | wall   3.00 | 'Here is a summary of the provided text i'
+##### d5_R_ours_a | 01:36:35
+    d5_R_ours_a_140000 longpf 33657+128 tok | prefill  2049.2 t/s | decode  92.52 t/s | wall   7.19 | 'Here is a five-point summary of the prov'
+    d5_R_ours_a_280000 longpf 66112+128 tok | prefill  3371.1 t/s | decode  88.10 t/s | wall   6.08 | 'Here is a five-point summary of the prov'
+    d5_R_ours_a_560000 longpf 132432+128 tok | prefill  2629.4 t/s | decode  78.95 t/s | wall   2.46 | 'Here is a five-point summary of the prov'
+##### d5_R_oursub_a | 01:38:13
+    d5_R_oursub_a_140000 longpf 33657+128 tok | prefill  2701.0 t/s | decode  93.06 t/s | wall   9.26 | 'Here is a five-point summary of the prov'
+    d5_R_oursub_a_280000 longpf 66112+128 tok | prefill  3957.8 t/s | decode  90.07 t/s | wall   7.07 | 'Here is a five-point summary of the prov'
+    d5_R_oursub_a_560000 longpf 132432+128 tok | prefill  2971.7 t/s | decode  80.46 t/s | wall   2.77 | 'Here is a summary of the provided text i'
+##### d5_R_combo_a | 01:39:40
+    d5_R_combo_a_140000 longpf 33657+128 tok | prefill  3698.1 t/s | decode  94.31 t/s | wall  12.25 | 'Here is a five-point summary of the prov'
+    d5_R_combo_a_280000 longpf 66112+128 tok | prefill  4958.1 t/s | decode  89.49 t/s | wall   8.68 | 'Here is a five-point summary of the prov'
+    d5_R_combo_a_560000 longpf 132432+128 tok | prefill  3466.7 t/s | decode  80.24 t/s | wall   3.22 | 'Here is a summary of the provided text i'
+##### d5_R_vllm_a | 01:40:53
+    d5_R_vllm_a_140000 longpf 33657+128 tok | prefill  4530.9 t/s | decode  58.49 t/s | wall  13.33 | 'Here is a five-point summary of the prov'
+    d5_R_vllm_a_280000 longpf 66112+128 tok | prefill  3258.2 t/s | decode  55.57 t/s | wall   5.67 | 'Here is a five-point summary of the prov'
+    d5_R_vllm_a_560000 longpf 132432+128 tok | prefill  2046.6 t/s | decode  49.92 t/s | wall   1.90 | 'The provided text contains summaries for'
+##### d5_R_stock_b | 01:44:29
+    d5_R_stock_b_140000 longpf 33657+128 tok | prefill  2046.2 t/s | decode  92.80 t/s | wall   7.18 | 'Here is a five-point summary of the prov'
+    d5_R_stock_b_280000 longpf 66112+128 tok | prefill  3363.8 t/s | decode  88.32 t/s | wall   6.07 | 'Here is a five-point summary of the prov'
+    d5_R_stock_b_560000 longpf 132432+128 tok | prefill  2625.1 t/s | decode  78.96 t/s | wall   2.46 | 'Here is a five-point summary of the prov'
+##### d5_R_dave_b | 01:46:08
+    d5_R_dave_b_140000 longpf 33657+128 tok | prefill  3573.2 t/s | decode  91.97 t/s | wall  11.85 | 'Here is a five-point summary of the prov'
+    d5_R_dave_b_280000 longpf 66112+128 tok | prefill  4699.2 t/s | decode  87.39 t/s | wall   8.25 | 'Here is a five-point summary of the prov'
+    d5_R_dave_b_560000 longpf 132432+128 tok | prefill  3229.5 t/s | decode  78.71 t/s | wall   3.00 | 'Here is a summary of the provided text i'
+##### d5_R_ours_b | 01:47:25
+    d5_R_ours_b_140000 longpf 33657+128 tok | prefill  2046.9 t/s | decode  92.78 t/s | wall   7.19 | 'Here is a five-point summary of the prov'
+    d5_R_ours_b_280000 longpf 66112+128 tok | prefill  3365.1 t/s | decode  88.08 t/s | wall   6.07 | 'Here is a five-point summary of the prov'
+    d5_R_ours_b_560000 longpf 132432+128 tok | prefill  2630.3 t/s | decode  79.41 t/s | wall   2.46 | 'Here is a five-point summary of the prov'
+##### d5_R_oursub_b | 01:49:04
+    d5_R_oursub_b_140000 longpf 33657+128 tok | prefill  2698.8 t/s | decode  93.60 t/s | wall   9.26 | 'Here is a five-point summary of the prov'
+    d5_R_oursub_b_280000 longpf 66112+128 tok | prefill  3957.1 t/s | decode  88.84 t/s | wall   7.06 | 'Here is a five-point summary of the prov'
+    d5_R_oursub_b_560000 longpf 132432+128 tok | prefill  2971.5 t/s | decode  79.66 t/s | wall   2.77 | 'Here is a summary of the provided text i'
+##### d5_R_combo_b | 01:50:30
+    d5_R_combo_b_140000 longpf 33657+128 tok | prefill  3697.1 t/s | decode  92.67 t/s | wall  12.22 | 'Here is a five-point summary of the prov'
+    d5_R_combo_b_280000 longpf 66112+128 tok | prefill  4953.6 t/s | decode  88.24 t/s | wall   8.66 | 'Here is a five-point summary of the prov'
+    d5_R_combo_b_560000 longpf 132432+128 tok | prefill  3470.4 t/s | decode  79.46 t/s | wall   3.22 | 'Here is a summary of the provided text i'
+##### d5_R_vllm_b | 01:51:43
+    d5_R_vllm_b_140000 longpf 33657+128 tok | prefill  4506.2 t/s | decode  57.94 t/s | wall  13.25 | 'Here is a five-point summary of the prov'
+    d5_R_vllm_b_280000 longpf 66112+128 tok | prefill  3263.9 t/s | decode  55.14 t/s | wall   5.67 | 'Here is a five-point summary of the prov'
+    d5_R_vllm_b_560000 longpf 132432+128 tok | prefill  2047.4 t/s | decode  49.53 t/s | wall   1.90 | 'The provided text contains summaries for'
+##### d5_O_stock_a | 01:54:49
+    d5_O_stock_a_140000 longpf 33657+128 tok | prefill   615.8 t/s | decode  39.87 t/s | wall   2.21 | 'Here is a five-point summary of the prov'
+    d5_O_stock_a_280000 longpf 66112+128 tok | prefill  1158.7 t/s | decode  48.57 t/s | wall   2.15 | 'Here is a five-point summary of the prov'
+    d5_O_stock_a_560000 longpf 132432+128 tok | prefill  1020.2 t/s | decode  28.22 t/s | wall   0.95 | 'Here is a summary of the provided text i'
+##### d5_O_dave_a | 01:59:20
+    d5_O_dave_a_140000 longpf 33657+128 tok | prefill  1606.0 t/s | decode  54.04 t/s | wall   5.49 | 'Here is a five-point summary of the prov'
+    d5_O_dave_a_280000 longpf 66112+128 tok | prefill  2480.0 t/s | decode  19.02 t/s | wall   3.84 | 'Here is a five-point summary of the prov'
+    d5_O_dave_a_560000 longpf 132432+128 tok | prefill  2040.8 t/s | decode  35.29 t/s | wall   1.87 | 'Here is a summary of the provided text i'
+##### d5_O_ours_a | 02:01:43
+    d5_O_ours_a_140000 longpf 33657+128 tok | prefill  1289.6 t/s | decode  60.31 t/s | wall   4.54 | 'Here is a five-point summary of the prov'
+    d5_O_ours_a_280000 longpf 66112+128 tok | prefill  2293.1 t/s | decode  47.98 t/s | wall   4.07 | 'Here is a five-point summary of the prov'
+    d5_O_ours_a_560000 longpf 132432+128 tok | prefill  1920.6 t/s | decode  43.10 t/s | wall   1.78 | 'Here is a five-point summary of the prov'
+##### d5_O_comboc_a | 02:04:13
+    d5_O_comboc_a_140000 longpf 33657+128 tok | prefill  1498.0 t/s | decode  44.78 t/s | wall   5.06 | 'Here is a five-point summary of the prov'
+    d5_O_comboc_a_280000 longpf 66112+128 tok | prefill  2605.9 t/s | decode  46.13 t/s | wall   4.55 | 'Here is a five-point summary of the prov'
+    d5_O_comboc_a_560000 longpf 132432+128 tok | prefill  2119.2 t/s | decode  44.30 t/s | wall   1.96 | 'Here is a five-point summary of the prov'
+##### d5_O_combo_a | 02:06:33
+    d5_O_combo_a_140000 longpf 33657+128 tok | prefill  1595.6 t/s | decode  46.28 t/s | wall   5.37 | 'Here is a five-point summary of the prov'
+    d5_O_combo_a_280000 longpf 66112+128 tok | prefill  2598.6 t/s | decode  51.57 t/s | wall   4.59 | 'Here is a five-point summary of the prov'
+    d5_O_combo_a_560000 longpf 132432+128 tok | prefill  2105.1 t/s | decode  49.23 t/s | wall   1.95 | 'Here is a five-point summary of the prov'
+##### d5_O_stock_b | 02:08:48
+    d5_O_stock_b_140000 longpf 33657+128 tok | prefill   618.1 t/s | decode  55.27 t/s | wall   2.26 | 'Here is a five-point summary of the prov'
+    d5_O_stock_b_280000 longpf 66112+128 tok | prefill  1160.4 t/s | decode  54.21 t/s | wall   2.16 | 'Here is a five-point summary of the prov'
+    d5_O_stock_b_560000 longpf 132432+128 tok | prefill  1028.1 t/s | decode  49.71 t/s | wall   0.97 | 'Here is a summary of the provided text i'
+##### d5_O_dave_b | 02:13:13
+    d5_O_dave_b_140000 longpf 33657+128 tok | prefill  1632.7 t/s | decode  54.71 t/s | wall   5.58 | 'Here is a five-point summary of the prov'
+    d5_O_dave_b_280000 longpf 66112+128 tok | prefill  2608.3 t/s | decode  51.64 t/s | wall   4.60 | 'Here is a five-point summary of the prov'
+    d5_O_dave_b_560000 longpf 132432+128 tok | prefill  2048.4 t/s | decode  39.54 t/s | wall   1.89 | 'Here is a summary of the provided text i'
+##### d5_O_ours_b | 02:15:30
+    d5_O_ours_b_140000 longpf 33657+128 tok | prefill  1306.7 t/s | decode  45.06 t/s | wall   4.48 | 'Here is a five-point summary of the prov'
+    d5_O_ours_b_280000 longpf 66112+128 tok | prefill  2296.6 t/s | decode  51.54 t/s | wall   4.10 | 'Here is a five-point summary of the prov'
+    d5_O_ours_b_560000 longpf 132432+128 tok | prefill  1914.7 t/s | decode  53.64 t/s | wall   1.79 | 'Here is a summary of the provided text i'
+##### d5_O_comboc_b | 02:18:00
+    d5_O_comboc_b_140000 longpf 33657+128 tok | prefill  1485.2 t/s | decode  59.92 t/s | wall   5.17 | 'Here is a five-point summary of the prov'
+    d5_O_comboc_b_280000 longpf 66112+128 tok | prefill  2528.0 t/s | decode  58.07 t/s | wall   4.52 | 'Here is a five-point summary of the prov'
+    d5_O_comboc_b_560000 longpf 132432+128 tok | prefill  2119.7 t/s | decode  32.22 t/s | wall   1.93 | 'Here is a five-point summary of the prov'
+##### d5_O_combo_b | 02:20:17
+    d5_O_combo_b_140000 longpf 33657+128 tok | prefill  1586.1 t/s | decode  54.45 t/s | wall   5.43 | 'Here is a five-point summary of the prov'
+    d5_O_combo_b_280000 longpf 66112+128 tok | prefill  2592.0 t/s | decode  47.45 t/s | wall   4.54 | 'Here is a five-point summary of the prov'
+    d5_O_combo_b_560000 longpf 132432+128 tok | prefill  2100.7 t/s | decode  51.42 t/s | wall   1.95 | 'Here is a five-point summary of the prov'
+== R
+  stock   33k tok pf  2047.0±  1.5 dec   93.3 | 66k tok pf  3365.7±  3.8 dec   88.3 | 132k tok pf  2626.8±  3.3 dec   79.0
+  dave    33k tok pf  3570.1±  6.3 dec   92.2 | 66k tok pf  4699.5±  0.7 dec   87.6 | 132k tok pf  3229.2±  0.5 dec   78.7
+  ours    33k tok pf  2048.1±  2.3 dec   92.7 | 66k tok pf  3368.1±  6.0 dec   88.1 | 132k tok pf  2629.9±  0.9 dec   79.2
+  oursub  33k tok pf  2699.9±  2.2 dec   93.3 | 66k tok pf  3957.4±  0.7 dec   89.5 | 132k tok pf  2971.6±  0.2 dec   80.1
+  combo   33k tok pf  3697.6±  1.0 dec   93.5 | 66k tok pf  4955.9±  4.5 dec   88.9 | 132k tok pf  3468.6±  3.7 dec   79.8
+  vllm    33k tok pf  4518.5± 24.7 dec   58.2 | 66k tok pf  3261.1±  5.7 dec   55.4 | 132k tok pf  2047.0±  0.8 dec   49.7
+== O
+  stock   33k tok pf   617.0±  2.3 dec   47.6 | 66k tok pf  1159.6±  1.7 dec   51.4 | 132k tok pf  1024.2±  7.9 dec   39.0
+  dave    33k tok pf  1619.3± 26.7 dec   54.4 | 66k tok pf  2544.2±128.3 dec   35.3 | 132k tok pf  2044.6±  7.6 dec   37.4
+  ours    33k tok pf  1298.2± 17.1 dec   52.7 | 66k tok pf  2294.8±  3.5 dec   49.8 | 132k tok pf  1917.7±  5.9 dec   48.4
+  comboc  33k tok pf  1491.6± 12.8 dec   52.4 | 66k tok pf  2566.9± 77.9 dec   52.1 | 132k tok pf  2119.4±  0.5 dec   38.3
+  combo   33k tok pf  1590.8±  9.5 dec   50.4 | 66k tok pf  2595.3±  6.6 dec   49.5 | 132k tok pf  2102.9±  4.4 dec   50.3
+DAVE5_DONE

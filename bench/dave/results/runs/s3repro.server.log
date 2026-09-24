@@ -1,0 +1,380 @@
+0.00.000.358 I srv  llama_server: initializing ...
+0.00.061.205 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.061.569 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.062.829 I srv    load_model: loading model '/models/dsv4-reap145-gguf/DSV4-Flash-Vision-Exp-REAP-145B-MXFP4-Q8_0.gguf'
+0.00.642.956 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance
+0.09.289.492 I cmn          init: llama threadpool init, n_threads = 24
+0.09.939.093 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 8192, kv_unified = 'false'
+0.09.946.046 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.09.946.085 I srv  llama_server: model loaded
+0.09.946.091 I srv  llama_server: listening on http://127.0.0.1:8099
+0.11.239.428 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.11.239.486 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.24.087.180 I slot print_timing: id  0 | task 0 | n_gen =    100, tg =   9.38 t/s, tg_3s =   9.48 t/s
+0.27.116.783 I slot print_timing: id  0 | task 0 | n_gen =    161, tg =  11.78 t/s, tg_3s =  20.13 t/s
+0.30.128.288 I slot print_timing: id  0 | task 0 | n_gen =    193, tg =  11.57 t/s, tg_3s =  10.63 t/s
+0.33.165.328 I slot print_timing: id  0 | task 0 | n_gen =    247, tg =  12.53 t/s, tg_3s =  17.78 t/s
+0.36.002.696 I slot print_timing: id  0 | task 0 | prompt eval time =    2294.42 ms /    34 tokens (   67.48 ms per token,    14.82 tokens per second)
+0.36.002.702 I slot print_timing: id  0 | task 0 |        eval time =   22468.75 ms /   300 tokens (   75.15 ms per token,    13.31 tokens per second)
+0.36.002.703 I slot print_timing: id  0 | task 0 |       total time =   24763.18 ms /   334 tokens
+0.36.002.709 I slot print_timing: id  0 | task 0 |    graphs reused =        299
+0.36.002.750 I slot      release: id  0 | task 0 | stop processing: n_tokens = 333, truncated = 0
+0.36.006.317 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 2522826117229
+0.36.035.142 I slot launch_slot_: id  0 | task 303 | processing task, is_child = 0
+0.47.291.939 I slot print_timing: id  0 | task 303 | n_gen =    100, tg =  12.29 t/s, tg_3s =  12.41 t/s
+0.50.327.829 I slot print_timing: id  0 | task 303 | n_gen =    161, tg =  14.43 t/s, tg_3s =  20.09 t/s
+0.53.336.596 I slot print_timing: id  0 | task 303 | n_gen =    233, tg =  16.45 t/s, tg_3s =  23.93 t/s
+0.56.500.683 I slot print_timing: id  0 | task 303 | n_gen =    259, tg =  14.94 t/s, tg_3s =   8.22 t/s
+0.59.316.480 I slot print_timing: id  0 | task 303 | prompt eval time =    3201.86 ms /    49 tokens (   65.34 ms per token,    15.30 tokens per second)
+0.59.316.517 I slot print_timing: id  0 | task 303 |        eval time =   20079.46 ms /   300 tokens (   67.16 ms per token,    14.89 tokens per second)
+0.59.316.539 I slot print_timing: id  0 | task 303 |       total time =   23281.32 ms /   349 tokens
+0.59.316.559 I slot print_timing: id  0 | task 303 |    graphs reused =        597
+0.59.316.841 I slot      release: id  0 | task 303 | stop processing: n_tokens = 349, truncated = 0
+0.59.322.180 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 2522849431341
+0.59.351.513 I slot launch_slot_: id  0 | task 605 | processing task, is_child = 0
+1.05.069.556 I slot print_timing: id  0 | task 605 | prompt processing, n_tokens =    234, progress = 0.64, t =   5.72 s / 40.92 tokens per second
+1.07.680.652 I slot print_timing: id  0 | task 605 | prompt processing, n_tokens =    362, progress = 0.99, t =   8.33 s / 43.46 tokens per second
+1.14.561.537 I slot print_timing: id  0 | task 605 | n_gen =    100, tg =  18.70 t/s, tg_3s =  18.89 t/s
+1.17.565.661 I slot print_timing: id  0 | task 605 | n_gen =    164, tg =  19.64 t/s, tg_3s =  21.30 t/s
+1.20.610.385 I slot print_timing: id  0 | task 605 | n_gen =    226, tg =  19.84 t/s, tg_3s =  20.36 t/s
+1.23.663.230 I slot print_timing: id  0 | task 605 | n_gen =    248, tg =  17.16 t/s, tg_3s =   7.21 t/s
+1.26.671.619 I slot print_timing: id  0 | task 605 | n_gen =    282, tg =  16.15 t/s, tg_3s =  11.30 t/s
+1.27.472.766 I slot print_timing: id  0 | task 605 | prompt eval time =    9916.69 ms /   366 tokens (   27.09 ms per token,    36.91 tokens per second)
+1.27.472.801 I slot print_timing: id  0 | task 605 |        eval time =   18204.53 ms /   300 tokens (   60.88 ms per token,    16.42 tokens per second)
+1.27.472.820 I slot print_timing: id  0 | task 605 |       total time =   28121.22 ms /   666 tokens
+1.27.472.838 I slot print_timing: id  0 | task 605 |    graphs reused =        895
+1.27.472.893 I slot      release: id  0 | task 605 | stop processing: n_tokens = 666, truncated = 0
+1.27.483.197 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 2522877587389
+1.27.524.597 I slot launch_slot_: id  0 | task 908 | processing task, is_child = 0
+1.27.595.603 E find_slot: n_tokens = 1988 > size = 256
+1.27.596.644 E find_slot: n_tokens = 1988 > size = 256
+1.27.596.651 W decode: failed to find a memory slot for batch of size 1988
+1.27.596.680 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 0, n_batch = 2048, ret = 1
+1.27.597.993 E find_slot: n_tokens = 1988 > size = 256
+1.27.598.828 E find_slot: n_tokens = 1988 > size = 256
+1.27.598.831 W decode: failed to find a memory slot for batch of size 1988
+1.27.598.851 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 0, n_batch = 1024, ret = 1
+1.27.599.404 E find_slot: n_tokens = 1024 > size = 256
+1.27.599.826 E find_slot: n_tokens = 1024 > size = 256
+1.27.599.830 W decode: failed to find a memory slot for batch of size 1024
+1.27.599.849 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 0, n_batch = 512, ret = 1
+1.27.600.144 E find_slot: n_tokens = 512 > size = 256
+1.27.600.352 E find_slot: n_tokens = 512 > size = 256
+1.27.600.355 W decode: failed to find a memory slot for batch of size 512
+1.27.600.373 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 0, n_batch = 256, ret = 1
+1.27.600.638 W decode: failed to find a memory slot for batch of size 256
+1.27.600.657 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 0, n_batch = 128, ret = 1
+1.32.553.535 E find_slot: n_tokens = 1860 > size = 256
+1.32.554.641 E find_slot: n_tokens = 1860 > size = 256
+1.32.554.647 W decode: failed to find a memory slot for batch of size 1860
+1.32.554.725 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 128, n_batch = 2048, ret = 1
+1.32.556.019 E find_slot: n_tokens = 1860 > size = 256
+1.32.556.824 E find_slot: n_tokens = 1860 > size = 256
+1.32.556.829 W decode: failed to find a memory slot for batch of size 1860
+1.32.556.894 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 128, n_batch = 1024, ret = 1
+1.32.557.463 E find_slot: n_tokens = 1024 > size = 256
+1.32.557.949 E find_slot: n_tokens = 1024 > size = 256
+1.32.557.953 W decode: failed to find a memory slot for batch of size 1024
+1.32.557.987 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 128, n_batch = 512, ret = 1
+1.32.558.278 E find_slot: n_tokens = 512 > size = 256
+1.32.558.483 E find_slot: n_tokens = 512 > size = 256
+1.32.558.487 W decode: failed to find a memory slot for batch of size 512
+1.32.558.516 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 128, n_batch = 256, ret = 1
+1.32.558.772 W decode: failed to find a memory slot for batch of size 256
+1.32.558.801 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 128, n_batch = 128, ret = 1
+1.39.930.746 E find_slot: n_tokens = 1732 > size = 256
+1.39.931.744 E find_slot: n_tokens = 1732 > size = 256
+1.39.931.749 W decode: failed to find a memory slot for batch of size 1732
+1.39.931.827 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 256, n_batch = 2048, ret = 1
+1.39.933.000 E find_slot: n_tokens = 1732 > size = 256
+1.39.933.750 E find_slot: n_tokens = 1732 > size = 256
+1.39.933.754 W decode: failed to find a memory slot for batch of size 1732
+1.39.933.818 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 256, n_batch = 1024, ret = 1
+1.39.934.383 E find_slot: n_tokens = 1024 > size = 256
+1.39.934.874 E find_slot: n_tokens = 1024 > size = 256
+1.39.934.879 W decode: failed to find a memory slot for batch of size 1024
+1.39.934.909 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 256, n_batch = 512, ret = 1
+1.39.935.183 E find_slot: n_tokens = 512 > size = 256
+1.39.935.386 E find_slot: n_tokens = 512 > size = 256
+1.39.935.389 W decode: failed to find a memory slot for batch of size 512
+1.39.935.418 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 256, n_batch = 256, ret = 1
+1.39.935.672 W decode: failed to find a memory slot for batch of size 256
+1.39.935.702 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 256, n_batch = 128, ret = 1
+1.42.979.231 E find_slot: n_tokens = 1604 > size = 256
+1.42.980.695 E find_slot: n_tokens = 1604 > size = 256
+1.42.980.703 W decode: failed to find a memory slot for batch of size 1604
+1.42.980.779 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 384, n_batch = 2048, ret = 1
+1.42.982.755 E find_slot: n_tokens = 1604 > size = 256
+1.42.983.493 E find_slot: n_tokens = 1604 > size = 256
+1.42.983.500 W decode: failed to find a memory slot for batch of size 1604
+1.42.983.569 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 384, n_batch = 1024, ret = 1
+1.42.984.234 E find_slot: n_tokens = 1024 > size = 256
+1.42.984.685 E find_slot: n_tokens = 1024 > size = 256
+1.42.984.691 W decode: failed to find a memory slot for batch of size 1024
+1.42.984.722 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 384, n_batch = 512, ret = 1
+1.42.985.015 E find_slot: n_tokens = 512 > size = 256
+1.42.985.229 E find_slot: n_tokens = 512 > size = 256
+1.42.985.234 W decode: failed to find a memory slot for batch of size 512
+1.42.985.262 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 384, n_batch = 256, ret = 1
+1.42.985.516 W decode: failed to find a memory slot for batch of size 256
+1.42.985.549 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 384, n_batch = 128, ret = 1
+1.47.907.846 E find_slot: n_tokens = 1476 > size = 256
+1.47.909.604 E find_slot: n_tokens = 1476 > size = 256
+1.47.909.620 W decode: failed to find a memory slot for batch of size 1476
+1.47.909.661 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 512, n_batch = 2048, ret = 1
+1.47.911.988 E find_slot: n_tokens = 1476 > size = 256
+1.47.913.437 E find_slot: n_tokens = 1476 > size = 256
+1.47.913.451 W decode: failed to find a memory slot for batch of size 1476
+1.47.913.489 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 512, n_batch = 1024, ret = 1
+1.47.914.714 E find_slot: n_tokens = 1024 > size = 256
+1.47.915.589 E find_slot: n_tokens = 1024 > size = 256
+1.47.915.598 W decode: failed to find a memory slot for batch of size 1024
+1.47.915.642 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 512, n_batch = 512, ret = 1
+1.47.916.214 E find_slot: n_tokens = 512 > size = 256
+1.47.916.478 E find_slot: n_tokens = 512 > size = 256
+1.47.916.483 W decode: failed to find a memory slot for batch of size 512
+1.47.919.570 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 512, n_batch = 256, ret = 1
+1.47.920.085 W decode: failed to find a memory slot for batch of size 256
+1.47.920.112 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 512, n_batch = 128, ret = 1
+1.52.632.067 E find_slot: n_tokens = 1348 > size = 256
+1.52.632.561 E find_slot: n_tokens = 1348 > size = 256
+1.52.632.566 W decode: failed to find a memory slot for batch of size 1348
+1.52.632.635 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 640, n_batch = 2048, ret = 1
+1.52.633.279 E find_slot: n_tokens = 1348 > size = 256
+1.52.633.821 E find_slot: n_tokens = 1348 > size = 256
+1.52.633.824 W decode: failed to find a memory slot for batch of size 1348
+1.52.633.871 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 640, n_batch = 1024, ret = 1
+1.52.634.323 E find_slot: n_tokens = 1024 > size = 256
+1.52.634.737 E find_slot: n_tokens = 1024 > size = 256
+1.52.634.740 W decode: failed to find a memory slot for batch of size 1024
+1.52.634.785 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 640, n_batch = 512, ret = 1
+1.52.635.027 E find_slot: n_tokens = 512 > size = 256
+1.52.635.213 E find_slot: n_tokens = 512 > size = 256
+1.52.635.216 W decode: failed to find a memory slot for batch of size 512
+1.52.635.261 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 640, n_batch = 256, ret = 1
+1.52.635.491 W decode: failed to find a memory slot for batch of size 256
+1.52.635.513 W srv        decode: failed to find free space in the KV cache, retrying with smaller batch size, off = 640, n_batch = 128, ret = 1
+Queue error - HSA_STATUS_ERROR_MEMORY_FAULT
+Memory access fault by GPU node-1 (Agent handle: 0x60f763e98ef0) on address 0x7d098a068000. Reason: Write access to a read-only page.
+Nearby memory map:
+0x7d0989c00000, 0x100000, System
+0x7d0989e00000, 0x100000, System
+0x7d098a520000, 0x22000, VRAM
+
+PtrInfo:
+	Address: 0x7d0989c00000-0x7d0989d00000/0x7d0989c00000-0x7d0989d00000
+	Size: 0x100000
+	Type: 1
+	Owner: 0x60f763e9c9f0
+	CanAccess: 1
+		0x60f763e98ef0
+	In block: 0x7d0989c00000, 0x100000
+PtrInfo:
+	Address: 0x7d0989e00000-0x7d0989f00000/0x7d0989e00000-0x7d0989f00000
+	Size: 0x100000
+	Type: 1
+	Owner: 0x60f763e9c9f0
+	CanAccess: 1
+		0x60f763e98ef0
+	In block: 0x7d0989e00000, 0x100000
+PtrInfo:
+	Address: 0x7d098a520000-0x7d098a541c80/0x7d098a520000-0x7d098a541c80
+	Size: 0x21c80
+	Type: 1
+	Owner: 0x60f763e98ef0
+	CanAccess: 1
+		0x60f763e98ef0
+	In block: 0x7d098a520000, 0x22000
+core file size: -1
+LOAD 0x7ce750a00000 size: 55765368832
+LOAD 0x7cf44ca00000 size: 8099201024
+LOAD 0x7d0942000000 size: 614465536
+LOAD 0x7d097a400000 size: 6750208
+LOAD 0x7d097b400000 size: 6340608
+LOAD 0x7d098a520000 size: 139264
+LOAD 0x7d098a560000 size: 135168
+LOAD 0x7d098a5a0000 size: 196608
+LOAD 0x7d0999ac0000 size: 135168
+LOAD 0x7d0999b00000 size: 135168
+LOAD 0x7d0999b40000 size: 135168
+LOAD 0x7d0999b80000 size: 172032
+LOAD 0x7d0999bc0000 size: 135168
+LOAD 0x7d099a440000 size: 135168
+LOAD 0x7d099a480000 size: 196608
+LOAD 0x7d099a4c0000 size: 135168
+LOAD 0x7d099a500000 size: 135168
+LOAD 0x7d099a540000 size: 172032
+LOAD 0x7d099a580000 size: 135168
+LOAD 0x7d099a5c0000 size: 135168
+LOAD 0x7d099a600000 size: 2097152
+LOAD 0x7d099a840000 size: 196608
+LOAD 0x7d099a880000 size: 135168
+LOAD 0x7d099a8c0000 size: 135168
+LOAD 0x7d099a900000 size: 172032
+LOAD 0x7d099a940000 size: 135168
+LOAD 0x7d099a980000 size: 135168
+LOAD 0x7d099a9c0000 size: 196608
+LOAD 0x7d099ac40000 size: 135168
+LOAD 0x7d099ac80000 size: 135168
+LOAD 0x7d099acc0000 size: 172032
+LOAD 0x7d099ad00000 size: 135168
+LOAD 0x7d099ad40000 size: 135168
+LOAD 0x7d099ad80000 size: 196608
+LOAD 0x7d099adc0000 size: 135168
+LOAD 0x7d099ae00000 size: 2109440
+LOAD 0x7d099b040000 size: 135168
+LOAD 0x7d099b080000 size: 172032
+LOAD 0x7d099b0c0000 size: 135168
+LOAD 0x7d099b100000 size: 135168
+LOAD 0x7d099b140000 size: 196608
+LOAD 0x7d099b180000 size: 135168
+LOAD 0x7d099b1c0000 size: 135168
+LOAD 0x7d099b380000 size: 172032
+LOAD 0x7d099b3c0000 size: 135168
+LOAD 0x7d099b400000 size: 135168
+LOAD 0x7d099b440000 size: 196608
+LOAD 0x7d099b480000 size: 135168
+LOAD 0x7d099b4c0000 size: 135168
+LOAD 0x7d099b700000 size: 1994752
+LOAD 0x7d099b900000 size: 172032
+LOAD 0x7d099b940000 size: 135168
+LOAD 0x7d099b980000 size: 135168
+LOAD 0x7d099b9c0000 size: 196608
+LOAD 0x7d099ba00000 size: 10485760
+LOAD 0x7d099c5c0000 size: 135168
+LOAD 0x7d099c600000 size: 12582912
+LOAD 0x7d099d240000 size: 225280
+LOAD 0x7d099d280000 size: 466944
+LOAD 0x7d099d300000 size: 724992
+LOAD 0x7d099d3c0000 size: 135168
+LOAD 0x7d099d400000 size: 44040192
+LOAD 0x7d099fe40000 size: 172032
+LOAD 0x7d099fe80000 size: 135168
+LOAD 0x7d099fec0000 size: 135168
+LOAD 0x7d099ff00000 size: 196608
+LOAD 0x7d099ff40000 size: 135168
+LOAD 0x7d099ff80000 size: 135168
+LOAD 0x7d099ffc0000 size: 172032
+LOAD 0x7d09a4040000 size: 135168
+LOAD 0x7d09a4080000 size: 135168
+LOAD 0x7d09a40c0000 size: 196608
+LOAD 0x7d09a4100000 size: 135168
+LOAD 0x7d09a4140000 size: 135168
+LOAD 0x7d09a4180000 size: 172032
+LOAD 0x7d09a41c0000 size: 135168
+LOAD 0x7d09a7ec0000 size: 135168
+LOAD 0x7d09a7f00000 size: 196608
+LOAD 0x7d09a7f40000 size: 135168
+LOAD 0x7d09a7f80000 size: 135168
+LOAD 0x7d09a7fc0000 size: 172032
+LOAD 0x7d09ac040000 size: 135168
+LOAD 0x7d09ac080000 size: 135168
+LOAD 0x7d09ac0c0000 size: 196608
+LOAD 0x7d09ac100000 size: 135168
+LOAD 0x7d09ac140000 size: 135168
+LOAD 0x7d09ac180000 size: 172032
+LOAD 0x7d09ac1c0000 size: 135168
+LOAD 0x7d09afec0000 size: 135168
+LOAD 0x7d09aff00000 size: 196608
+LOAD 0x7d09aff40000 size: 135168
+LOAD 0x7d09aff80000 size: 135168
+LOAD 0x7d09affc0000 size: 172032
+LOAD 0x7d09b4040000 size: 135168
+LOAD 0x7d09b4080000 size: 135168
+LOAD 0x7d09b40c0000 size: 196608
+LOAD 0x7d09b4100000 size: 135168
+LOAD 0x7d09b4140000 size: 135168
+LOAD 0x7d09b4180000 size: 172032
+LOAD 0x7d09b41c0000 size: 135168
+LOAD 0x7d09b4200000 size: 1392640
+LOAD 0x7d09b4380000 size: 135168
+LOAD 0x7d09b43c0000 size: 196608
+LOAD 0x7d09b4840000 size: 135168
+LOAD 0x7d09b4880000 size: 135168
+LOAD 0x7d09b48c0000 size: 172032
+LOAD 0x7d09b4900000 size: 135168
+LOAD 0x7d09b4940000 size: 135168
+LOAD 0x7d09b4980000 size: 196608
+LOAD 0x7d09b49c0000 size: 135168
+LOAD 0x7d09b4a00000 size: 6291456
+LOAD 0x7d09b5040000 size: 135168
+LOAD 0x7d09b5080000 size: 172032
+LOAD 0x7d09b50c0000 size: 135168
+LOAD 0x7d09b5100000 size: 135168
+LOAD 0x7d09b5140000 size: 196608
+LOAD 0x7d09b5180000 size: 135168
+LOAD 0x7d09b51c0000 size: 135168
+LOAD 0x7d09b5200000 size: 12582912
+LOAD 0x7d09b5e40000 size: 172032
+LOAD 0x7d09b5e80000 size: 135168
+LOAD 0x7d09b5ec0000 size: 135168
+LOAD 0x7d09b5f00000 size: 196608
+LOAD 0x7d09b5f40000 size: 135168
+LOAD 0x7d09b5f80000 size: 135168
+LOAD 0x7d09b5fc0000 size: 172032
+LOAD 0x7d09b7040000 size: 135168
+LOAD 0x7d09b7080000 size: 135168
+LOAD 0x7d09b70c0000 size: 196608
+LOAD 0x7d09b7100000 size: 135168
+LOAD 0x7d09b7140000 size: 135168
+LOAD 0x7d09b7180000 size: 172032
+LOAD 0x7d09b71c0000 size: 135168
+LOAD 0x7d09b7640000 size: 135168
+LOAD 0x7d09b7680000 size: 196608
+LOAD 0x7d09b76c0000 size: 135168
+LOAD 0x7d09b7700000 size: 135168
+LOAD 0x7d09b7740000 size: 172032
+LOAD 0x7d09b7780000 size: 135168
+LOAD 0x7d09b77c0000 size: 135168
+LOAD 0x7d09b7940000 size: 200704
+LOAD 0x7d09bbec0000 size: 135168
+LOAD 0x7d09bbf00000 size: 135168
+LOAD 0x7d09bbf40000 size: 483328
+LOAD 0x7d09d4040000 size: 167936
+LOAD 0x7d09d4080000 size: 135168
+LOAD 0x7d09d40c0000 size: 135168
+LOAD 0x7d09d4100000 size: 159744
+LOAD 0x7d09d4340000 size: 237568
+LOAD 0x7d09d4380000 size: 438272
+LOAD 0x7d09d4400000 size: 2097152
+LOAD 0x7d09d4760000 size: 184320
+LOAD 0x7d09e3e00000 size: 146800640
+LOAD 0x7d09eca00000 size: 20447232
+LOAD 0x7d0ae3f00000 size: 876544
+LOAD 0x7d0ae8040000 size: 135168
+LOAD 0x7d0ae8080000 size: 270336
+LOAD 0x7d0ae8180000 size: 385024
+LOAD 0x7d0ae81f0000 size: 49152
+LOAD 0x7d0ae8300000 size: 610304
+LOAD 0x7d0ae83a0000 size: 106496
+LOAD 0x7d0ae83c0000 size: 188416
+LOAD 0x7d0ae83f0000 size: 20480
+LOAD 0x7d0ae8508000 size: 20480
+LOAD 0x7d0ae8518000 size: 24576
+LOAD 0x7d0ae85c0000 size: 16384
+LOAD 0x7d0ae85d0000 size: 73728
+LOAD 0x7d0ae85e8000 size: 20480
+LOAD 0x7d0ae9206000 size: 4096
+LOAD 0x7d0ae9210000 size: 36864
+LOAD 0x7d0ae921a000 size: 4096
+LOAD 0x7d0ae924e000 size: 4096
+LOAD 0x7d0ae9250000 size: 24576
+LOAD 0x7d0ae925e000 size: 4096
+LOAD 0x7d0ae9260000 size: 184320
+LOAD 0x7d0ae9290000 size: 4096
+LOAD 0x7d0ae9292000 size: 4096
+LOAD 0x7d0ae9294000 size: 16384
+LOAD 0x7d0aea618000 size: 57344
+LOAD 0x7d0aea62a000 size: 4096
+LOAD 0x7d0aea62c000 size: 4096
+LOAD 0x7d0aea63c000 size: 4096
+LOAD 0x7d0aea63e000 size: 4096
+LOAD 0x7d0aea640000 size: 45056
+LOAD 0x7d0aea650000 size: 4096
+LOAD 0x7d0aea652000 size: 4096
+LOAD 0x7d0aeb750000 size: 32768
+LOAD 0x7d0b1e3f1000 size: 4096
+LOAD 0x7d0b1e3f3000 size: 4096
+Failed to create GPU coredump: Permission denied
+GPU core dump failed
+llama-server: ./runtime/hsa-runtime/core/runtime/runtime.cpp:2026: static bool rocr::core::Runtime::VMFaultHandler(hsa_signal_value_t, void*): Assertion `false && "GPU memory access fault."' failed.
