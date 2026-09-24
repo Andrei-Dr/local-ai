@@ -112,7 +112,8 @@ class Spec1SimCase(unittest.TestCase):
         (cal / "spec1cal_n2_1.json").write_text(json.dumps(rows))
         out, res = self.run_tool("--cal", str(cal))
         self.assertFalse(res["fit"]["ok"])
-        self.assertIn("NO VERDICT: the calibration fit did not pass the 3% rule", out)
+        self.assertIn("TREE / SIBLING LINE: NO VERDICT: the calibration fit did not pass the 3% rule", out)
+        self.assertIn("CONFIDENCE STOP: NO VERDICT: the calibration fit did not pass the 3% rule", out)
 
 
 if __name__ == "__main__":

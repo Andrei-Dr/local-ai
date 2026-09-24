@@ -38,7 +38,8 @@ Calibration (--cal DIR = bench/box/spec1cal.sh output): per (arm n, prompt) the 
   calibration prompts are the first two T = 0 tasks, code and reason, same text at T = 0); n = 4 extrapolates E_NEW linearly from
   n = 2, 3 (the dump has 3 drafts). Fit error per arm = predicted vs measured decode t/s. RULE: every arm n = 1..4 within 3%.
 Gate: a policy PASSES if its held-out tokens/s beats chain n = 3 by >= 5% on BOTH dumps AND the fit is within 3%.
-Kill: no L3 / L4 policy passes -> the tree / sibling line is closed; the confidence stop is kept if >= +2% on both held-out dumps.
+Kill: no L3 / L4 policy passes -> the tree / sibling line is closed; the confidence stop is kept if >= +2% on both held-out dumps;
+  both lines print NO VERDICT when the fit fails the 3% rule.
 Without --cal the run is UNCALIBRATED: numbers print, verdicts are not verdicts.
 Not scorable here: the confidence stop with a longer cap (--spec-draft-p-min theta with --spec-draft-n-max 4 or 5) — the dumps hold 3
   draft depths, so depth > 3 has no acceptance or routing data; only a box arm can measure it.
@@ -298,6 +299,8 @@ def main():
     g_stop = verdicts["confidence stop"][1]
     stop_line = (f"KEEP ({100 * g_stop[0]:+.1f}% T0 / {100 * g_stop[1]:+.1f}% card, >= +2% on both)" if min(g_stop) >= KEEP_STOP
                  else f"DROP ({100 * g_stop[0]:+.1f}% T0 / {100 * g_stop[1]:+.1f}% card)")
+    if calibrated and not fit_ok:  # the keep / drop rule rests on the same time model as the gate
+        stop_line = f"NO VERDICT: the calibration fit did not pass the 3% rule (model says {stop_line})"
     print(f"SPEC1 {tag}TREE / SIBLING LINE: {tree_line}")
     print(f"SPEC1 {tag}CONFIDENCE STOP: {stop_line}")
     res.update({"calibrated": calibrated, "params": params, "baseline": base, "policies": table,
